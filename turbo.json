@@ -20,6 +20,10 @@
     "test": {
       "dependsOn": ["^build"]
     },
+    "storybook:build": {
+      "dependsOn": ["^build"],
+      "outputs": ["storybook-static/**"]
+    },
     "lint": {},
     "dev": {
       "cache": false,
