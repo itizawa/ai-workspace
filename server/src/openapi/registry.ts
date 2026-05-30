@@ -101,6 +101,7 @@ registry.registerPath({
         },
       },
     },
+    400: { description: "リクエストボディが不正（employeeId 空など）" },
     401: { description: "未認証" },
   },
 });

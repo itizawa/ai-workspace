@@ -1,5 +1,6 @@
 import { createApp } from "./app.js";
 import { loadEnv } from "./config/env.js";
+import { PrismaChannelMembershipRepository } from "./persistence/prismaChannelMembershipRepository.js";
 import { prisma } from "./persistence/prismaClient.js";
 import { PrismaMessageRepository } from "./persistence/prismaMessageRepository.js";
 import { PrismaUserRepository } from "./persistence/prismaUserRepository.js";
@@ -9,6 +10,7 @@ const env = loadEnv();
 const app = createApp({
   messageRepository: new PrismaMessageRepository(prisma),
   userRepository: new PrismaUserRepository(prisma),
+  channelMembershipRepository: new PrismaChannelMembershipRepository(prisma),
 });
 
 app.listen(env.port, () => {
