@@ -73,6 +73,6 @@ export function generateOpenApiDocument() {
       title: "Hatchery API",
       version: "0.1.0",
     },
-    servers: [{ url: "/api" }],
+    servers: [{ url: "/" }],
   });
 }

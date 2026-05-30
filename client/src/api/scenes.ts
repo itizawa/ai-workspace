@@ -8,8 +8,8 @@ export function useScenes() {
     queryKey: ["scenes"],
     queryFn: async () => {
       const { data, error } = await openApiClient.GET("/scenes");
-      if (error) throw error;
-      return data;
+      if (error) throw new Error(JSON.stringify(error));
+      return data ?? [];
     },
   });
 }
