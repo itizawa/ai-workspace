@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import session from "express-session";
 
 import { createPassport } from "./auth/passport.js";
+import { SECURITY_DEFAULTS } from "./config/env.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { createRateLimiter } from "./middleware/rateLimiter.js";
 import { createJsonBodyParser, createRequestTimeout } from "./middleware/requestLimits.js";
@@ -28,13 +29,8 @@ export interface SecurityOptions {
   requestTimeoutMs?: number;
 }
 
-/** SecurityOptions の既定値（本番は server.ts が env から渡す）。 */
-const DEFAULT_SECURITY: Required<SecurityOptions> = {
-  rateLimitWindowMs: 60_000,
-  rateLimitMax: 300,
-  bodyLimit: "100kb",
-  requestTimeoutMs: 30_000,
-};
+/** SecurityOptions の既定値（env.ts と共有＝単一情報源。本番は server.ts が env から渡す）。 */
+const DEFAULT_SECURITY: Required<SecurityOptions> = { ...SECURITY_DEFAULTS };
 
 /** createApp の依存（永続化は注入する＝Express/Prisma からドメインを独立させる）。 */
 export interface AppDeps {
@@ -65,6 +61,9 @@ export function createApp(deps: AppDeps): Express {
   }
 
   // DDoS/過負荷対策（#34）はボディ解釈より前に置き、過大・過多なリクエストを早期に弾く。
+  // 注: レート制限は req.ip ごとに数える。リバースプロキシ/LB の背後で運用する場合は、
+  //     正しいクライアント IP を得るためデプロイ側で app.set("trust proxy", ...) の設定が必要
+  //     （未設定だと全クライアントがプロキシ IP に集約される）。本 MVP は単一プロセス前提。
   app.use(createRateLimiter({ windowMs: security.rateLimitWindowMs, max: security.rateLimitMax }));
   app.use(createRequestTimeout(security.requestTimeoutMs));
   app.use(createJsonBodyParser(security.bodyLimit));

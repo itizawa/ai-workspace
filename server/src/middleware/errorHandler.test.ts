@@ -36,4 +36,17 @@ describe("errorHandler", () => {
     expect(res.status).toBe(500);
     expect(res.body.error).toBe("InternalServerError");
   });
+
+  it("応答開始後のエラーは二重送信せず、既に送った応答を維持する", async () => {
+    // タイムアウト 503 送出後に遅延ハンドラが next(err) するケースの再現。
+    // headersSent ガードにより 200 のまま（500 で上書きしない）であることを確認。
+    const res = await request(
+      appThrowing((_req, res, next) => {
+        res.status(200).json({ ok: true });
+        next(new Error("late error after response"));
+      }),
+    ).get("/t");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true });
+  });
 });

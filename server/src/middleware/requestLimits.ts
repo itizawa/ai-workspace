@@ -11,16 +11,23 @@ export function createJsonBodyParser(limit: string): RequestHandler {
 
 /**
  * リクエストタイムアウトミドルウェアを生成する。
- * 処理が ms を超えた場合に 503 と { error: "RequestTimeout" } を返す（応答済みなら何もしない）。
+ * リクエスト受信から ms を超えても応答が始まらなければ 503 と { error: "RequestTimeout" } を返す。
+ * 実時間タイマー（res.setTimeout のソケットアイドルではなく）で処理時間を測り、応答完了
+ * （finish）や接続切断（close）でクリアして keep-alive 越しのタイマー漏れを防ぐ。
  * 遅いリクエストでコネクションが占有され続けるのを防ぐ。
  */
 export function createRequestTimeout(ms: number): RequestHandler {
   return (_req, res, next) => {
-    res.setTimeout(ms, () => {
+    const timer = setTimeout(() => {
       if (!res.headersSent) {
         res.status(503).json({ error: "RequestTimeout" });
       }
-    });
+    }, ms);
+    // タイマーがイベントループを生かし続けないようにする（プロセス終了を妨げない）。
+    timer.unref();
+    const clear = (): void => clearTimeout(timer);
+    res.on("finish", clear);
+    res.on("close", clear);
     next();
   };
 }

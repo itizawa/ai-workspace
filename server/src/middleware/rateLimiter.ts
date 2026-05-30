@@ -37,13 +37,14 @@ export function createRateLimiter(options: RateLimiterOptions): RequestHandler {
       return;
     }
 
-    bucket.count += 1;
-    if (bucket.count > max) {
+    if (bucket.count >= max) {
+      // 上限到達。カウンタはこれ以上増やさない（フラッド時の無意味な増加を避ける）。
       const retryAfterSec = Math.max(1, Math.ceil((bucket.resetAt - ts) / 1000));
       res.setHeader("Retry-After", String(retryAfterSec));
       res.status(429).json({ error: "TooManyRequests" });
       return;
     }
+    bucket.count += 1;
     next();
   };
 }

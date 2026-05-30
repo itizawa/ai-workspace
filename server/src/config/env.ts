@@ -17,16 +17,27 @@ export interface ServerEnv {
 }
 
 /**
+ * DDoS/過負荷対策（#34）の既定値。Zod のデフォルトと createApp（app.ts）の双方が
+ * 参照する単一情報源。値を変えるときはここだけを書き換える。
+ */
+export const SECURITY_DEFAULTS = {
+  rateLimitWindowMs: 60_000,
+  rateLimitMax: 300,
+  bodyLimit: "100kb",
+  requestTimeoutMs: 30_000,
+} as const;
+
+/**
  * 環境変数のスキーマ。プロジェクト標準（ADR-0005/0006）どおり Zod で検証する。
  * 数値項目は coerce で数値に強制し、不正値（"abc" や非正の値）は parse 時に弾く。
  */
 const EnvSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().min(1).optional(),
-  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
-  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
-  REQUEST_BODY_LIMIT: z.string().min(1).default("100kb"),
-  REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(SECURITY_DEFAULTS.rateLimitWindowMs),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(SECURITY_DEFAULTS.rateLimitMax),
+  REQUEST_BODY_LIMIT: z.string().min(1).default(SECURITY_DEFAULTS.bodyLimit),
+  REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(SECURITY_DEFAULTS.requestTimeoutMs),
 });
 
 /** 環境変数から ServerEnv を構築する。不正な値は ZodError を投げて起動時に気付けるようにする。 */
