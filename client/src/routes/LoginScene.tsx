@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
-import { login } from "../api/auth.js";
+import { AUTH_ME_QUERY_KEY, login } from "../api/auth.js";
 
 export const LoginScene = (): ReactElement => {
   const [id, setId] = useState("");
@@ -21,7 +21,7 @@ export const LoginScene = (): ReactElement => {
     setError(null);
     try {
       await login({ id, password });
-      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      await queryClient.invalidateQueries({ queryKey: AUTH_ME_QUERY_KEY });
       await navigate({ to: "/" });
     } catch {
       setError("ID またはパスワードが正しくありません");

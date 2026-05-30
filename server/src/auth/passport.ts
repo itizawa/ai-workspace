@@ -1,11 +1,14 @@
 import bcrypt from "bcrypt";
-import passport from "passport";
+import { Passport } from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 
 import type { UserRepository } from "../persistence/userRepository.js";
 
-export function configurePassport(userRepo: UserRepository): void {
-  passport.use(
+/** userRepo に束縛された独立した Passport インスタンスを生成する（グローバル汚染回避）。 */
+export function createPassport(userRepo: UserRepository): Passport {
+  const p = new Passport();
+
+  p.use(
     new LocalStrategy({ usernameField: "id" }, async (id, password, done) => {
       try {
         const user = await userRepo.findById(id);
@@ -19,11 +22,11 @@ export function configurePassport(userRepo: UserRepository): void {
     }),
   );
 
-  passport.serializeUser((user, done) => {
+  p.serializeUser((user, done) => {
     done(null, (user as { id: string }).id);
   });
 
-  passport.deserializeUser(async (id: string, done) => {
+  p.deserializeUser(async (id: string, done) => {
     try {
       const user = await userRepo.findById(id);
       if (!user) return done(null, false);
@@ -32,4 +35,6 @@ export function configurePassport(userRepo: UserRepository): void {
       done(err);
     }
   });
+
+  return p;
 }

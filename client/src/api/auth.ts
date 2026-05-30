@@ -1,7 +1,7 @@
 import type { AuthUser, LoginRequest } from "@hatchery/common";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-const AUTH_ME_QUERY_KEY = ["auth", "me"] as const;
+export const AUTH_ME_QUERY_KEY = ["auth", "me"] as const;
 
 /** GET /auth/me を呼び出す。未ログイン（401）のときは null を返す。 */
 export async function fetchMe(): Promise<AuthUser | null> {

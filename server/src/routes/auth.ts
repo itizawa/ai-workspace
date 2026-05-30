@@ -1,18 +1,18 @@
 import { LoginRequestSchema } from "@hatchery/common";
 import type { RequestHandler } from "express";
 import { Router } from "express";
-import passport from "passport";
+import type { Passport } from "passport";
 
 import { requireAuth } from "../middleware/requireAuth.js";
 import { validateBody } from "../middleware/validateBody.js";
 
-export function createAuthRouter(): Router {
+export function createAuthRouter(passportInstance: Passport): Router {
   const router = Router();
 
   router.post(
     "/login",
     validateBody(LoginRequestSchema),
-    (passport.authenticate("local") as RequestHandler),
+    (passportInstance.authenticate("local") as RequestHandler),
     (req, res) => {
       res.status(200).json(req.user);
     },
