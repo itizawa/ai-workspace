@@ -1,6 +1,6 @@
 # ADR-0001: monorepo 構成（docs / client / server / common）
 
-- ステータス: Proposed
+- ステータス: Accepted
 - 日付: 2026-05-30
 - 関連 Issue: #1
 

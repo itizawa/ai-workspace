@@ -1,6 +1,6 @@
 # ADR-0002: パッケージマネージャとビルド/タスク管理（pnpm + Turborepo）
 
-- ステータス: Proposed
+- ステータス: Accepted
 - 日付: 2026-05-30
 - 関連 Issue: #1
 

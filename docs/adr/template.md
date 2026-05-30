@@ -1,6 +1,6 @@
 # ADR-NNNN: <タイトル>
 
-- ステータス: Proposed
+- ステータス: Accepted
 - 日付: YYYY-MM-DD
 - 関連 Issue: #N
 

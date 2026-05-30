@@ -1,6 +1,6 @@
 # ADR-0005: common パッケージの責務と依存方向
 
-- ステータス: Proposed
+- ステータス: Accepted
 - 日付: 2026-05-30
 - 関連 Issue: #1
 

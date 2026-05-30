@@ -1,6 +1,6 @@
 # ADR-0004: server 技術スタック（Express + Prisma）
 
-- ステータス: Proposed
+- ステータス: Accepted
 - 日付: 2026-05-30
 - 関連 Issue: #1
 

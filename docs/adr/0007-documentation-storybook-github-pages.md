@@ -1,6 +1,6 @@
 # ADR-0007: ドキュメント基盤（Storybook MDX + GitHub Pages）
 
-- ステータス: Proposed
+- ステータス: Accepted
 - 日付: 2026-05-30
 - 関連 Issue: #1
 

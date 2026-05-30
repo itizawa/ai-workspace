@@ -1,6 +1,6 @@
 # ADR-0003: client 技術スタック（React SPA）
 
-- ステータス: Proposed
+- ステータス: Accepted
 - 日付: 2026-05-30
 - 関連 Issue: #1
 
