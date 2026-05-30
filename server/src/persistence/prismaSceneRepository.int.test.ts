@@ -1,4 +1,3 @@
-import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { PrismaSceneRepository } from "./prismaSceneRepository.js";
@@ -6,12 +5,17 @@ import { PrismaSceneRepository } from "./prismaSceneRepository.js";
 const hasDb = Boolean(process.env.DATABASE_URL);
 
 // DATABASE_URL がある時（= マイグレーション適用済みの PostgreSQL がある時）のみ実行する。
-// DB レス環境では skip し、`vitest run` を緑に保つ（AC-6 の実 DB 検証は docker 起動時に実施）。
+// PrismaClient は prisma generate 済みでないと import 時に初期化エラーになるため、
+// skip 時にロードしないよう beforeAll 内で動的 import する（generate 前の CI でも
+// DB 非依存テストを緑に保つ）。AC-6 の実 DB 検証は docker 起動時に実施する。
 describe.skipIf(!hasDb)("PrismaSceneRepository (AC-6 統合・要 DATABASE_URL)", () => {
-  const prisma = new PrismaClient();
-  const repo = new PrismaSceneRepository(prisma);
+  let prisma: InstanceType<typeof import("@prisma/client").PrismaClient>;
+  let repo: PrismaSceneRepository;
 
   beforeAll(async () => {
+    const { PrismaClient } = await import("@prisma/client");
+    prisma = new PrismaClient();
+    repo = new PrismaSceneRepository(prisma);
     await prisma.message.deleteMany();
     await prisma.scene.deleteMany();
   });

@@ -1,7 +1,12 @@
-import type { Scene } from "@hatchery/common";
+import type { Message, Scene } from "@hatchery/common";
 import type { PrismaClient } from "@prisma/client";
 
 import type { SceneRecord, SceneRepository } from "./sceneRepository.js";
+
+/** Prisma の Message 行を common の Message（speaker/channel/text）に射影する。 */
+function toMessages(rows: { speaker: string; channel: string; text: string }[]): Message[] {
+  return rows.map((m) => ({ speaker: m.speaker, channel: m.channel, text: m.text }));
+}
 
 /** SceneRepository の Prisma / PostgreSQL 実装。 */
 export class PrismaSceneRepository implements SceneRepository {
@@ -16,7 +21,7 @@ export class PrismaSceneRepository implements SceneRepository {
       id: s.id,
       scene: s.summary,
       createdAt: s.createdAt,
-      messages: s.messages.map((m) => ({ speaker: m.speaker, channel: m.channel, text: m.text })),
+      messages: toMessages(s.messages),
     }));
   }
 
@@ -39,11 +44,7 @@ export class PrismaSceneRepository implements SceneRepository {
       id: created.id,
       scene: created.summary,
       createdAt: created.createdAt,
-      messages: created.messages.map((m) => ({
-        speaker: m.speaker,
-        channel: m.channel,
-        text: m.text,
-      })),
+      messages: toMessages(created.messages),
     };
   }
 }

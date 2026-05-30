@@ -14,4 +14,8 @@ describe("loadEnv", () => {
     expect(env.port).toBe(3000);
     expect(env.databaseUrl).toBeUndefined();
   });
+
+  it("数値でない PORT は ZodError で弾く", () => {
+    expect(() => loadEnv({ PORT: "abc" })).toThrow();
+  });
 });
