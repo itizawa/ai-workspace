@@ -21,4 +21,14 @@ describe("createAppRouter", () => {
     render(<RouterProvider router={router} />);
     expect(await screen.findByText("#雑談")).toBeInTheDocument();
   });
+
+  it("チャンネルルート（/channels/$channelId）で選択中チャンネル ID を描画する", async () => {
+    const router = createAppRouter({
+      history: createMemoryHistory({ initialEntries: ["/channels/zatsudan"] }),
+    });
+    render(<RouterProvider router={router} />);
+    expect(
+      await screen.findByRole("heading", { name: /チャンネル: zatsudan/ }),
+    ).toBeInTheDocument();
+  });
 });

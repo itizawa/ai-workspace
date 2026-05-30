@@ -5,6 +5,7 @@ import {
   type RouterHistory,
 } from "@tanstack/react-router";
 
+import { ChannelScene } from "./routes/ChannelScene";
 import { HomeScene } from "./routes/HomeScene";
 import { RootLayout } from "./routes/RootLayout";
 
@@ -24,7 +25,7 @@ const indexRoute = createRoute({
 const channelRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/channels/$channelId",
-  component: HomeScene,
+  component: ChannelScene,
 });
 
 const routeTree = rootRoute.addChildren([indexRoute, channelRoute]);
@@ -44,11 +45,14 @@ export const createAppRouter = (options: CreateAppRouterOptions = {}) =>
     defaultPreload: "intent",
   });
 
+/** アプリのルータ型（AppRoot への注入や Register augmentation で共有する）。 */
+export type AppRouter = ReturnType<typeof createAppRouter>;
+
 /** SPA 実行時に用いる既定ルータ（browser history）。 */
-export const router = createAppRouter();
+export const router: AppRouter = createAppRouter();
 
 declare module "@tanstack/react-router" {
   interface Register {
-    router: ReturnType<typeof createAppRouter>;
+    router: AppRouter;
   }
 }
