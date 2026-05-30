@@ -13,6 +13,13 @@ export {
   type SceneRepository,
 } from "./persistence/sceneRepository.js";
 export { PrismaSceneRepository } from "./persistence/prismaSceneRepository.js";
+export {
+  InMemoryUserRepository,
+  type UserRepository,
+  type User,
+} from "./persistence/userRepository.js";
+export { PrismaUserRepository } from "./persistence/prismaUserRepository.js";
+export { requireAuth } from "./middleware/requireAuth.js";
 export { listScenes } from "./usecases/listScenes.js";
 export { createScene } from "./usecases/createScene.js";
 export {
