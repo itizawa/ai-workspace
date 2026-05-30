@@ -2,14 +2,14 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 
 import { createApp } from "../app.js";
-import { InMemorySceneRepository } from "../persistence/sceneRepository.js";
+import { InMemoryMessageRepository } from "../persistence/messageRepository.js";
 import type { UserRepository } from "../persistence/userRepository.js";
 import { InMemoryUserRepository } from "../persistence/userRepository.js";
 
 async function buildApp(userRepo?: UserRepository) {
   const repo = userRepo ?? (await InMemoryUserRepository.createWithTestUser());
   return createApp({
-    sceneRepository: new InMemorySceneRepository(),
+    messageRepository: new InMemoryMessageRepository(),
     userRepository: repo,
   });
 }

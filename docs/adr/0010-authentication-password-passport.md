@@ -1,4 +1,4 @@
-# ADR-0009: 認証方式: ID/Password（passport-local + express-session）
+# ADR-0010: 認証方式: ID/Password（passport-local + express-session）
 
 - ステータス: Accepted
 - 日付: 2026-05-30

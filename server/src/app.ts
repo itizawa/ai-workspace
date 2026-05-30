@@ -3,15 +3,15 @@ import session from "express-session";
 
 import { createPassport } from "./auth/passport.js";
 import { errorHandler } from "./middleware/errorHandler.js";
-import type { SceneRepository } from "./persistence/sceneRepository.js";
+import type { MessageRepository } from "./persistence/messageRepository.js";
 import { InMemoryUserRepository, type UserRepository } from "./persistence/userRepository.js";
 import { createAuthRouter } from "./routes/auth.js";
 import { healthRouter } from "./routes/health.js";
-import { createScenesRouter } from "./routes/scenes.js";
+import { createMessagesRouter } from "./routes/messages.js";
 
 /** createApp の依存（永続化は注入する＝Express/Prisma からドメインを独立させる）。 */
 export interface AppDeps {
-  sceneRepository: SceneRepository;
+  messageRepository: MessageRepository;
   /** 省略時はテスト用の空リポジトリを使用。本番では PrismaUserRepository を渡す。 */
   userRepository?: UserRepository;
 }
@@ -51,7 +51,7 @@ export function createApp(deps: AppDeps): Express {
 
   app.use("/health", healthRouter);
   app.use("/auth", createAuthRouter(passportInstance));
-  app.use("/scenes", createScenesRouter(deps.sceneRepository));
+  app.use("/messages", createMessagesRouter(deps.messageRepository));
   app.use(errorHandler);
   return app;
 }
