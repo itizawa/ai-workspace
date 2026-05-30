@@ -1,0 +1,62 @@
+name: ADR auto-accept on merge
+
+# develop へ PR がマージされたとき、その PR に含まれる ADR の
+# 「ステータス: Proposed」を「Accepted」へ自動更新する。
+# AI/API は使わず sed による単純な置換のみ（コスト・依存なし）。
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  accept-adr:
+    # develop へ「マージされた」PR のときだけ実行（close だけなら何もしない）
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Flip ADR status Proposed -> Accepted
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          # この PR で変更された docs/adr/NNNN-*.md を抽出（README/template は対象外）
+          mapfile -t files < <(gh pr view "$PR_NUMBER" --json files --jq '.files[].path' \
+            | grep -E '^docs/adr/[0-9]{4}-[^/]+\.md$' || true)
+
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "ADR ファイルを含まない PR のためスキップします。"
+            exit 0
+          fi
+
+          changed=0
+          for f in "${files[@]}"; do
+            [ -f "$f" ] || continue
+            if grep -qE '^- ステータス: *Proposed' "$f"; then
+              sed -i -E 's/^- ステータス: *Proposed/- ステータス: Accepted/' "$f"
+              echo "accepted: $f"
+              changed=1
+            fi
+          done
+
+          if [ "$changed" -eq 0 ]; then
+            echo "更新対象（Proposed の ADR）はありませんでした。"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/adr
+          git commit -m "docs(adr): マージに伴いステータスを Accepted に更新 (PR #${PR_NUMBER}) [skip ci]"
+          # detached HEAD でも確実に develop へ反映するため refspec を明示
+          git push origin HEAD:develop
