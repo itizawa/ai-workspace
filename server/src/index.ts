@@ -13,6 +13,13 @@ export {
   type MessageRepository,
 } from "./persistence/messageRepository.js";
 export { PrismaMessageRepository } from "./persistence/prismaMessageRepository.js";
+export {
+  InMemoryUserRepository,
+  type UserRepository,
+  type User,
+} from "./persistence/userRepository.js";
+export { PrismaUserRepository } from "./persistence/prismaUserRepository.js";
+export { requireAuth } from "./middleware/requireAuth.js";
 export { listMessages } from "./usecases/listMessages.js";
 export { createMessages } from "./usecases/createMessages.js";
 export {
