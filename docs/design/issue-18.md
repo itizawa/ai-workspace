@@ -68,16 +68,16 @@ name: Auto Release PR
 
 on:
   push:
-    branches: [develop]   # develop が更新されたら起動
-  workflow_dispatch:       # 手動再生成も可能
+    branches: [develop] # develop が更新されたら起動
+  workflow_dispatch: # 手動再生成も可能
 
 concurrency:
-  group: auto-release-pr   # リリース PR は常に 1 本（多重実行を防ぐ）
+  group: auto-release-pr # リリース PR は常に 1 本（多重実行を防ぐ）
   cancel-in-progress: true
 
 permissions:
-  contents: read           # 履歴の読み取りのみ（最小権限）
-  pull-requests: write     # PR の作成・更新に必要
+  contents: read # 履歴の読み取りのみ（最小権限）
+  pull-requests: write # PR の作成・更新に必要
 
 jobs:
   release-pr:
@@ -85,7 +85,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # main..develop の差分・ログ算出に全履歴が必要
+          fetch-depth: 0 # main..develop の差分・ログ算出に全履歴が必要
       - name: Create or update release PR (develop -> main)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -106,7 +106,7 @@ jobs:
 
 ### 4.4 前提・運用上の注意（人間向け・本ワークフロー外）
 
-- **GitHub Actions の PR 作成許可**: 既定の `GITHUB_TOKEN` で PR を作成するには、リポジトリ設定 *Settings → Actions → General → Workflow permissions* の **「Allow GitHub Actions to create and approve pull requests」を有効化**しておく必要がある（無効だと `gh pr create` が権限エラーになる）。この設定は GitHub の管理画面操作のため本 Issue のスコープ外（設計書に明記して人間に委ねる）。
+- **GitHub Actions の PR 作成許可**: 既定の `GITHUB_TOKEN` で PR を作成するには、リポジトリ設定 _Settings → Actions → General → Workflow permissions_ の **「Allow GitHub Actions to create and approve pull requests」を有効化**しておく必要がある（無効だと `gh pr create` が権限エラーになる）。この設定は GitHub の管理画面操作のため本 Issue のスコープ外（設計書に明記して人間に委ねる）。
 - 自動作成されたリリース PR（base=main）には、`docs/dark-factory-workflow.md` のとおり **CI（`ci.yml`）はトリガーされない**（CI は base=develop 限定）。リリース PR の品質は develop へマージされた時点で既に担保済みという前提に立つ。
 
 ## 5. 影響範囲 / 既存への変更（対象ワークスペース: CI/docs）
