@@ -14,14 +14,13 @@ permissions:
   pages: write
   id-token: write
 
-# 同一ブランチの古いデプロイをキャンセルして直列化する
-concurrency:
-  group: pages-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    # ビルドジョブは同一ブランチの古い実行をキャンセルして効率化する
+    concurrency:
+      group: pages-build-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,7 +37,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # common と client のビルドを先行させ、Storybook が型・成果物を参照できるようにする
+      # @hatchery/docs#storybook:build は common#build のみに依存（server チェーンを回避）
+      # Storybook は viteFinal エイリアスで client/common をソースから直接解決する
       - name: Build Storybook
         run: pnpm turbo run storybook:build
 
@@ -51,6 +51,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    # デプロイジョブは直列化するが実行中のデプロイはキャンセルしない
+    # （GitHub Pages デプロイを中断するとサイトが壊れた状態になる可能性があるため）
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

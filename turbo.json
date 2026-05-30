@@ -24,6 +24,10 @@
       "dependsOn": ["^build"],
       "outputs": ["storybook-static/**"]
     },
+    "@hatchery/docs#storybook:build": {
+      "dependsOn": ["@hatchery/common#build"],
+      "outputs": ["storybook-static/**"]
+    },
     "lint": {},
     "dev": {
       "cache": false,
