@@ -41,10 +41,10 @@ Issue 本文の指示:
 
 ### 影響を受ける import の追従
 
-| ファイル | 変更前 | 変更後 |
-|---|---|---|
-| `src/index.ts` | `./domain/<name>.js` | `./domain/<name>/index.js` |
-| `src/logic/formatRecentLog.ts` / `.test.ts` | `../domain/message.js` | `../domain/message/index.js` |
+| ファイル                                           | 変更前                  | 変更後                        |
+| -------------------------------------------------- | ----------------------- | ----------------------------- |
+| `src/index.ts`                                     | `./domain/<name>.js`    | `./domain/<name>/index.js`    |
+| `src/logic/formatRecentLog.ts` / `.test.ts`        | `../domain/message.js`  | `../domain/message/index.js`  |
 | `src/logic/selectAppearingMembers.ts` / `.test.ts` | `../domain/employee.js` | `../domain/employee/index.js` |
 
 ## 5. 影響範囲 / 既存への変更
