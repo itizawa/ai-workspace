@@ -39,10 +39,9 @@ describe("Turborepo タスク依存順 (受け入れ条件 #4)", () => {
     ]) {
       const task = byId.get(consumer);
       expect(task, `${consumer} がタスクグラフに存在する`).toBeDefined();
-      expect(
-        task?.dependencies,
-        `${consumer} は @hatchery/common#build に依存する`,
-      ).toContain("@hatchery/common#build");
+      expect(task?.dependencies, `${consumer} は @hatchery/common#build に依存する`).toContain(
+        "@hatchery/common#build",
+      );
     }
   });
 });
