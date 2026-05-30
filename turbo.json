@@ -10,7 +10,7 @@
       "outputs": ["openapi.json"]
     },
     "gen-types": {
-      "dependsOn": ["server#openapi"],
+      "dependsOn": ["@hatchery/server#openapi"],
       "outputs": ["src/api/openapi.gen.ts"]
     },
     "test": {
