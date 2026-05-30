@@ -2,13 +2,14 @@ import type { Preview } from "@storybook/react";
 import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 
-// Slack 風ダークテーマ（ADR-0003 の slackTheme と同値）
-// preview.tsx は Storybook 専用のエントリで client/index.ts の "UI 不可" バレルを経由しない
+// Slack 風ライトテーマ（client/src/theme.ts の slackTheme と同値・Issue #31）
+// preview.tsx は Storybook 専用のエントリで client/index.ts の "UI 不可" バレルを経由しないため、
+// 値を直接複製して同期する（slackTheme をライト化したら本ファイルも追従させる）。
 const previewTheme = createTheme({
   palette: {
-    mode: "dark",
+    mode: "light",
     primary: { main: "#1164A3" },
-    background: { default: "#1A1D21", paper: "#3F0E40" },
+    background: { default: "#FFFFFF", paper: "#F8F8FA" },
   },
 });
 
