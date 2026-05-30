@@ -29,6 +29,14 @@ export interface SchedulerPort {
   scheduleDaily(hour: number, minute: number, handler: () => void): () => void;
 }
 
+/**
+ * 再登録時の最小待機（ms）。setTimeout がわずかに早く発火した場合、再登録時点の現在時刻が
+ * まだ当日の hour:minute 直前に見え、msUntilNext がごく小さい値を返して同一定時で二重発火しうる。
+ * これを下回る待機は「直前の定時を発火済み」とみなし翌日（+24h）へ送ることで二重発火を防ぐ。
+ */
+const MIN_REARM_DELAY_MS = 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 /** setTimeout ベースの既定スケジューラ。発火後に翌日分を再登録して日次運用する。 */
 export class SystemScheduler implements SchedulerPort {
   scheduleDaily(hour: number, minute: number, handler: () => void): () => void {
@@ -36,11 +44,14 @@ export class SystemScheduler implements SchedulerPort {
     let cancelled = false;
 
     const arm = (): void => {
+      // 早発火による二重発火を防ぐため、極端に短い待機は翌日へ繰り上げる。
+      const delay = msUntilNext(hour, minute);
+      const safeDelay = delay < MIN_REARM_DELAY_MS ? delay + DAY_MS : delay;
       timer = setTimeout(() => {
         if (cancelled) return;
         handler();
         arm(); // 翌日分を再登録して日次運用する。
-      }, msUntilNext(hour, minute));
+      }, safeDelay);
     };
 
     arm();
