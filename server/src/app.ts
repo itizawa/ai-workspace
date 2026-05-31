@@ -4,8 +4,10 @@ import session from "express-session";
 import { createPassport } from "./auth/passport.js";
 import { SECURITY_DEFAULTS } from "./config/env.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { createCors } from "./middleware/cors.js";
 import { createRateLimiter } from "./middleware/rateLimiter.js";
 import { createJsonBodyParser, createRequestTimeout } from "./middleware/requestLimits.js";
+import { createSecureHeaders } from "./middleware/secureHeaders.js";
 import {
   InMemoryChannelMembershipRepository,
   type ChannelMembershipRepository,
@@ -27,10 +29,18 @@ export interface SecurityOptions {
   bodyLimit?: string;
   /** リクエストタイムアウト（ミリ秒）。既定 30000。 */
   requestTimeoutMs?: number;
+  /** CORS で許可するオリジンのリスト（#35）。既定 []（＝全オリジン不許可）。`"*"` で全許可。 */
+  corsAllowedOrigins?: string[];
+  /** HSTS（Strict-Transport-Security）を付与するか（#35）。HTTPS（本番）でのみ true。既定 false。 */
+  enableHsts?: boolean;
 }
 
 /** SecurityOptions の既定値（env.ts と共有＝単一情報源。本番は server.ts が env から渡す）。 */
-const DEFAULT_SECURITY: Required<SecurityOptions> = { ...SECURITY_DEFAULTS };
+const DEFAULT_SECURITY: Required<SecurityOptions> = {
+  ...SECURITY_DEFAULTS,
+  corsAllowedOrigins: [],
+  enableHsts: false,
+};
 
 /** createApp の依存（永続化は注入する＝Express/Prisma からドメインを独立させる）。 */
 export interface AppDeps {
@@ -59,6 +69,11 @@ export function createApp(deps: AppDeps): Express {
   if (!sessionSecret && process.env.NODE_ENV === "production") {
     throw new Error("SESSION_SECRET 環境変数が設定されていません。本番環境では必須です。");
   }
+
+  // セキュアヘッダ／CORS（#35）は最前段に置き、エラー応答も含む全レスポンスに効かせる。
+  // CORS のプリフライト（OPTIONS）は createCors が 204 で打ち切るため、レート制限等より前に置く。
+  app.use(createSecureHeaders({ enableHsts: security.enableHsts }));
+  app.use(createCors({ allowedOrigins: security.corsAllowedOrigins }));
 
   // DDoS/過負荷対策（#34）はボディ解釈より前に置き、過大・過多なリクエストを早期に弾く。
   // 注: レート制限は req.ip ごとに数える。リバースプロキシ/LB の背後で運用する場合は、

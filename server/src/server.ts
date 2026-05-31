@@ -16,6 +16,9 @@ const app = createApp({
     rateLimitMax: env.rateLimitMax,
     bodyLimit: env.bodyLimit,
     requestTimeoutMs: env.requestTimeoutMs,
+    corsAllowedOrigins: env.corsAllowedOrigins,
+    // HSTS は HTTPS 前提のため本番でのみ有効化する（session cookie の secure と同じ判定）。
+    enableHsts: process.env.NODE_ENV === "production",
   },
 });
 
