@@ -14,6 +14,8 @@ export interface ServerEnv {
   bodyLimit: string;
   /** リクエストタイムアウト（ミリ秒）。未指定なら 30000。 */
   requestTimeoutMs: number;
+  /** CORS で許可するオリジンのリスト（#35）。未設定なら空配列（＝全オリジン不許可）。 */
+  corsAllowedOrigins: string[];
 }
 
 /**
@@ -38,6 +40,16 @@ const EnvSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(SECURITY_DEFAULTS.rateLimitMax),
   REQUEST_BODY_LIMIT: z.string().min(1).default(SECURITY_DEFAULTS.bodyLimit),
   REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(SECURITY_DEFAULTS.requestTimeoutMs),
+  // カンマ区切りのオリジン文字列を配列へ整形する（前後空白除去・空要素除去）。未設定は空配列。
+  CORS_ALLOWED_ORIGINS: z
+    .string()
+    .optional()
+    .transform((value) =>
+      (value ?? "")
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter((origin) => origin.length > 0),
+    ),
 });
 
 /** 環境変数から ServerEnv を構築する。不正な値は ZodError を投げて起動時に気付けるようにする。 */
@@ -49,6 +61,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
     RATE_LIMIT_MAX: source.RATE_LIMIT_MAX,
     REQUEST_BODY_LIMIT: source.REQUEST_BODY_LIMIT,
     REQUEST_TIMEOUT_MS: source.REQUEST_TIMEOUT_MS,
+    CORS_ALLOWED_ORIGINS: source.CORS_ALLOWED_ORIGINS,
   });
   return {
     port: parsed.PORT,
@@ -57,5 +70,6 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
     rateLimitMax: parsed.RATE_LIMIT_MAX,
     bodyLimit: parsed.REQUEST_BODY_LIMIT,
     requestTimeoutMs: parsed.REQUEST_TIMEOUT_MS,
+    corsAllowedOrigins: parsed.CORS_ALLOWED_ORIGINS,
   };
 }
