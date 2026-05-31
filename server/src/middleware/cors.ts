@@ -29,10 +29,12 @@ export function createCors(options: CorsOptions): RequestHandler {
     const origin = req.headers.origin;
     const allowed = typeof origin === "string" && isAllowed(origin, allowedOrigins);
 
+    // 応答がオリジンに依存することをキャッシュへ常に知らせ、オリジン跨ぎのキャッシュ汚染を防ぐ。
+    res.vary("Origin");
+
     if (allowed) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
-      res.vary("Origin");
     }
 
     // プリフライトは本リクエストの前にブラウザが送る OPTIONS。許可オリジンのみ詳細を返し 204 で打ち切る。
