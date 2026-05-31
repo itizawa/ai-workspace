@@ -1,6 +1,7 @@
 import Box from "@mui/material/Box";
+import Link from "@mui/material/Link";
 import Typography from "@mui/material/Typography";
-import { Outlet } from "@tanstack/react-router";
+import { Link as RouterLink, Outlet } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 
 import { ChannelList } from "../components/ChannelList";
@@ -18,7 +19,9 @@ export const RootLayout = (): ReactElement => (
         width: 260,
         flexShrink: 0,
         bgcolor: "background.paper",
-        color: "common.white",
+        color: "text.primary",
+        borderRight: 1,
+        borderColor: "divider",
         p: 2,
       }}
     >
@@ -26,6 +29,11 @@ export const RootLayout = (): ReactElement => (
         Hatchery
       </Typography>
       <ChannelList />
+      <Box sx={{ mt: 2 }}>
+        <Link component={RouterLink} to="/settings" color="inherit" underline="hover">
+          設定
+        </Link>
+      </Box>
     </Box>
     <Box component="main" sx={{ flexGrow: 1, bgcolor: "background.default" }}>
       <Outlet />

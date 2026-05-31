@@ -5,8 +5,28 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
+    "openapi": {
+      "dependsOn": ["^build"],
+      "outputs": ["openapi.json"]
+    },
+    "gen-types": {
+      "dependsOn": ["@hatchery/server#openapi"],
+      "outputs": ["src/api/openapi.gen.ts"]
+    },
+    "@hatchery/client#build": {
+      "dependsOn": ["^build", "gen-types"],
+      "outputs": ["dist/**"]
+    },
     "test": {
       "dependsOn": ["^build"]
+    },
+    "storybook:build": {
+      "dependsOn": ["^build"],
+      "outputs": ["storybook-static/**"]
+    },
+    "@hatchery/docs#storybook:build": {
+      "dependsOn": ["@hatchery/common#build"],
+      "outputs": ["storybook-static/**"]
     },
     "lint": {},
     "dev": {
