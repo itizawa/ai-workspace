@@ -10,9 +10,11 @@ import {
   AddChannelMemberSchema,
   AuthUserSchema,
   ChannelSchema,
+  EmployeeSchema,
   LoginRequestSchema,
   MessageSchema,
   UpdateChannelSchema,
+  UpdateEmployeeSchema,
 } from "@hatchery/common";
 
 extendZodWithOpenApi(z);
@@ -98,6 +100,39 @@ registry.registerPath({
         },
       },
     },
+  },
+});
+
+// Employee CRUD（#38）。
+const EmployeeComponent = registry.register(
+  "Employee",
+  EmployeeSchema.openapi({ description: "AI 社員（id / displayName / role / isBot / personality）" }),
+);
+
+const UpdateEmployeeComponent = registry.register(
+  "UpdateEmployee",
+  UpdateEmployeeSchema.openapi({ description: "Employee 更新リクエストボディ（#38）" }),
+);
+
+const employeePathIdParam = z.string().openapi({ param: { name: "id", in: "path" } });
+
+registry.registerPath({
+  method: "patch",
+  path: "/employees/{id}",
+  summary: "自分の Employee を更新（認証必須・本人のみ）",
+  request: {
+    params: z.object({ id: employeePathIdParam }),
+    body: { content: { "application/json": { schema: UpdateEmployeeComponent } } },
+  },
+  responses: {
+    200: {
+      description: "更新後の Employee",
+      content: { "application/json": { schema: EmployeeComponent } },
+    },
+    400: { description: "バリデーションエラー（personality 501 文字超など）", ...errorJson },
+    401: { description: "未認証", ...errorJson },
+    403: { description: "他ユーザーの Employee への操作禁止", ...errorJson },
+    404: { description: "Employee が存在しない", ...errorJson },
   },
 });
 

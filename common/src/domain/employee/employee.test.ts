@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { createDisplayNameResolver, DEFAULT_EMPLOYEES, EmployeeSchema } from "./employee.js";
+import {
+  createDisplayNameResolver,
+  DEFAULT_EMPLOYEES,
+  EmployeeSchema,
+  UpdateEmployeeSchema,
+} from "./employee.js";
 
 describe("EmployeeSchema (A-1 / A-2)", () => {
   it("id / displayName を持つ社員は parse 成功する（role は任意）", () => {
@@ -49,6 +54,57 @@ describe("DEFAULT_EMPLOYEES (#25)", () => {
   // #49: 既定 AI 社員は全員 bot（ユーザー所有社員と区別する）。
   it("全員が isBot=true（AC-7）", () => {
     expect(DEFAULT_EMPLOYEES.every((e) => e.isBot === true)).toBe(true);
+  });
+});
+
+describe("EmployeeSchema: personality フィールド (#38)", () => {
+  it("personality が 500 文字以内なら parse 成功する", () => {
+    const result = EmployeeSchema.safeParse({
+      id: "haru",
+      displayName: "haru",
+      personality: "a".repeat(500),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("personality が 501 文字なら parse に失敗する", () => {
+    const result = EmployeeSchema.safeParse({
+      id: "haru",
+      displayName: "haru",
+      personality: "a".repeat(501),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("personality を省略しても parse 成功する（任意フィールド）", () => {
+    const result = EmployeeSchema.safeParse({ id: "haru", displayName: "haru" });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("UpdateEmployeeSchema (#38)", () => {
+  it("displayName / role / personality を部分更新できる", () => {
+    const result = UpdateEmployeeSchema.safeParse({
+      displayName: "new name",
+      role: "マネージャー",
+      personality: "明るく積極的",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("displayName が空文字なら invalid", () => {
+    const result = UpdateEmployeeSchema.safeParse({ displayName: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("personality が 501 文字なら invalid", () => {
+    const result = UpdateEmployeeSchema.safeParse({ personality: "a".repeat(501) });
+    expect(result.success).toBe(false);
+  });
+
+  it("すべてのフィールドを省略できる（空更新は valid）", () => {
+    const result = UpdateEmployeeSchema.safeParse({});
+    expect(result.success).toBe(true);
   });
 });
 
