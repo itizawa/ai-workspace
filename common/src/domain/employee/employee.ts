@@ -8,9 +8,17 @@ export const EmployeeSchema = z.object({
   id: z.string().min(1),
   displayName: z.string().min(1),
   role: z.string().min(1).optional(),
+  // #49: AI 社員（true）とユーザー所有社員（false）を区別する。省略時は false。
+  isBot: z.boolean().default(false),
 });
 
-export type Employee = z.infer<typeof EmployeeSchema>;
+/**
+ * 型は `z.input` から導出し、`isBot` を型レベルでは任意にする（#49）。
+ * `.default(false)` により `parse` 後は常に `boolean` が埋まるため実行時の保証は保たれるが、
+ * 出力型（`z.infer`）だと `isBot` が必須になり、id/displayName のみで Employee を組み立てる
+ * 既存のフィクスチャ・呼び出し側（#25/#32/#33 等）が型エラーになる。これを避けるための選択。
+ */
+export type Employee = z.input<typeof EmployeeSchema>;
 
 /**
  * MVP の既定 AI 社員（3 人）。client / server が共有する単一情報源（ADR-0005）。
@@ -18,9 +26,9 @@ export type Employee = z.infer<typeof EmployeeSchema>;
  * 表示名・役割は MVP 暫定で、正典の社員定義（Phase 1 のプロンプト設計）が固まれば差し替える。
  */
 export const DEFAULT_EMPLOYEES: readonly Employee[] = [
-  { id: "haru", displayName: "haru", role: "ムードメーカー" },
-  { id: "ken", displayName: "ken", role: "ベテラン" },
-  { id: "mei", displayName: "mei", role: "新人" },
+  { id: "haru", displayName: "haru", role: "ムードメーカー", isBot: true },
+  { id: "ken", displayName: "ken", role: "ベテラン", isBot: true },
+  { id: "mei", displayName: "mei", role: "新人", isBot: true },
 ];
 
 /**
