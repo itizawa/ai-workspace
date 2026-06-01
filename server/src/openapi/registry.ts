@@ -9,8 +9,15 @@ import { z } from "zod";
 import {
   AddChannelMemberSchema,
   AuthUserSchema,
+  ChannelSchema,
+  CreateChannelMessageSchema,
+  CreateChannelSchema,
+  EmployeeSchema,
   LoginRequestSchema,
+  MessageRecordSchema,
   MessageSchema,
+  UpdateChannelSchema,
+  UpdateEmployeeSchema,
 } from "@hatchery/common";
 
 extendZodWithOpenApi(z);
@@ -20,6 +27,33 @@ const registry = new OpenAPIRegistry();
 const MessageComponent = registry.register(
   "Message",
   MessageSchema.openapi({ description: "channel に直接紐づく社員の 1 発言（ADR-0009）" }),
+);
+
+const MessageRecordComponent = registry.register(
+  "MessageRecord",
+  MessageRecordSchema.openapi({ description: "永続化された発言（id / createdAt / order 付き）" }),
+);
+
+const CreateChannelMessageComponent = registry.register(
+  "CreateChannelMessage",
+  CreateChannelMessageSchema.openapi({
+    description: "ユーザーがチャンネルへメッセージを投稿するリクエストボディ（#48）",
+  }),
+);
+
+const ChannelComponent = registry.register(
+  "Channel",
+  ChannelSchema.openapi({ description: "チャンネル（id / label）" }),
+);
+
+const UpdateChannelComponent = registry.register(
+  "UpdateChannel",
+  UpdateChannelSchema.openapi({ description: "チャンネル名更新リクエストボディ（#37）" }),
+);
+
+const CreateChannelComponent = registry.register(
+  "CreateChannel",
+  CreateChannelSchema.openapi({ description: "チャンネル作成リクエストボディ（#47・label のみ）" }),
 );
 
 const AddChannelMemberComponent = registry.register(
@@ -89,9 +123,126 @@ registry.registerPath({
   },
 });
 
-// チャンネルへの Employee 所属（多対多 / #33）。
+// Employee CRUD（#38）。
+const EmployeeComponent = registry.register(
+  "Employee",
+  EmployeeSchema.openapi({ description: "AI 社員（id / displayName / role / isBot / personality）" }),
+);
+
+const UpdateEmployeeComponent = registry.register(
+  "UpdateEmployee",
+  UpdateEmployeeSchema.openapi({ description: "Employee 更新リクエストボディ（#38）" }),
+);
+
+const employeePathIdParam = z.string().openapi({ param: { name: "id", in: "path" } });
+
+registry.registerPath({
+  method: "patch",
+  path: "/employees/{id}",
+  summary: "自分の Employee を更新（認証必須・本人のみ）",
+  request: {
+    params: z.object({ id: employeePathIdParam }),
+    body: { content: { "application/json": { schema: UpdateEmployeeComponent } } },
+  },
+  responses: {
+    200: {
+      description: "更新後の Employee",
+      content: { "application/json": { schema: EmployeeComponent } },
+    },
+    400: { description: "バリデーションエラー（personality 501 文字超など）", ...errorJson },
+    401: { description: "未認証", ...errorJson },
+    403: { description: "他ユーザーの Employee への操作禁止", ...errorJson },
+    404: { description: "Employee が存在しない", ...errorJson },
+  },
+});
+
+// チャンネル CRUD（#37 / #47）。
 const channelIdParam = z.string().openapi({ param: { name: "channelId", in: "path" } });
 const employeeIdParam = z.string().openapi({ param: { name: "employeeId", in: "path" } });
+const channelPathIdParam = z.string().openapi({ param: { name: "id", in: "path" } });
+
+registry.registerPath({
+  method: "get",
+  path: "/channels",
+  summary: "チャンネル一覧を取得（認証不要・#47）",
+  responses: {
+    200: {
+      description: "チャンネル一覧",
+      content: { "application/json": { schema: z.array(ChannelComponent) } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/channels",
+  summary: "チャンネルを作成（認証必須・#47）",
+  request: {
+    body: { content: { "application/json": { schema: CreateChannelComponent } } },
+  },
+  responses: {
+    201: {
+      description: "作成されたチャンネル",
+      content: { "application/json": { schema: ChannelComponent } },
+    },
+    400: { description: "リクエストボディが不正（label 空など）", ...errorJson },
+    401: { description: "未認証", ...errorJson },
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/channels/{id}",
+  summary: "チャンネル名を更新（認証必須）",
+  request: {
+    params: z.object({ id: channelPathIdParam }),
+    body: {
+      content: { "application/json": { schema: UpdateChannelComponent } },
+    },
+  },
+  responses: {
+    200: {
+      description: "更新後のチャンネル情報",
+      content: { "application/json": { schema: ChannelComponent } },
+    },
+    400: { description: "リクエストボディが不正（label 空など）", ...errorJson },
+    401: { description: "未認証", ...errorJson },
+    404: { description: "チャンネルが存在しない", ...errorJson },
+  },
+});
+
+// チャンネル別メッセージ（#48）。
+registry.registerPath({
+  method: "get",
+  path: "/channels/{channelId}/messages",
+  summary: "チャンネル別メッセージ一覧を取得（認証不要・#48）",
+  request: { params: z.object({ channelId: channelIdParam }) },
+  responses: {
+    200: {
+      description: "チャンネルのメッセージ一覧",
+      content: { "application/json": { schema: z.array(MessageRecordComponent) } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/channels/{channelId}/messages",
+  summary: "チャンネルにメッセージを投稿（認証必須・#48）",
+  request: {
+    params: z.object({ channelId: channelIdParam }),
+    body: { content: { "application/json": { schema: CreateChannelMessageComponent } } },
+  },
+  responses: {
+    201: {
+      description: "作成されたメッセージ",
+      content: { "application/json": { schema: MessageRecordComponent } },
+    },
+    400: { description: "text が空 or employeeId 未紐づけ", ...errorJson },
+    401: { description: "未認証", ...errorJson },
+    404: { description: "チャンネルが存在しない", ...errorJson },
+  },
+});
 
 registry.registerPath({
   method: "get",

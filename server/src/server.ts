@@ -1,7 +1,9 @@
 import { createApp } from "./app.js";
 import { loadEnv } from "./config/env.js";
 import { PrismaChannelMembershipRepository } from "./persistence/prismaChannelMembershipRepository.js";
+import { PrismaChannelRepository } from "./persistence/prismaChannelRepository.js";
 import { prisma } from "./persistence/prismaClient.js";
+import { PrismaEmployeeRepository } from "./persistence/prismaEmployeeRepository.js";
 import { PrismaMessageRepository } from "./persistence/prismaMessageRepository.js";
 import { PrismaUserRepository } from "./persistence/prismaUserRepository.js";
 
@@ -11,6 +13,8 @@ const app = createApp({
   messageRepository: new PrismaMessageRepository(prisma),
   userRepository: new PrismaUserRepository(prisma),
   channelMembershipRepository: new PrismaChannelMembershipRepository(prisma),
+  channelRepository: new PrismaChannelRepository(prisma),
+  employeeRepository: new PrismaEmployeeRepository(prisma),
   security: {
     rateLimitWindowMs: env.rateLimitWindowMs,
     rateLimitMax: env.rateLimitMax,

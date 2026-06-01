@@ -17,6 +17,8 @@ function cloneRecord(record: MessageRecord): MessageRecord {
 export interface MessageRepository {
   list(): Promise<MessageRecord[]>;
   createMany(input: Message[]): Promise<MessageRecord[]>;
+  /** channelId でフィルタリングしたメッセージ一覧を返す（#48）。 */
+  listByChannel(channelId: string): Promise<MessageRecord[]>;
 }
 
 /** DB 非依存のインメモリ実装。ユースケース/ルートのテストで注入する。 */
@@ -43,5 +45,11 @@ export class InMemoryMessageRepository implements MessageRepository {
       return cloneRecord(record);
     });
     return Promise.resolve(created);
+  }
+
+  listByChannel(channelId: string): Promise<MessageRecord[]> {
+    return Promise.resolve(
+      this.records.filter((r) => r.channel === channelId).map(cloneRecord),
+    );
   }
 }
