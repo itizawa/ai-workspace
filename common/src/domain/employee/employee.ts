@@ -12,13 +12,9 @@ export const EmployeeSchema = z.object({
   isBot: z.boolean().default(false),
 });
 
-/**
- * 型は `z.input` から導出し、`isBot` を型レベルでは任意にする（#49）。
- * `.default(false)` により `parse` 後は常に `boolean` が埋まるため実行時の保証は保たれるが、
- * 出力型（`z.infer`）だと `isBot` が必須になり、id/displayName のみで Employee を組み立てる
- * 既存のフィクスチャ・呼び出し側（#25/#32/#33 等）が型エラーになる。これを避けるための選択。
- */
-export type Employee = z.input<typeof EmployeeSchema>;
+// 出力型（parse 後）を採用し、`isBot` は常に boolean とする（#49）。
+// `.default(false)` により parse 時に既定が埋まるため、bot 判定（#48 で利用）を型安全に扱える。
+export type Employee = z.infer<typeof EmployeeSchema>;
 
 /**
  * MVP の既定 AI 社員（3 人）。client / server が共有する単一情報源（ADR-0005）。

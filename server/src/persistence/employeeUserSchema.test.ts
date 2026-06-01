@@ -41,7 +41,9 @@ describe("Prisma schema: Employee に isBot / userId（#49）", () => {
   });
 
   it("User が Employee への逆リレーションを持つ（AC-2）", () => {
-    expect(schema).toMatch(/employee\s+Employee\?/);
+    // schema 全体だと Task.employee も一致してしまうため、User モデル定義ブロックに限定して検証する。
+    const userModel = schema.match(/model User \{[\s\S]*?\n\}/)?.[0] ?? "";
+    expect(userModel).toMatch(/employee\s+Employee\?/);
   });
 });
 
