@@ -1,7 +1,9 @@
 import {
   AddChannelMemberSchema,
+  CreateChannelMessageSchema,
   CreateChannelSchema,
   UpdateChannelSchema,
+  type AuthUser,
   type CreateChannelInput,
   type UpdateChannelInput,
 } from "@hatchery/common";
@@ -11,16 +13,18 @@ import { requireAuth } from "../middleware/requireAuth.js";
 import { validateBody } from "../middleware/validateBody.js";
 import type { ChannelRepository } from "../persistence/channelRepository.js";
 import type { ChannelMembershipRepository } from "../persistence/channelMembershipRepository.js";
+import type { MessageRepository } from "../persistence/messageRepository.js";
 import { addChannelMember, removeChannelMember } from "../usecases/channelMembers.js";
 
 /**
- * /channels ルータ。チャンネル更新（#37）と Employee 所属管理（#33）を担う。
- * 更新・追加 / 除外は認証必須（requireAuth）。一覧取得は認証不要。
+ * /channels ルータ。チャンネル更新（#37）と Employee 所属管理（#33）、メッセージ投稿（#48）を担う。
+ * 更新・追加 / 除外・投稿は認証必須（requireAuth）。一覧取得は認証不要。
  * 永続化は注入されたリポジトリに委ねる（層分離 / ADR-0004）。
  */
 export function createChannelsRouter(
   membershipRepo: ChannelMembershipRepository,
   channelRepo: ChannelRepository,
+  messageRepo: MessageRepository,
 ): Router {
   const router = Router();
 
@@ -55,6 +59,43 @@ export function createChannelsRouter(
       })
       .catch(next);
   });
+
+  // チャンネル別メッセージ一覧（認証不要・#48）。
+  router.get("/:channelId/messages", (req, res, next) => {
+    const { channelId } = req.params as { channelId: string };
+    messageRepo
+      .listByChannel(channelId)
+      .then((messages) => res.status(200).json(messages))
+      .catch(next);
+  });
+
+  // チャンネルへのメッセージ投稿（認証必須・#48）。speaker は req.user.employeeId を使う。
+  router.post(
+    "/:channelId/messages",
+    requireAuth,
+    validateBody(CreateChannelMessageSchema),
+    (req, res, next) => {
+      const { channelId } = req.params as { channelId: string };
+      const user = req.user as AuthUser;
+      if (!user.employeeId) {
+        res.status(400).json({ error: "EmployeeNotLinked" });
+        return;
+      }
+      const { text } = req.body as { text: string };
+      channelRepo
+        .findById(channelId)
+        .then((channel) => {
+          if (!channel) {
+            res.status(404).json({ error: "ChannelNotFound" });
+            return;
+          }
+          return messageRepo
+            .createMany([{ speaker: user.employeeId!, channel: channelId, text }])
+            .then(([created]) => res.status(201).json(created));
+        })
+        .catch(next);
+    },
+  );
 
   router.get("/:channelId/employees", (req, res, next) => {
     membershipRepo

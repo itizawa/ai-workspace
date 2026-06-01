@@ -9,6 +9,8 @@ export interface ChannelRepository {
   /** チャンネルを新規作成して返す。id はサーバ側で採番する（POST /channels・#47）。 */
   create(input: CreateChannelInput): Promise<Channel>;
   updateLabel(id: string, label: string): Promise<Channel | null>;
+  /** id でチャンネルを 1 件取得する。存在しない場合は null（#48）。 */
+  findById(id: string): Promise<Channel | null>;
 }
 
 /** DB 非依存のインメモリ実装。ルートのテストで注入する。既定は DEFAULT_CHANNELS で初期化。 */
@@ -34,5 +36,9 @@ export class InMemoryChannelRepository implements ChannelRepository {
     if (!channel) return null;
     channel.label = label;
     return { ...channel };
+  }
+
+  async findById(id: string): Promise<Channel | null> {
+    return this.channels.find((c) => c.id === id) ?? null;
   }
 }
