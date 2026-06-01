@@ -119,7 +119,10 @@ export function createApp(deps: AppDeps): Express {
   app.use("/health", healthRouter);
   app.use("/auth", createAuthRouter(passportInstance));
   app.use("/messages", createMessagesRouter(deps.messageRepository));
-  app.use("/channels", createChannelsRouter(channelMembershipRepository, channelRepository));
+  app.use(
+    "/channels",
+    createChannelsRouter(channelMembershipRepository, channelRepository, deps.messageRepository),
+  );
   app.use("/employees", createEmployeesRouter(employeeRepository));
   app.use(errorHandler);
   return app;

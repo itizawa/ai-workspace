@@ -2,8 +2,10 @@ import { findChannelById, type Channel } from "@hatchery/common";
 import { useParams } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 
-import { ChannelView } from "../components/ChannelView";
-import { getFixtureMessages } from "../fixtures/channelMessages";
+import { useAuth } from "../api/auth.js";
+import { useChannelMessages, usePostChannelMessage } from "../api/channels.js";
+import { ChannelView } from "../components/ChannelView.js";
+import { MessageInput } from "../components/MessageInput.js";
 
 /** channelId から既定チャンネルを解決する。未知 ID は `#${id}` ラベルでフォールバックする。 */
 const resolveChannel = (channelId: string): Channel =>
@@ -11,14 +13,22 @@ const resolveChannel = (channelId: string): Channel =>
 
 /**
  * チャンネル別ビュー（/channels/$channelId）のコンテナ（#30）。
- * channelId から Channel を解決し、当該チャンネルの message[] を presentational な
- * ChannelView に渡す薄いコンテナ。実データ取得（型共有パイプライン #8/#41・定時バッチ #32）が
- * 整うまでは fixture を注入する（後続の MVP 機能 Issue で実データへ差し替える）。
+ * channelId から Channel を解決し、実 API でメッセージを取得して presentational な
+ * ChannelView に渡す（#48）。ログイン済みユーザーはメッセージ投稿フォームも表示する。
  */
 export const ChannelScene = (): ReactElement => {
   const { channelId } = useParams({ strict: false });
   const id = channelId ?? "";
   const channel = resolveChannel(id);
 
-  return <ChannelView channel={channel} messages={getFixtureMessages(id)} />;
+  const { data: messages = [] } = useChannelMessages(id);
+  const { data: authUser } = useAuth();
+  const { mutate: postMessage, isPending } = usePostChannelMessage(id);
+
+  return (
+    <>
+      <ChannelView channel={channel} messages={messages} />
+      {authUser && <MessageInput onSubmit={postMessage} disabled={isPending} />}
+    </>
+  );
 };

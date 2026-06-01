@@ -22,6 +22,13 @@ export const MessageArraySchema = z.array(MessageSchema).min(1);
 
 export type MessageArray = z.infer<typeof MessageArraySchema>;
 
+/** ユーザーがチャンネルへメッセージを投稿するリクエストボディ（#48）。speaker/channel はサーバ側でセット。 */
+export const CreateChannelMessageSchema = z.object({
+  text: z.string().min(1).max(MAX_MESSAGE_LENGTH),
+});
+
+export type CreateChannelMessage = z.infer<typeof CreateChannelMessageSchema>;
+
 /**
  * 永続化された 1 発言（#40）。生成ペイロード MessageSchema に、永続化由来の
  * id / createdAt / order を加えたもの。common を単一情報源とし、server の

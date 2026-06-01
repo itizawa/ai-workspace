@@ -68,4 +68,27 @@ describe("generateOpenApiDocument", () => {
     expect(okRef).toBe("#/components/schemas/AuthUser");
     expect(me?.responses?.["401"]).toBeDefined();
   });
+
+  // #48: チャンネル別メッセージ投稿・取得エンドポイントが spec に含まれる。
+  it("paths に /channels/{channelId}/messages が含まれる", () => {
+    const doc = generateOpenApiDocument();
+    expect(doc.paths).toHaveProperty("/channels/{channelId}/messages");
+  });
+
+  it("/channels/{channelId}/messages(get) は 200 でメッセージ配列を返す", () => {
+    const doc = generateOpenApiDocument();
+    const get = doc.paths?.["/channels/{channelId}/messages"]?.get;
+    expect(get).toBeDefined();
+    expect(get?.responses?.["200"]).toBeDefined();
+  });
+
+  it("/channels/{channelId}/messages(post) は 201 を返し 400/401/404 を定義する", () => {
+    const doc = generateOpenApiDocument();
+    const post = doc.paths?.["/channels/{channelId}/messages"]?.post;
+    expect(post).toBeDefined();
+    expect(post?.responses?.["201"]).toBeDefined();
+    expect(post?.responses?.["400"]).toBeDefined();
+    expect(post?.responses?.["401"]).toBeDefined();
+    expect(post?.responses?.["404"]).toBeDefined();
+  });
 });

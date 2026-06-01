@@ -47,4 +47,12 @@ export class PrismaMessageRepository implements MessageRepository {
     );
     return rows.map(toMessageRecord);
   }
+
+  async listByChannel(channelId: string): Promise<MessageRecord[]> {
+    const rows = await this.prisma.message.findMany({
+      where: { channel: channelId },
+      orderBy: [{ createdAt: "asc" }, { order: "asc" }],
+    });
+    return rows.map(toMessageRecord);
+  }
 }

@@ -10,9 +10,11 @@ import {
   AddChannelMemberSchema,
   AuthUserSchema,
   ChannelSchema,
+  CreateChannelMessageSchema,
   CreateChannelSchema,
   EmployeeSchema,
   LoginRequestSchema,
+  MessageRecordSchema,
   MessageSchema,
   UpdateChannelSchema,
   UpdateEmployeeSchema,
@@ -25,6 +27,18 @@ const registry = new OpenAPIRegistry();
 const MessageComponent = registry.register(
   "Message",
   MessageSchema.openapi({ description: "channel に直接紐づく社員の 1 発言（ADR-0009）" }),
+);
+
+const MessageRecordComponent = registry.register(
+  "MessageRecord",
+  MessageRecordSchema.openapi({ description: "永続化された発言（id / createdAt / order 付き）" }),
+);
+
+const CreateChannelMessageComponent = registry.register(
+  "CreateChannelMessage",
+  CreateChannelMessageSchema.openapi({
+    description: "ユーザーがチャンネルへメッセージを投稿するリクエストボディ（#48）",
+  }),
 );
 
 const ChannelComponent = registry.register(
@@ -192,6 +206,39 @@ registry.registerPath({
       content: { "application/json": { schema: ChannelComponent } },
     },
     400: { description: "リクエストボディが不正（label 空など）", ...errorJson },
+    401: { description: "未認証", ...errorJson },
+    404: { description: "チャンネルが存在しない", ...errorJson },
+  },
+});
+
+// チャンネル別メッセージ（#48）。
+registry.registerPath({
+  method: "get",
+  path: "/channels/{channelId}/messages",
+  summary: "チャンネル別メッセージ一覧を取得（認証不要・#48）",
+  request: { params: z.object({ channelId: channelIdParam }) },
+  responses: {
+    200: {
+      description: "チャンネルのメッセージ一覧",
+      content: { "application/json": { schema: z.array(MessageRecordComponent) } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/channels/{channelId}/messages",
+  summary: "チャンネルにメッセージを投稿（認証必須・#48）",
+  request: {
+    params: z.object({ channelId: channelIdParam }),
+    body: { content: { "application/json": { schema: CreateChannelMessageComponent } } },
+  },
+  responses: {
+    201: {
+      description: "作成されたメッセージ",
+      content: { "application/json": { schema: MessageRecordComponent } },
+    },
+    400: { description: "text が空 or employeeId 未紐づけ", ...errorJson },
     401: { description: "未認証", ...errorJson },
     404: { description: "チャンネルが存在しない", ...errorJson },
   },
