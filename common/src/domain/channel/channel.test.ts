@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { CHANNEL_IDS, ChannelSchema, DEFAULT_CHANNELS, findChannelById } from "./channel.js";
+import {
+  CHANNEL_IDS,
+  ChannelSchema,
+  CreateChannelSchema,
+  DEFAULT_CHANNELS,
+  findChannelById,
+} from "./channel.js";
 
 describe("Channel / CHANNEL_IDS (A-7)", () => {
   it("CHANNEL_IDS は MVP の 2 チャンネル zatsudan / shigoto を含む", () => {
@@ -24,6 +30,20 @@ describe("Channel / CHANNEL_IDS (A-7)", () => {
     for (const ch of DEFAULT_CHANNELS) {
       expect(ChannelSchema.safeParse(ch).success).toBe(true);
     }
+  });
+});
+
+describe("CreateChannelSchema（POST /channels ボディ・#47）", () => {
+  it("label が 1 文字以上なら parse 成功する", () => {
+    expect(CreateChannelSchema.parse({ label: "#新規" })).toEqual({ label: "#新規" });
+  });
+
+  it("label が空文字なら parse に失敗する（400 の根拠）", () => {
+    expect(CreateChannelSchema.safeParse({ label: "" }).success).toBe(false);
+  });
+
+  it("label が無いと parse に失敗する", () => {
+    expect(CreateChannelSchema.safeParse({}).success).toBe(false);
   });
 });
 

@@ -1,21 +1,56 @@
-import { DEFAULT_CHANNELS } from "@hatchery/common";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import type { ReactElement } from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ChannelList } from "./ChannelList";
 
-// 受け入れ条件 #2 / #6: common の DEFAULT_CHANNELS を描画（client → common の実依存）。
-describe("ChannelList", () => {
-  it("common の DEFAULT_CHANNELS のラベルをすべて描画する", () => {
-    render(<ChannelList />);
-    for (const channel of DEFAULT_CHANNELS) {
-      expect(screen.getByText(channel.label)).toBeInTheDocument();
-    }
+/** JSON ボディを持つ Response を組み立てる小ヘルパ。 */
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+/** retry を無効化した QueryClient で children を包む（テスト間でキャッシュを共有しない）。 */
+function renderWithClient(ui: ReactElement) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
+
+// 受け入れ条件 AC6: ChannelList は GET /channels の結果を描画し、DEFAULT_CHANNELS を直接参照しない。
+describe("ChannelList（GET /channels 駆動・#47）", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
-  it("既定では 2 チャンネル（#雑談 / #仕事）を描画する", () => {
-    render(<ChannelList />);
-    expect(screen.getByText("#雑談")).toBeInTheDocument();
-    expect(screen.getByText("#仕事")).toBeInTheDocument();
+  it("GET /channels から返ったチャンネルのラベルを描画する", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse(200, [
+          { id: "zatsudan", label: "#雑談" },
+          { id: "shigoto", label: "#仕事" },
+        ]),
+      ),
+    );
+
+    renderWithClient(<ChannelList />);
+
+    expect(await screen.findByText("#雑談")).toBeInTheDocument();
+    expect(await screen.findByText("#仕事")).toBeInTheDocument();
+  });
+
+  it("API が返したチャンネルだけを描画する（ハードコードに依存しない）", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse(200, [{ id: "kikaku", label: "#企画" }])),
+    );
+
+    renderWithClient(<ChannelList />);
+
+    expect(await screen.findByText("#企画")).toBeInTheDocument();
+    expect(screen.queryByText("#雑談")).not.toBeInTheDocument();
   });
 });

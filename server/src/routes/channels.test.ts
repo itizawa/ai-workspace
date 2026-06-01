@@ -121,3 +121,48 @@ describe("PATCH /channels/:id（チャンネル名更新・認証必須）", () 
     expect(res.status).toBe(404);
   });
 });
+
+describe("GET /channels（一覧・認証不要・#47）", () => {
+  it("認証不要で 200 と既定チャンネル配列を返す", async () => {
+    const { app } = await buildApp();
+    const res = await request(app).get("/channels");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([
+      { id: "zatsudan", label: "#雑談" },
+      { id: "shigoto", label: "#仕事" },
+    ]);
+  });
+});
+
+describe("POST /channels（作成・認証必須・#47）", () => {
+  it("未ログインだと 401 を返す", async () => {
+    const { app } = await buildApp();
+    const res = await request(app).post("/channels").send({ label: "#新規" });
+    expect(res.status).toBe(401);
+  });
+
+  it("ログイン済みで有効な label なら 201 と生成チャンネルを返す", async () => {
+    const { app } = await buildApp();
+    const agent = await login(app);
+    const res = await agent.post("/channels").send({ label: "#新規" });
+    expect(res.status).toBe(201);
+    expect(res.body.label).toBe("#新規");
+    expect(typeof res.body.id).toBe("string");
+    expect(res.body.id.length).toBeGreaterThan(0);
+  });
+
+  it("label が空文字なら 400 を返す", async () => {
+    const { app } = await buildApp();
+    const agent = await login(app);
+    const res = await agent.post("/channels").send({ label: "" });
+    expect(res.status).toBe(400);
+  });
+
+  it("作成したチャンネルは GET /channels の一覧に含まれる", async () => {
+    const { app } = await buildApp();
+    const agent = await login(app);
+    const created = await agent.post("/channels").send({ label: "#企画" });
+    const list = await request(app).get("/channels");
+    expect(list.body).toContainEqual({ id: created.body.id, label: "#企画" });
+  });
+});
