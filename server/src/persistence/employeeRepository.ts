@@ -21,7 +21,8 @@ export class InMemoryEmployeeRepository implements EmployeeRepository {
   }
 
   async findById(id: string): Promise<EmployeeRecord | null> {
-    return this.employees.find((e) => e.id === id) ?? null;
+    const found = this.employees.find((e) => e.id === id);
+    return found ? { ...found } : null;
   }
 
   async update(id: string, input: UpdateEmployeeInput): Promise<EmployeeRecord | null> {

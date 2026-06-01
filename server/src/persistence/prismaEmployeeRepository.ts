@@ -1,5 +1,5 @@
 import type { UpdateEmployeeInput } from "@hatchery/common";
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 
 import type { EmployeeRecord, EmployeeRepository } from "./employeeRepository.js";
 
@@ -35,8 +35,14 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
         isBot: row.isBot,
         personality: row.personality,
       };
-    } catch {
-      return null;
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2025"
+      ) {
+        return null;
+      }
+      throw err;
     }
   }
 }
