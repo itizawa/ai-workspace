@@ -21,7 +21,7 @@ model User {
   employee     Employee?
 }
 
-/// AI 社員。common の EmployeeSchema に対応（id / displayName / role? / isBot）。
+/// AI 社員。common の EmployeeSchema に対応（id / displayName / role? / isBot / personality?）。
 model Employee {
   id          String            @id
   displayName String
@@ -33,6 +33,8 @@ model Employee {
   user        User?             @relation(fields: [userId], references: [id])
   tasks       Task[]
   channels    ChannelEmployee[]
+  /// AI バッチのプロンプト指針となる性格設定（任意・500 文字以内）（#38）。
+  personality String?
 }
 
 /// 話題の入れ物。common の ChannelSchema に対応（id / label）。

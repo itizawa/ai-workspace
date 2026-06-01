@@ -10,11 +10,22 @@ export const EmployeeSchema = z.object({
   role: z.string().min(1).optional(),
   // #49: AI 社員（true）とユーザー所有社員（false）を区別する。省略時は false。
   isBot: z.boolean().default(false),
+  // #38: AI バッチのプロンプト指針となる性格設定（任意・500 文字以内）。
+  personality: z.string().max(500).optional(),
 });
 
 // 出力型（parse 後）を採用し、`isBot` は常に boolean とする（#49）。
 // `.default(false)` により parse 時に既定が埋まるため、bot 判定（#48 で利用）を型安全に扱える。
 export type Employee = z.infer<typeof EmployeeSchema>;
+
+/** PATCH /employees/:id のリクエストボディ。全フィールド任意（部分更新）。 */
+export const UpdateEmployeeSchema = z.object({
+  displayName: z.string().min(1).optional(),
+  role: z.string().min(1).optional(),
+  personality: z.string().max(500).optional(),
+});
+
+export type UpdateEmployeeInput = z.infer<typeof UpdateEmployeeSchema>;
 
 /**
  * MVP の既定 AI 社員（3 人）。client / server が共有する単一情報源（ADR-0005）。
