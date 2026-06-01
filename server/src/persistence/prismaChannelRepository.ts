@@ -31,4 +31,12 @@ export class PrismaChannelRepository implements ChannelRepository {
     if (updated.count === 0) return null;
     return { id, label };
   }
+
+  async findById(id: string): Promise<Channel | null> {
+    const row = await this.prisma.channel.findUnique({
+      where: { id },
+      select: { id: true, label: true },
+    });
+    return row ? { id: row.id, label: row.label } : null;
+  }
 }

@@ -17,7 +17,7 @@ export const MessageInput = ({ onSubmit, disabled }: MessageInputProps): ReactEl
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
-    onSubmit(text);
+    onSubmit(text.trim());
     setText("");
   };
 

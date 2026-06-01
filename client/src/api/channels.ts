@@ -52,7 +52,7 @@ export function useChannelMessages(channelId: string) {
         params: { path: { channelId } },
       });
       if (error) throw new Error(JSON.stringify(error));
-      return (data ?? []) as MessageRecord[];
+      return (data ?? []) as unknown as MessageRecord[];
     },
   });
 }
@@ -70,8 +70,8 @@ export function usePostChannelMessage(channelId: string) {
         body: { text },
         credentials: "include",
       });
-      if (error || !data) throw new Error(JSON.stringify(error));
-      return data as MessageRecord;
+      if (error || !data) throw new Error(error ? JSON.stringify(error) : "no data returned");
+      return data as unknown as MessageRecord;
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: channelMessagesQueryKey(channelId) }),
