@@ -3,6 +3,7 @@
  * client / server が共有するドメインモデル・型・Zod スキーマ・ドメインロジック（純粋関数）の単一情報源（ADR-0005）。
  * Scene は ADR-0009（#27）で廃止。
  */
+export * from "./domain/appSetting/index.js";
 export * from "./domain/auth/index.js";
 export * from "./domain/channel/index.js";
 export * from "./domain/channelMembership/index.js";

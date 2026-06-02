@@ -1,10 +1,70 @@
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Snackbar from "@mui/material/Snackbar";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useState, type ReactElement, type ReactNode } from "react";
 
+import { useAdminSettings, useSaveAdminSetting } from "../api/admin.js";
 import { EmployeeTable } from "../components/EmployeeTable";
+
+/** API トークン設定タブのコンテンツ（#52）。 */
+const ApiTokenSettings = (): ReactElement => {
+  const { data: settings } = useAdminSettings();
+  const saveMutation = useSaveAdminSetting();
+  const [apiKey, setApiKey] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  const currentMasked =
+    settings?.find((s) => s.key === "CLAUDE_API_KEY")?.maskedValue ?? null;
+
+  const handleSave = async () => {
+    await saveMutation.mutateAsync({ key: "CLAUDE_API_KEY", value: apiKey });
+    setApiKey("");
+    setSnackbarOpen(true);
+  };
+
+  return (
+    <Box sx={{ maxWidth: 480, display: "flex", flexDirection: "column", gap: 2 }}>
+      <Typography variant="body2" color="text.secondary">
+        Claude API キーを設定します。設定済みの場合はマスク表示で確認できます。
+      </Typography>
+      {currentMasked && (
+        <Typography variant="body2">
+          現在の設定: <strong>{currentMasked}</strong>
+        </Typography>
+      )}
+      <TextField
+        label="Claude API キー"
+        type="password"
+        value={apiKey}
+        onChange={(e) => setApiKey(e.target.value)}
+        placeholder="sk-ant-api03-..."
+        fullWidth
+        size="small"
+      />
+      <Button
+        variant="contained"
+        onClick={handleSave}
+        disabled={saveMutation.isPending}
+      >
+        保存
+      </Button>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+      >
+        <Alert severity="success" onClose={() => setSnackbarOpen(false)}>
+          APIキーを保存しました
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+};
 
 /** 管理画面のタブ定義。配列駆動にして将来のタブ追加（会社設定・定時設定など）を妨げない。 */
 interface SettingsTab {
@@ -15,6 +75,7 @@ interface SettingsTab {
 
 const SETTINGS_TABS: readonly [SettingsTab, ...SettingsTab[]] = [
   { label: "ユーザー一覧", value: "users", content: <EmployeeTable /> },
+  { label: "API トークン設定", value: "api-token", content: <ApiTokenSettings /> },
 ];
 
 /** 管理画面（/admin）。タブ UI を持ち、ユーザー一覧タブに AI 社員をテーブル表示する（#25）。 */
