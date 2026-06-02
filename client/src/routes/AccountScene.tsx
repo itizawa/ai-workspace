@@ -5,7 +5,7 @@ import Snackbar from "@mui/material/Snackbar";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { type ReactElement, useEffect, useState } from "react";
+import { type ReactElement, useEffect, useRef, useState } from "react";
 
 import * as authApi from "../api/auth.js";
 
@@ -14,17 +14,19 @@ export const AccountScene = (): ReactElement => {
   const queryClient = useQueryClient();
   const updateMutation = useMutation({
     mutationFn: (body: Parameters<typeof authApi.updateProfile>[0]) => authApi.updateProfile(body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: authApi.AUTH_ME_QUERY_KEY }),
+    onSuccess: (data) => queryClient.setQueryData(authApi.AUTH_ME_QUERY_KEY, data),
   });
 
   const [displayName, setDisplayName] = useState(authUser?.displayName ?? "");
   const [avatarUrl, setAvatarUrl] = useState(authUser?.avatarUrl ?? "");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    if (authUser) {
+    if (authUser && !initialized.current) {
       setDisplayName(authUser.displayName);
       setAvatarUrl(authUser.avatarUrl ?? "");
+      initialized.current = true;
     }
   }, [authUser]);
 

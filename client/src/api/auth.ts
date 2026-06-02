@@ -74,11 +74,11 @@ export async function updateProfile(body: UpdateProfile): Promise<AuthUser> {
   return res.json() as Promise<AuthUser>;
 }
 
-/** プロフィール更新ミューテーションフック。成功後に auth キャッシュを無効化する。 */
+/** プロフィール更新ミューテーションフック。成功後に auth キャッシュを直接更新する（再フェッチ不要）。 */
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateProfile,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: AUTH_ME_QUERY_KEY }),
+    onSuccess: (data) => queryClient.setQueryData(AUTH_ME_QUERY_KEY, data),
   });
 }
