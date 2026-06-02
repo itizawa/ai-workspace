@@ -85,3 +85,10 @@ model Task {
   employee   Employee?  @relation(fields: [employeeId], references: [id])
   employeeId String?
 }
+
+/// アプリ設定のキーバリューストア（#52）。API キーや各種設定値を格納する。値は暗号化して保存。
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
