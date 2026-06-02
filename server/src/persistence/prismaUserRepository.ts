@@ -17,6 +17,25 @@ export class PrismaUserRepository implements UserRepository {
       displayName: row.displayName,
       passwordHash: row.passwordHash,
       employeeId: row.employee?.id ?? null,
+      avatarUrl: row.avatarUrl ?? null,
+    };
+  }
+
+  async updateProfile(id: string, data: { displayName: string; avatarUrl?: string }): Promise<User> {
+    const row = await this.prisma.user.update({
+      where: { id },
+      data: {
+        displayName: data.displayName,
+        ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl } : {}),
+      },
+      include: { employee: { select: { id: true } } },
+    });
+    return {
+      id: row.id,
+      displayName: row.displayName,
+      passwordHash: row.passwordHash,
+      employeeId: row.employee?.id ?? null,
+      avatarUrl: row.avatarUrl ?? null,
     };
   }
 }
