@@ -1,14 +1,15 @@
 import { randomUUID } from "node:crypto";
 
 import { DEFAULT_CHANNELS } from "@hatchery/common";
-import type { Channel, CreateChannelInput } from "@hatchery/common";
+import type { Channel, CreateChannelInput, UpdateChannelInput } from "@hatchery/common";
 
 export interface ChannelRepository {
   /** 全チャンネルを返す（GET /channels・#47）。 */
   list(): Promise<Channel[]>;
   /** チャンネルを新規作成して返す。id はサーバ側で採番する（POST /channels・#47）。 */
   create(input: CreateChannelInput): Promise<Channel>;
-  updateLabel(id: string, label: string): Promise<Channel | null>;
+  /** label / type を部分更新して返す。存在しない場合は null（PATCH /channels/:id・#54）。 */
+  update(id: string, input: UpdateChannelInput): Promise<Channel | null>;
   /** id でチャンネルを 1 件取得する。存在しない場合は null（#48）。 */
   findById(id: string): Promise<Channel | null>;
 }
@@ -26,15 +27,16 @@ export class InMemoryChannelRepository implements ChannelRepository {
   }
 
   async create(input: CreateChannelInput): Promise<Channel> {
-    const channel: Channel = { id: randomUUID(), label: input.label };
+    const channel: Channel = { id: randomUUID(), label: input.label, type: input.type };
     this.channels.push(channel);
     return { ...channel };
   }
 
-  async updateLabel(id: string, label: string): Promise<Channel | null> {
+  async update(id: string, input: UpdateChannelInput): Promise<Channel | null> {
     const channel = this.channels.find((c) => c.id === id);
     if (!channel) return null;
-    channel.label = label;
+    if (input.label !== undefined) channel.label = input.label;
+    if (input.type !== undefined) channel.type = input.type;
     return { ...channel };
   }
 

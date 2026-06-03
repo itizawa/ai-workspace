@@ -1,4 +1,4 @@
-import type { Channel, MessageRecord } from "@hatchery/common";
+import type { Channel, ChannelType, MessageRecord } from "@hatchery/common";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { openApiClient } from "./client.js";
@@ -23,19 +23,20 @@ export function useChannels() {
 }
 
 /**
- * POST /channels でチャンネルを作成するミューテーションフック（認証必須・#47）。
+ * POST /channels でチャンネルを作成するミューテーションフック（認証必須・#47・#54）。
  * 成功後にチャンネル一覧キャッシュを無効化して再取得させる。
  */
 export function useCreateChannel() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (label: string): Promise<Channel> => {
+    mutationFn: async (input: { label: string; type?: ChannelType }): Promise<Channel> => {
       const { data, error } = await openApiClient.POST("/channels", {
-        body: { label },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        body: input as any,
         credentials: "include",
       });
       if (error || !data) throw new Error(JSON.stringify(error));
-      return data;
+      return data as Channel;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: CHANNELS_QUERY_KEY }),
   });

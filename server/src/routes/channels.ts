@@ -36,20 +36,21 @@ export function createChannelsRouter(
       .catch(next);
   });
 
-  // チャンネル作成（認証必須・#47）。id はリポジトリが採番する。
+  // チャンネル作成（認証必須・#47・#54）。id はリポジトリが採番する。type 省略時は zatsudan。
   router.post("/", requireAuth, validateBody(CreateChannelSchema), (req, res, next) => {
-    const { label } = req.body as CreateChannelInput;
+    const { label, type } = req.body as CreateChannelInput;
     channelRepo
-      .create({ label })
+      .create({ label, type })
       .then((channel) => res.status(201).json(channel))
       .catch(next);
   });
 
+  // チャンネル更新（認証必須・#54）。label / type の一方または両方を更新できる。
   router.patch("/:id", requireAuth, validateBody(UpdateChannelSchema), (req, res, next) => {
     const { id } = req.params as { id: string };
-    const { label } = req.body as UpdateChannelInput;
+    const input = req.body as UpdateChannelInput;
     channelRepo
-      .updateLabel(id, label)
+      .update(id, input)
       .then((channel) => {
         if (!channel) {
           res.status(404).json({ error: "ChannelNotFound" });

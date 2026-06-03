@@ -21,7 +21,7 @@ function stubFetch(meStatus: number, meBody: unknown) {
       if (url.includes("/auth/me")) {
         return Promise.resolve(jsonResponse(meStatus, meBody));
       }
-      return Promise.resolve(jsonResponse(201, { id: "new", label: "#新規" }));
+      return Promise.resolve(jsonResponse(201, { id: "new", label: "#新規", type: "zatsudan" }));
     }),
   );
 }
@@ -41,6 +41,13 @@ describe("AddChannelForm（ログイン時のみ表示・#47）", () => {
     stubFetch(200, { id: "u1", displayName: "Alice" });
     renderWithClient(<AddChannelForm />);
     expect(await screen.findByRole("button", { name: "追加" })).toBeInTheDocument();
+  });
+
+  it("ログイン時はタイプ選択ラジオボタンを表示する（#54）", async () => {
+    stubFetch(200, { id: "u1", displayName: "Alice" });
+    renderWithClient(<AddChannelForm />);
+    expect(await screen.findByRole("radio", { name: "雑談" })).toBeInTheDocument();
+    expect(await screen.findByRole("radio", { name: "仕事" })).toBeInTheDocument();
   });
 
   it("未ログイン（401）のときは何も表示しない", async () => {
