@@ -9,7 +9,7 @@ import { MessageInput } from "../components/MessageInput.js";
 
 /** channelId から既定チャンネルを解決する。未知 ID は `#${id}` ラベルでフォールバックする。 */
 const resolveChannel = (channelId: string): Channel =>
-  findChannelById(channelId) ?? { id: channelId, label: `#${channelId}` };
+  findChannelById(channelId) ?? { id: channelId, label: `#${channelId}`, type: "zatsudan" };
 
 /**
  * チャンネル別ビュー（/channels/$channelId）のコンテナ（#30）。

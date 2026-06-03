@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import {
   AddChannelMemberSchema,
+  AppSettingResponseSchema,
   AuthUserSchema,
   ChannelSchema,
   CreateChannelMessageSchema,
@@ -16,8 +17,10 @@ import {
   LoginRequestSchema,
   MessageRecordSchema,
   MessageSchema,
+  UpdateAppSettingSchema,
   UpdateChannelSchema,
   UpdateEmployeeSchema,
+  UpdateProfileSchema,
 } from "@hatchery/common";
 
 extendZodWithOpenApi(z);
@@ -333,6 +336,71 @@ registry.registerPath({
       description: "認証済みユーザー",
       content: { "application/json": { schema: AuthUserComponent } },
     },
+    401: { description: "未認証", ...errorJson },
+  },
+});
+
+const UpdateProfileComponent = registry.register(
+  "UpdateProfile",
+  UpdateProfileSchema.openapi({ description: "プロフィール更新リクエストボディ（#51）" }),
+);
+
+registry.registerPath({
+  method: "patch",
+  path: "/auth/me",
+  summary: "自分自身のプロフィールを更新（認証必須・#51）",
+  request: {
+    body: { content: { "application/json": { schema: UpdateProfileComponent } } },
+  },
+  responses: {
+    200: {
+      description: "更新後の認証済みユーザー",
+      content: { "application/json": { schema: AuthUserComponent } },
+    },
+    400: { description: "リクエストボディが不正（displayName 空・avatarUrl 不正など）", ...errorJson },
+    401: { description: "未認証", ...errorJson },
+  },
+});
+
+// 管理画面 API（#52）。認証必須。
+const AppSettingResponseComponent = registry.register(
+  "AppSettingResponse",
+  AppSettingResponseSchema.openapi({
+    description: "アプリ設定エントリ（API キーはマスク表示）",
+  }),
+);
+
+const UpdateAppSettingComponent = registry.register(
+  "UpdateAppSetting",
+  UpdateAppSettingSchema.openapi({ description: "設定更新リクエストボディ（key / value）" }),
+);
+
+registry.registerPath({
+  method: "get",
+  path: "/admin/settings",
+  summary: "アプリ設定一覧を取得（認証必須・#52）",
+  responses: {
+    200: {
+      description: "設定一覧（API キーはマスク表示）",
+      content: { "application/json": { schema: z.array(AppSettingResponseComponent) } },
+    },
+    401: { description: "未認証", ...errorJson },
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/admin/settings",
+  summary: "アプリ設定を更新（認証必須・#52）",
+  request: {
+    body: { content: { "application/json": { schema: UpdateAppSettingComponent } } },
+  },
+  responses: {
+    200: {
+      description: "更新後の設定（API キーはマスク表示）",
+      content: { "application/json": { schema: AppSettingResponseComponent } },
+    },
+    400: { description: "リクエストボディが不正（key 空など）", ...errorJson },
     401: { description: "未認証", ...errorJson },
   },
 });

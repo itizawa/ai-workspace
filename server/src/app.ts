@@ -22,6 +22,11 @@ import {
 } from "./persistence/employeeRepository.js";
 import type { MessageRepository } from "./persistence/messageRepository.js";
 import { InMemoryUserRepository, type UserRepository } from "./persistence/userRepository.js";
+import {
+  InMemoryAppSettingRepository,
+  type AppSettingRepository,
+} from "./persistence/appSettingRepository.js";
+import { createAdminRouter } from "./routes/admin.js";
 import { createAuthRouter } from "./routes/auth.js";
 import { createChannelsRouter } from "./routes/channels.js";
 import { createEmployeesRouter } from "./routes/employees.js";
@@ -62,6 +67,8 @@ export interface AppDeps {
   channelRepository?: ChannelRepository;
   /** Employee CRUD の永続化。省略時はインメモリ（#38）。 */
   employeeRepository?: EmployeeRepository;
+  /** アプリ設定（API キー等）の永続化。省略時はインメモリ（#52）。 */
+  appSettingRepository?: AppSettingRepository;
   /** DDoS/過負荷対策の設定（#34）。省略時は既定値。 */
   security?: SecurityOptions;
 }
@@ -77,6 +84,7 @@ export function createApp(deps: AppDeps): Express {
     deps.channelMembershipRepository ?? new InMemoryChannelMembershipRepository();
   const channelRepository = deps.channelRepository ?? new InMemoryChannelRepository();
   const employeeRepository = deps.employeeRepository ?? new InMemoryEmployeeRepository();
+  const appSettingRepository = deps.appSettingRepository ?? new InMemoryAppSettingRepository();
 
   const security = { ...DEFAULT_SECURITY, ...deps.security };
 
@@ -117,13 +125,14 @@ export function createApp(deps: AppDeps): Express {
   app.use(passportInstance.session());
 
   app.use("/health", healthRouter);
-  app.use("/auth", createAuthRouter(passportInstance));
+  app.use("/auth", createAuthRouter(passportInstance, userRepository));
   app.use("/messages", createMessagesRouter(deps.messageRepository));
   app.use(
     "/channels",
     createChannelsRouter(channelMembershipRepository, channelRepository, deps.messageRepository),
   );
   app.use("/employees", createEmployeesRouter(employeeRepository));
+  app.use("/admin", createAdminRouter(appSettingRepository));
   app.use(errorHandler);
   return app;
 }
