@@ -24,7 +24,7 @@ export const RootLayout = (): ReactElement => {
           width: 260,
           flexShrink: 0,
           bgcolor: "background.paper",
-          color: "text.primary",
+          color: "#FFFFFF",
           borderRight: 1,
           borderColor: "divider",
           p: 2,

@@ -7,8 +7,10 @@ import { createTheme, type Theme } from "@mui/material/styles";
 export const SLACK_COLORS = {
   /** プライマリ（Slack ブルー）。ライト背景でもアクセシブルなので据え置き。 */
   blue: "#1164A3",
-  /** サイドバー背景（白に近い明るいグレー）。MUI の background.paper に割り当てる。 */
-  sidebar: "#F8F8FA",
+  /** サイドバー背景（ダークネイビー）。MUI の background.paper に割り当てる（Issue #65）。 */
+  sidebar: "#26334D",
+  /** サイドバーテキスト色（白）。ダーク背景上で視認できるよう上書き（Issue #65）。 */
+  sidebarText: "#FFFFFF",
   /** メイン背景（白）。 */
   background: "#FFFFFF",
 } as const;
@@ -17,6 +19,7 @@ export const SLACK_COLORS = {
  * Slack 風のライトテーマ。MUI v6 + Emotion の ThemeProvider に渡す土台。
  * ライトモードに統一し、テキスト・背景の視認性を保つ（Issue #31）。MUI ライトモード既定により
  * text.primary は暗色（rgba(0,0,0,0.87)）となり、明るい背景上で視認できる。
+ * サイドバーはダークネイビー背景のため ListItemButton/ListItemText を白テキストに上書き（Issue #65）。
  */
 export const slackTheme: Theme = createTheme({
   palette: {
@@ -25,6 +28,22 @@ export const slackTheme: Theme = createTheme({
     background: {
       default: SLACK_COLORS.background,
       paper: SLACK_COLORS.sidebar,
+    },
+  },
+  components: {
+    MuiListItemButton: {
+      styleOverrides: {
+        root: {
+          color: SLACK_COLORS.sidebarText,
+        },
+      },
+    },
+    MuiListItemText: {
+      styleOverrides: {
+        primary: {
+          color: SLACK_COLORS.sidebarText,
+        },
+      },
     },
   },
 });
