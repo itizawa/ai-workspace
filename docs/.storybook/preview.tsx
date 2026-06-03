@@ -1,7 +1,9 @@
 import React from "react";
 import type { Preview } from "@storybook/react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
+import { createQueryClient } from "@hatchery/client/queryClient";
 
 // Slack 風ライトテーマ（client/src/theme.ts の slackTheme と同値・Issue #31）
 // preview.tsx は Storybook 専用のエントリで client/index.ts の "UI 不可" バレルを経由しないため、
@@ -14,13 +16,17 @@ const previewTheme = createTheme({
   },
 });
 
+const queryClient = createQueryClient();
+
 const preview: Preview = {
   decorators: [
     (Story) => (
-      <ThemeProvider theme={previewTheme}>
-        <CssBaseline />
-        <Story />
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={previewTheme}>
+          <CssBaseline />
+          <Story />
+        </ThemeProvider>
+      </QueryClientProvider>
     ),
   ],
   parameters: {
