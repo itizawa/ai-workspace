@@ -94,7 +94,7 @@ describe("GET /channels/:channelId/employees（一覧・認証不要）", () => 
   });
 });
 
-describe("PATCH /channels/:id（チャンネル名更新・認証必須）", () => {
+describe("PATCH /channels/:id（チャンネル更新・認証必須・#54）", () => {
   it("未ログインだと 401 を返す", async () => {
     const { app } = await buildApp();
     const res = await request(app).patch("/channels/zatsudan").send({ label: "新しい名前" });
@@ -106,7 +106,7 @@ describe("PATCH /channels/:id（チャンネル名更新・認証必須）", () 
     const agent = await login(app);
     const res = await agent.patch("/channels/zatsudan").send({ label: "更新後ラベル" });
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ id: "zatsudan", label: "更新後ラベル" });
+    expect(res.body).toMatchObject({ id: "zatsudan", label: "更新後ラベル" });
   });
 
   it("label が空文字なら 400 を返す", async () => {
@@ -122,35 +122,68 @@ describe("PATCH /channels/:id（チャンネル名更新・認証必須）", () 
     const res = await agent.patch("/channels/nonexistent").send({ label: "何か" });
     expect(res.status).toBe(404);
   });
+
+  it("type のみを指定してタイプを更新できる（#54）", async () => {
+    const { app } = await buildApp();
+    const agent = await login(app);
+    const res = await agent.patch("/channels/zatsudan").send({ type: "task" });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: "zatsudan", type: "task" });
+  });
+
+  it("label と type の両方を指定して更新できる（#54）", async () => {
+    const { app } = await buildApp();
+    const agent = await login(app);
+    const res = await agent.patch("/channels/zatsudan").send({ label: "新名前", type: "task" });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: "zatsudan", label: "新名前", type: "task" });
+  });
+
+  it("label も type も指定しないと 400 を返す（#54）", async () => {
+    const { app } = await buildApp();
+    const agent = await login(app);
+    const res = await agent.patch("/channels/zatsudan").send({});
+    expect(res.status).toBe(400);
+  });
 });
 
-describe("GET /channels（一覧・認証不要・#47）", () => {
-  it("認証不要で 200 と既定チャンネル配列を返す", async () => {
+describe("GET /channels（一覧・認証不要・#47 / #54）", () => {
+  it("認証不要で 200 と既定チャンネル配列を返す（type フィールド含む）", async () => {
     const { app } = await buildApp();
     const res = await request(app).get("/channels");
     expect(res.status).toBe(200);
     expect(res.body).toEqual([
-      { id: "zatsudan", label: "#雑談" },
-      { id: "shigoto", label: "#仕事" },
+      { id: "zatsudan", label: "#雑談", type: "zatsudan" },
+      { id: "shigoto", label: "#仕事", type: "task" },
     ]);
   });
 });
 
-describe("POST /channels（作成・認証必須・#47）", () => {
+describe("POST /channels（作成・認証必須・#47 / #54）", () => {
   it("未ログインだと 401 を返す", async () => {
     const { app } = await buildApp();
     const res = await request(app).post("/channels").send({ label: "#新規" });
     expect(res.status).toBe(401);
   });
 
-  it("ログイン済みで有効な label なら 201 と生成チャンネルを返す", async () => {
+  it("ログイン済みで有効な label なら 201 と生成チャンネルを返す（type=zatsudan がデフォルト）", async () => {
     const { app } = await buildApp();
     const agent = await login(app);
     const res = await agent.post("/channels").send({ label: "#新規" });
     expect(res.status).toBe(201);
     expect(res.body.label).toBe("#新規");
+    expect(res.body.type).toBe("zatsudan");
     expect(typeof res.body.id).toBe("string");
     expect(res.body.id.length).toBeGreaterThan(0);
+  });
+
+  it("type='task' を指定して作成できる（#54）", async () => {
+    const { app } = await buildApp();
+    const agent = await login(app);
+    const res = await agent.post("/channels").send({ label: "#仕事2", type: "task" });
+    expect(res.status).toBe(201);
+    expect(res.body.label).toBe("#仕事2");
+    expect(res.body.type).toBe("task");
   });
 
   it("label が空文字なら 400 を返す", async () => {
@@ -165,7 +198,7 @@ describe("POST /channels（作成・認証必須・#47）", () => {
     const agent = await login(app);
     const created = await agent.post("/channels").send({ label: "#企画" });
     const list = await request(app).get("/channels");
-    expect(list.body).toContainEqual({ id: created.body.id, label: "#企画" });
+    expect(list.body).toContainEqual({ id: created.body.id, label: "#企画", type: "zatsudan" });
   });
 });
 
