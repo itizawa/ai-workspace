@@ -41,7 +41,7 @@ export const UserFooter = (): ReactElement | null => {
         </Avatar>
         <Typography
           variant="body2"
-          sx={{ color: SLACK_COLORS.sidebarText, overflow: "hidden", textOverflow: "ellipsis" }}
+          sx={{ color: SLACK_COLORS.sidebarText, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
         >
           {user.displayName}
         </Typography>

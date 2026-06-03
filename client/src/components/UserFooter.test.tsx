@@ -15,8 +15,7 @@ function jsonResponse(status: number, body?: unknown): Response {
 }
 
 /** グローバル fetch をスタブしてログイン状態を制御する。 */
-function stubFetch(options: { isLoggedIn: boolean; logoutOk?: boolean }) {
-  const { isLoggedIn, logoutOk = true } = options;
+function stubFetch(isLoggedIn: boolean) {
   const user = isLoggedIn ? { id: "user1", displayName: "Alice" } : undefined;
   vi.stubGlobal(
     "fetch",
@@ -26,7 +25,7 @@ function stubFetch(options: { isLoggedIn: boolean; logoutOk?: boolean }) {
         return Promise.resolve(jsonResponse(isLoggedIn ? 200 : 401, user));
       }
       if (url.includes("/auth/logout")) {
-        return Promise.resolve(jsonResponse(logoutOk ? 200 : 500));
+        return Promise.resolve(jsonResponse(200));
       }
       return Promise.resolve(jsonResponse(200, []));
     }),
@@ -55,21 +54,21 @@ describe("UserFooter", () => {
   });
 
   it("ログイン済みのとき displayName が表示される", async () => {
-    stubFetch({ isLoggedIn: true });
+    stubFetch(true);
     renderApp("/");
 
     expect(await screen.findByText("Alice")).toBeInTheDocument();
   });
 
   it("ログイン済みのときログアウトボタンが表示される", async () => {
-    stubFetch({ isLoggedIn: true });
+    stubFetch(true);
     renderApp("/");
 
     expect(await screen.findByRole("button", { name: /ログアウト/ })).toBeInTheDocument();
   });
 
   it("ログアウトボタン押下で /auth/logout への POST リクエストが送信される", async () => {
-    stubFetch({ isLoggedIn: true });
+    stubFetch(true);
     renderApp("/");
 
     const button = await screen.findByRole("button", { name: /ログアウト/ });
@@ -86,7 +85,7 @@ describe("UserFooter", () => {
   });
 
   it("ログアウト成功後に /login へ遷移する", async () => {
-    stubFetch({ isLoggedIn: true });
+    stubFetch(true);
     renderApp("/");
 
     const button = await screen.findByRole("button", { name: /ログアウト/ });
@@ -96,14 +95,14 @@ describe("UserFooter", () => {
   });
 
   it("アカウント設定リンクが存在する", async () => {
-    stubFetch({ isLoggedIn: true });
+    stubFetch(true);
     renderApp("/");
 
     expect(await screen.findByRole("link", { name: /アカウント設定/ })).toBeInTheDocument();
   });
 
   it("未ログイン時は displayName が表示されない", async () => {
-    stubFetch({ isLoggedIn: false });
+    stubFetch(false);
     renderApp("/");
 
     await screen.findByRole("link", { name: "管理画面" });
@@ -111,7 +110,7 @@ describe("UserFooter", () => {
   });
 
   it("未ログイン時はログアウトボタンが表示されない", async () => {
-    stubFetch({ isLoggedIn: false });
+    stubFetch(false);
     renderApp("/");
 
     await screen.findByRole("link", { name: "管理画面" });
