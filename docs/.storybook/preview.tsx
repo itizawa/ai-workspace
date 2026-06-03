@@ -19,9 +19,9 @@ const previewTheme = createTheme({
 const preview: Preview = {
   decorators: [
     (Story) => {
-      const queryClient = createQueryClient();
+      const queryClientRef = React.useRef(createQueryClient());
       return (
-        <QueryClientProvider client={queryClient}>
+        <QueryClientProvider client={queryClientRef.current}>
           <Story />
         </QueryClientProvider>
       );

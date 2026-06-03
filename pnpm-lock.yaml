@@ -69,7 +69,7 @@ importers:
         specifier: ^6.1.10
         version: 6.5.0(@emotion/react@11.14.0(@types/react@19.2.15)(react@19.2.6))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.15)(react@19.2.6))(@types/react@19.2.15)(react@19.2.6))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@tanstack/react-query':
-        specifier: ^5.100.14
+        specifier: ^5.62.7
         version: 5.100.14(react@19.2.6)
       '@tanstack/react-router':
         specifier: ^1.87.0
