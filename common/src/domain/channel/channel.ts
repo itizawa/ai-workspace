@@ -5,10 +5,16 @@ export const CHANNEL_IDS = ["zatsudan", "shigoto"] as const;
 
 export type ChannelId = (typeof CHANNEL_IDS)[number];
 
-/** 話題の入れ物。id（チャンネル ID）と表示ラベルを持つ。 */
+/** チャンネルのタイプ（#54）。zatsudan=雑談チャンネル / task=仕事チャンネル。 */
+export const ChannelTypeSchema = z.enum(["zatsudan", "task"]);
+
+export type ChannelType = z.infer<typeof ChannelTypeSchema>;
+
+/** 話題の入れ物。id（チャンネル ID）・表示ラベル・タイプを持つ。 */
 export const ChannelSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
+  type: ChannelTypeSchema,
 });
 
 export type Channel = z.infer<typeof ChannelSchema>;
@@ -20,8 +26,8 @@ export type Channel = z.infer<typeof ChannelSchema>;
  * インメモリ実装・バッチ既定の初期値としてのみ用いる。CHANNEL_IDS と 1 対 1 に対応する。
  */
 export const DEFAULT_CHANNELS: readonly Channel[] = [
-  { id: "zatsudan", label: "#雑談" },
-  { id: "shigoto", label: "#仕事" },
+  { id: "zatsudan", label: "#雑談", type: "zatsudan" },
+  { id: "shigoto", label: "#仕事", type: "task" },
 ];
 
 /**
@@ -32,16 +38,23 @@ export const DEFAULT_CHANNELS: readonly Channel[] = [
 export const findChannelById = (channelId: string): Channel | undefined =>
   DEFAULT_CHANNELS.find((channel) => channel.id === channelId);
 
-/** チャンネル名更新リクエストのボディ検証スキーマ（PATCH /channels/:id）。 */
-export const UpdateChannelSchema = z.object({
-  label: z.string().min(1),
-});
+/** チャンネル更新リクエストのボディ検証スキーマ（PATCH /channels/:id・#54）。
+ * label / type のどちらか一方は必須。 */
+export const UpdateChannelSchema = z
+  .object({
+    label: z.string().min(1).optional(),
+    type: ChannelTypeSchema.optional(),
+  })
+  .refine((data) => data.label !== undefined || data.type !== undefined, {
+    message: "label または type のいずれかを指定してください",
+  });
 
 export type UpdateChannelInput = z.infer<typeof UpdateChannelSchema>;
 
-/** チャンネル作成リクエストのボディ検証スキーマ（POST /channels・#47）。id はサーバが採番する。 */
+/** チャンネル作成リクエストのボディ検証スキーマ（POST /channels・#47・#54）。type 省略時は zatsudan。 */
 export const CreateChannelSchema = z.object({
   label: z.string().min(1),
+  type: ChannelTypeSchema.optional().default("zatsudan"),
 });
 
 export type CreateChannelInput = z.infer<typeof CreateChannelSchema>;

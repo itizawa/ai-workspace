@@ -31,7 +31,7 @@ export interface SeedPrisma {
     upsert(args: {
       where: { id: string };
       update: Record<string, never>;
-      create: { id: string; label: string };
+      create: { id: string; label: string; type: "zatsudan" | "task" };
     }): Promise<unknown>;
   };
   channelEmployee: {
@@ -105,7 +105,7 @@ export async function seedDevData(prisma: SeedPrisma): Promise<SeedResult> {
     await prisma.channel.upsert({
       where: { id: channel.id },
       update: {},
-      create: { id: channel.id, label: channel.label },
+      create: { id: channel.id, label: channel.label, type: channel.type },
     });
   }
 

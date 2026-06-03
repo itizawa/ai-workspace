@@ -39,10 +39,17 @@ model Employee {
   personality String?
 }
 
-/// 話題の入れ物。common の ChannelSchema に対応（id / label）。
+/// チャンネルのタイプ（#54）。zatsudan=雑談 / task=仕事。
+enum ChannelType {
+  zatsudan
+  task
+}
+
+/// 話題の入れ物。common の ChannelSchema に対応（id / label / type）。
 model Channel {
   id      String            @id
   label   String
+  type    ChannelType       @default(zatsudan)
   members ChannelEmployee[]
 }
 

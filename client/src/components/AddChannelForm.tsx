@@ -1,19 +1,27 @@
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import FormControl from "@mui/material/FormControl";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormLabel from "@mui/material/FormLabel";
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
 import TextField from "@mui/material/TextField";
 import { useState, type FormEvent, type ReactElement } from "react";
 
+import type { ChannelType } from "@hatchery/common";
 import { useAuth } from "../api/auth.js";
 import { useCreateChannel } from "../api/channels.js";
 
 /**
- * チャンネル追加フォーム（#47）。ログイン時のみ表示する（未ログインでは何も描画しない）。
+ * チャンネル追加フォーム（#47・#54）。ログイン時のみ表示する（未ログインでは何も描画しない）。
  * 送信で POST /channels を呼び、成功後は入力欄をクリアする（一覧は useCreateChannel が invalidate）。
+ * タイプ（zatsudan / task）を選択できる（#54）。
  */
 export const AddChannelForm = (): ReactElement | null => {
   const { data: user } = useAuth();
   const createChannel = useCreateChannel();
   const [label, setLabel] = useState("");
+  const [type, setType] = useState<ChannelType>("zatsudan");
 
   if (!user) return null;
 
@@ -21,7 +29,7 @@ export const AddChannelForm = (): ReactElement | null => {
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (!trimmed) return;
-    createChannel.mutate(trimmed, { onSuccess: () => setLabel("") });
+    createChannel.mutate({ label: trimmed, type }, { onSuccess: () => setLabel("") });
   };
 
   return (
@@ -29,7 +37,7 @@ export const AddChannelForm = (): ReactElement | null => {
       component="form"
       onSubmit={handleSubmit}
       aria-label="チャンネル追加"
-      sx={{ display: "flex", gap: 1, mt: 1 }}
+      sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1 }}
     >
       <TextField
         size="small"
@@ -38,6 +46,17 @@ export const AddChannelForm = (): ReactElement | null => {
         onChange={(e) => setLabel(e.target.value)}
         inputProps={{ "aria-label": "チャンネル名" }}
       />
+      <FormControl>
+        <FormLabel>タイプ</FormLabel>
+        <RadioGroup
+          row
+          value={type}
+          onChange={(e) => setType(e.target.value as ChannelType)}
+        >
+          <FormControlLabel value="zatsudan" control={<Radio />} label="雑談" />
+          <FormControlLabel value="task" control={<Radio />} label="仕事" />
+        </RadioGroup>
+      </FormControl>
       <Button type="submit" variant="contained" disabled={!trimmed || createChannel.isPending}>
         追加
       </Button>

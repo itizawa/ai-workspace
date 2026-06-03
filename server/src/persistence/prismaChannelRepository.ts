@@ -1,42 +1,53 @@
 import { randomUUID } from "node:crypto";
 
-import type { Channel, CreateChannelInput } from "@hatchery/common";
+import type { Channel, CreateChannelInput, UpdateChannelInput } from "@hatchery/common";
 import type { PrismaClient } from "@prisma/client";
 
 import type { ChannelRepository } from "./channelRepository.js";
 
-/** ChannelRepository の Prisma / PostgreSQL 実装（一覧・作成・名称更新 / #37 / #47）。 */
+/** ChannelRepository の Prisma / PostgreSQL 実装（一覧・作成・更新 / #37 / #47 / #54）。 */
 export class PrismaChannelRepository implements ChannelRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async list(): Promise<Channel[]> {
     const rows = await this.prisma.channel.findMany({
-      select: { id: true, label: true },
+      select: { id: true, label: true, type: true },
       orderBy: { id: "asc" },
     });
-    return rows.map((r) => ({ id: r.id, label: r.label }));
+    return rows.map((r) => ({ id: r.id, label: r.label, type: r.type }));
   }
 
   async create(input: CreateChannelInput): Promise<Channel> {
     // Channel.id は DB 既定を持たないため、ユーザー作成チャンネルの id はここで採番する。
     const created = await this.prisma.channel.create({
-      data: { id: randomUUID(), label: input.label },
-      select: { id: true, label: true },
+      data: { id: randomUUID(), label: input.label, type: input.type },
+      select: { id: true, label: true, type: true },
     });
-    return { id: created.id, label: created.label };
+    return { id: created.id, label: created.label, type: created.type };
   }
 
-  async updateLabel(id: string, label: string): Promise<Channel | null> {
-    const updated = await this.prisma.channel.updateMany({ where: { id }, data: { label } });
-    if (updated.count === 0) return null;
-    return { id, label };
+  async update(id: string, input: UpdateChannelInput): Promise<Channel | null> {
+    const current = await this.prisma.channel.findUnique({
+      where: { id },
+      select: { id: true, label: true, type: true },
+    });
+    if (!current) return null;
+    const updated = await this.prisma.channel.update({
+      where: { id },
+      data: {
+        ...(input.label !== undefined && { label: input.label }),
+        ...(input.type !== undefined && { type: input.type }),
+      },
+      select: { id: true, label: true, type: true },
+    });
+    return { id: updated.id, label: updated.label, type: updated.type };
   }
 
   async findById(id: string): Promise<Channel | null> {
     const row = await this.prisma.channel.findUnique({
       where: { id },
-      select: { id: true, label: true },
+      select: { id: true, label: true, type: true },
     });
-    return row ? { id: row.id, label: row.label } : null;
+    return row ? { id: row.id, label: row.label, type: row.type } : null;
   }
 }
