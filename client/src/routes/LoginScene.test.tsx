@@ -52,4 +52,23 @@ describe("ログインフォーム", () => {
     await userEvent.click(screen.getByRole("button", { name: /ログイン/ }));
     await waitFor(() => expect(loginSpy).toHaveBeenCalledWith({ id: "user1", password: "pass1" }));
   });
+
+  it("ID フィールドが空の場合、送信しても login API が呼ばれない", async () => {
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue(null);
+    const loginSpy = vi.spyOn(authApi, "login").mockResolvedValue({ id: "user1", displayName: "Alice" });
+    renderApp("/login");
+    await screen.findByLabelText(/ID/);
+    await userEvent.type(screen.getByLabelText(/パスワード/), "pass1");
+    await userEvent.click(screen.getByRole("button", { name: /ログイン/ }));
+    await waitFor(() => expect(loginSpy).not.toHaveBeenCalled());
+  });
+
+  it("パスワードフィールドが空の場合、送信しても login API が呼ばれない", async () => {
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue(null);
+    const loginSpy = vi.spyOn(authApi, "login").mockResolvedValue({ id: "user1", displayName: "Alice" });
+    renderApp("/login");
+    await userEvent.type(await screen.findByLabelText(/ID/), "user1");
+    await userEvent.click(screen.getByRole("button", { name: /ログイン/ }));
+    await waitFor(() => expect(loginSpy).not.toHaveBeenCalled());
+  });
 });
