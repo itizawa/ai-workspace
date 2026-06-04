@@ -155,6 +155,7 @@ describe("GET /channels（一覧・認証不要・#47 / #54）", () => {
     expect(res.body).toEqual([
       { id: "zatsudan", label: "#雑談", type: "zatsudan" },
       { id: "shigoto", label: "#仕事", type: "task" },
+      { id: "kikaku", label: "#企画", type: "planning" },
     ]);
   });
 });

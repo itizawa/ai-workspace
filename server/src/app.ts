@@ -37,6 +37,7 @@ import { createChannelsRouter } from "./routes/channels.js";
 import { createEmployeesRouter } from "./routes/employees.js";
 import { healthRouter } from "./routes/health.js";
 import { createMessagesRouter } from "./routes/messages.js";
+import { createPlanningIssuesRouter } from "./routes/planning-issues.js";
 
 /** DDoS/過負荷対策（#34）の設定。未指定の項目は安全な既定値を使う。 */
 export interface SecurityOptions {
@@ -143,6 +144,7 @@ export function createApp(deps: AppDeps): Express {
   app.use("/employees", createEmployeesRouter(employeeRepository));
   app.use("/admin/batch-logs", createBatchLogsRouter(batchRunLogRepository));
   app.use("/admin", createAdminRouter(appSettingRepository));
+  app.use("/channels", createPlanningIssuesRouter(deps.messageRepository));
   app.use(errorHandler);
   return app;
 }

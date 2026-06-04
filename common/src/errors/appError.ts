@@ -37,3 +37,9 @@ export class ConflictError extends AppError {
     super(409, message);
   }
 }
+
+export class InternalServerError extends AppError {
+  constructor(message = "Internal Server Error") {
+    super(500, message);
+  }
+}
