@@ -13,9 +13,9 @@ concurrency:
 
 env:
   REGION: ${{ secrets.GCP_REGION }}
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   SERVICE_NAME: hatchery-server
   REGISTRY: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/hatchery
+  IMAGE: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/hatchery/server:${{ github.sha }}
 
 jobs:
   deploy:
@@ -41,22 +41,22 @@ jobs:
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
       - name: Build and push Docker image
-        env:
-          IMAGE: ${{ env.REGISTRY }}/server:${{ github.sha }}
         run: |
-          docker build -f server/Dockerfile -t $IMAGE .
-          docker push $IMAGE
+          docker build -f server/Dockerfile -t ${{ env.IMAGE }} .
+          docker push ${{ env.IMAGE }}
 
       - name: Deploy to Cloud Run
-        env:
-          IMAGE: ${{ env.REGISTRY }}/server:${{ github.sha }}
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image=$IMAGE \
+            --image=${{ env.IMAGE }} \
             --region=${{ env.REGION }} \
             --platform=managed \
             --allow-unauthenticated \
             --min-instances=0 \
             --max-instances=3 \
             --port=8080 \
-            --set-env-vars="DATABASE_URL=${{ secrets.DATABASE_URL }},SESSION_SECRET=${{ secrets.SESSION_SECRET }},ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }},CLIENT_ORIGIN=${{ secrets.CLIENT_ORIGIN }},NODE_ENV=production"
+            --set-env-vars="DATABASE_URL=${{ secrets.DATABASE_URL }}" \
+            --set-env-vars="SESSION_SECRET=${{ secrets.SESSION_SECRET }}" \
+            --set-env-vars="ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" \
+            --set-env-vars="CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }}" \
+            --set-env-vars="NODE_ENV=production"

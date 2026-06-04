@@ -128,7 +128,7 @@ pnpm --filter @hatchery/server db:migrate
    - **Production branch**: `main`
    - **Preview branches**: `develop`
    - **Build command**: *(GitHub Actions でビルドするため空白でよい)*
-   - **Build output directory**: `client/dist`
+   - **Build output directory**: `client/dist/web`
 4. **API Token** を取得:
    - My Profile → API Tokens → Create Token
    - テンプレート: **Edit Cloudflare Workers** を選択
@@ -150,7 +150,7 @@ pnpm --filter @hatchery/server db:migrate
 | `DATABASE_URL` | Neon または Cloud SQL の接続文字列 | Prisma 接続先 |
 | `SESSION_SECRET` | 任意の 32 文字以上のランダム文字列 | Express session の署名鍵 |
 | `ANTHROPIC_API_KEY` | Anthropic コンソール | AI バッチ用 |
-| `CLIENT_ORIGIN` | Cloudflare Pages の dev URL | CORS 許可オリジン |
+| `CORS_ALLOWED_ORIGINS` | Cloudflare Pages の dev URL（例: `https://hatchery.pages.dev`） | CORS 許可オリジン（server の `CORS_ALLOWED_ORIGINS` 環境変数に対応） |
 | `CLOUDFLARE_API_TOKEN` | 手順 2-4 で取得 | Wrangler デプロイ用 |
 | `CLOUDFLARE_ACCOUNT_ID` | 手順 2-5 で取得 | Cloudflare アカウント識別子 |
 
