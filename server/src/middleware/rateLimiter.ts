@@ -17,9 +17,7 @@ export function createRateLimiter({ windowMs, max }: RateLimiterOptions): Reques
     limit: max,
     standardHeaders: true,
     legacyHeaders: false,
-    handler: (_req, res, _next, optionsUsed) => {
-      const retryAfterSec = Math.ceil(optionsUsed.windowMs / 1000);
-      res.setHeader("Retry-After", String(retryAfterSec));
+    handler: (_req, res) => {
       res.status(429).json({ error: "TooManyRequests" });
     },
   });
