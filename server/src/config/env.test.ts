@@ -62,9 +62,4 @@ describe("loadEnv", () => {
     const env = loadEnv({ DATABASE_URL: urlWithTimeout });
     expect(env.databaseUrl).toBe(urlWithTimeout);
   });
-
-  it("DATABASE_URL のタイムアウトパラメータを含む URL は z.string().min(1) バリデーションを通過する", () => {
-    const urlWithTimeout = "postgresql://host/db?connect_timeout=10&pool_timeout=10";
-    expect(() => loadEnv({ DATABASE_URL: urlWithTimeout })).not.toThrow();
-  });
 });
