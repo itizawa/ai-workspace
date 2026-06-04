@@ -3,8 +3,10 @@ import {
   createRoute,
   createRouter,
   redirect,
+  useLocation,
   type RouterHistory,
 } from "@tanstack/react-router";
+import type { ReactElement } from "react";
 
 import { fetchMe } from "./api/auth.js";
 import {
@@ -14,6 +16,7 @@ import {
 
 export { SETTINGS_TAB_VALUES, type SettingsTabValue } from "./routes/settingsTabValues.js";
 import { AccountScene } from "./routes/AccountScene";
+import { AuthLayout } from "./routes/AuthLayout";
 import { ChannelScene } from "./routes/ChannelScene";
 import { HomeScene } from "./routes/HomeScene";
 import { LoginScene } from "./routes/LoginScene";
@@ -34,9 +37,26 @@ async function requireAuth(): Promise<void> {
   if (!user) throw redirect({ to: "/login" });
 }
 
+/** auth ルート（サイドバーなし）のパス一覧。 */
+const AUTH_PATHS = ["/login"] as const;
+
+/**
+ * アプリ全体のシェル。現在のパスに応じて
+ * - auth 系ルート（/login 等）→ AuthLayout（サイドバーなし）
+ * - その他 → RootLayout（サイドバーあり）
+ * を切り替える。ルートの ID を変えない方式のため、既存の useSearch 等への影響がない。
+ */
+function AppShell(): ReactElement {
+  const { pathname } = useLocation();
+  if ((AUTH_PATHS as readonly string[]).includes(pathname)) {
+    return <AuthLayout />;
+  }
+  return <RootLayout />;
+}
+
 // ルートはコードベースで定義する（ファイルルーティングの codegen には依存しない）。
 const rootRoute = createRootRoute({
-  component: RootLayout,
+  component: AppShell,
 });
 
 /** ホーム（/）= 本日のシーン表示の枠。 */
@@ -53,7 +73,7 @@ const channelRoute = createRoute({
   component: ChannelScene,
 });
 
-/** ログイン画面（/login）。 */
+/** ログイン画面（/login）。サイドバーなしの AuthLayout 経由で描画する。 */
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
