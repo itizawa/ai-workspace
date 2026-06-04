@@ -14,3 +14,4 @@ export * from "./constants/employeeMessages.js";
 export * from "./logic/buildRosterMessages.js";
 export * from "./logic/formatRecentLog.js";
 export * from "./logic/selectAppearingMembers.js";
+export * from "./errors/index.js";

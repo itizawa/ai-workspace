@@ -1,3 +1,4 @@
+import { NotFoundError } from "@hatchery/common";
 import express, { type Express, type RequestHandler } from "express";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
@@ -35,6 +36,16 @@ describe("errorHandler", () => {
     ).get("/t");
     expect(res.status).toBe(500);
     expect(res.body.error).toBe("InternalServerError");
+  });
+
+  it("AppError は statusCode に応じた HTTP レスポンスを返す", async () => {
+    const res = await request(
+      appThrowing((_req, _res, next) => {
+        next(new NotFoundError("ChannelNotFound"));
+      }),
+    ).get("/t");
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe("ChannelNotFound");
   });
 
   it("応答開始後のエラーは二重送信せず、既に送った応答を維持する", async () => {
