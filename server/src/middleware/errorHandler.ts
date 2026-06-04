@@ -14,13 +14,14 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
     next(err);
     return;
   }
+  if (err instanceof AppError) {
+    res.status(err.statusCode).json({ error: err.message });
+    return;
+  }
+  // body-parser が投げる過大ペイロードエラー（AppError でない framework レベルのエラー）
   const e = err as { status?: number; statusCode?: number; type?: string } | null;
   if (e?.status === 413 || e?.statusCode === 413 || e?.type === "entity.too.large") {
     res.status(413).json({ error: "PayloadTooLarge" });
-    return;
-  }
-  if (err instanceof AppError) {
-    res.status(err.statusCode).json({ error: err.message });
     return;
   }
   res.status(500).json({ error: "InternalServerError" });
