@@ -15,8 +15,8 @@ describe("domain フォルダ構成（#24）", () => {
   });
 
   it("channel フォルダの index から定義を参照できる", () => {
-    expect(CHANNEL_IDS).toEqual(["zatsudan", "shigoto"]);
-    expect(DEFAULT_CHANNELS).toHaveLength(2);
+    expect(CHANNEL_IDS).toEqual(["zatsudan", "shigoto", "kikaku"]);
+    expect(DEFAULT_CHANNELS).toHaveLength(3);
     expect(ChannelSchema.safeParse({ id: "zatsudan", label: "#雑談", type: "zatsudan" }).success).toBe(true);
   });
 

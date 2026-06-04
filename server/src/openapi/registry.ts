@@ -438,6 +438,35 @@ registry.registerPath({
   },
 });
 
+// GitHub Issue 起票（#76）。認証必須。
+registry.registerPath({
+  method: "post",
+  path: "/channels/{channelId}/messages/{messageId}/create-issue",
+  summary: "#企画 チャンネルのメッセージから GitHub Issue を起票（認証必須・#76）",
+  request: {
+    params: z.object({
+      channelId: z.string().openapi({ description: "チャンネル ID" }),
+      messageId: z.string().openapi({ description: "メッセージ ID" }),
+    }),
+  },
+  responses: {
+    201: {
+      description: "Issue 起票成功。issueNumber と issueUrl を返す",
+      content: {
+        "application/json": {
+          schema: z.object({
+            issueNumber: z.number().int().positive(),
+            issueUrl: z.string().url(),
+          }),
+        },
+      },
+    },
+    401: { description: "未認証", ...errorJson },
+    404: { description: "メッセージが存在しない", ...errorJson },
+    500: { description: "GITHUB_TOKEN 等の環境変数未設定", ...errorJson },
+  },
+});
+
 /** OpenAPI 3.1 ドキュメントを生成して返す。generate.ts やテストから呼ぶ。 */
 export function generateOpenApiDocument(): OpenAPIObject {
   const generator = new OpenApiGeneratorV31(registry.definitions);

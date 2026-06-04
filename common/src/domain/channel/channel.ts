@@ -1,12 +1,12 @@
 import { z } from "zod";
 
-/** MVP のチャンネル ID（#雑談 / #仕事）。既知 ID 群との突き合わせに用いる。 */
-export const CHANNEL_IDS = ["zatsudan", "shigoto"] as const;
+/** MVP のチャンネル ID（#雑談 / #仕事 / #企画）。既知 ID 群との突き合わせに用いる。 */
+export const CHANNEL_IDS = ["zatsudan", "shigoto", "kikaku"] as const;
 
 export type ChannelId = (typeof CHANNEL_IDS)[number];
 
-/** チャンネルのタイプ（#54）。zatsudan=雑談チャンネル / task=仕事チャンネル。 */
-export const ChannelTypeSchema = z.enum(["zatsudan", "task"]);
+/** チャンネルのタイプ（#54 / #76）。zatsudan=雑談 / task=仕事 / planning=企画。 */
+export const ChannelTypeSchema = z.enum(["zatsudan", "task", "planning"]);
 
 export type ChannelType = z.infer<typeof ChannelTypeSchema>;
 
@@ -28,6 +28,7 @@ export type Channel = z.infer<typeof ChannelSchema>;
 export const DEFAULT_CHANNELS: readonly Channel[] = [
   { id: "zatsudan", label: "#雑談", type: "zatsudan" },
   { id: "shigoto", label: "#仕事", type: "task" },
+  { id: "kikaku", label: "#企画", type: "planning" },
 ];
 
 /**

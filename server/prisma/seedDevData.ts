@@ -30,8 +30,8 @@ export interface SeedPrisma {
   channel: {
     upsert(args: {
       where: { id: string };
-      update: { type: "zatsudan" | "task" };
-      create: { id: string; label: string; type: "zatsudan" | "task" };
+      update: { type: "zatsudan" | "task" | "planning" };
+      create: { id: string; label: string; type: "zatsudan" | "task" | "planning" };
     }): Promise<unknown>;
   };
   channelEmployee: {
