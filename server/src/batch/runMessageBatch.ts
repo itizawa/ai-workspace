@@ -39,12 +39,16 @@ export async function runMessageBatch(deps: RunMessageBatchDeps): Promise<Messag
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     const errorCode = (err as { code?: string }).code ?? null;
-    await deps.batchRunLogRepository?.create({
-      status: "failure",
-      messageCount: 0,
-      errorMessage,
-      errorCode,
-    });
+    try {
+      await deps.batchRunLogRepository?.create({
+        status: "failure",
+        messageCount: 0,
+        errorMessage,
+        errorCode,
+      });
+    } catch {
+      // ログ保存失敗は元のエラーを隠さない
+    }
     throw err;
   }
 }

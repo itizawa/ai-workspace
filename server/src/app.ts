@@ -141,8 +141,8 @@ export function createApp(deps: AppDeps): Express {
     createChannelsRouter(channelMembershipRepository, channelRepository, deps.messageRepository),
   );
   app.use("/employees", createEmployeesRouter(employeeRepository));
-  app.use("/admin", createAdminRouter(appSettingRepository));
   app.use("/admin/batch-logs", createBatchLogsRouter(batchRunLogRepository));
+  app.use("/admin", createAdminRouter(appSettingRepository));
   app.use(errorHandler);
   return app;
 }
