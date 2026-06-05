@@ -11,7 +11,7 @@ export interface SeedPrisma {
     upsert(args: {
       where: { id: string };
       update: Record<string, never>;
-      create: { id: string; displayName: string; passwordHash: string };
+      create: { id: string; displayName: string; passwordHash: string; role?: "admin" | "member" };
     }): Promise<unknown>;
   };
   employee: {
@@ -71,7 +71,7 @@ export async function seedDevData(prisma: SeedPrisma): Promise<SeedResult> {
   await prisma.user.upsert({
     where: { id: DEV_USER.id },
     update: {},
-    create: { id: DEV_USER.id, displayName: DEV_USER.displayName, passwordHash },
+    create: { id: DEV_USER.id, displayName: DEV_USER.displayName, passwordHash, role: "admin" },
   });
 
   // AI 社員（既定 3 名）は isBot=true / userId は紐付けない（#49）。
