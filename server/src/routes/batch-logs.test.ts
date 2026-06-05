@@ -6,8 +6,11 @@ import { InMemoryMessageRepository } from "../persistence/messageRepository.js";
 import { InMemoryBatchRunLogRepository } from "../persistence/batchRunLogRepository.js";
 import { InMemoryUserRepository } from "../persistence/userRepository.js";
 
-async function makeApp(logRepo = new InMemoryBatchRunLogRepository()) {
-  const userRepo = await InMemoryUserRepository.createWithTestUser();
+async function makeApp(
+  logRepo = new InMemoryBatchRunLogRepository(),
+  role: "admin" | "member" = "admin",
+) {
+  const userRepo = await InMemoryUserRepository.createWithTestUser(undefined, role);
   return createApp({
     messageRepository: new InMemoryMessageRepository(),
     userRepository: userRepo,
@@ -26,6 +29,13 @@ describe("GET /admin/batch-logs", () => {
     const app = await makeApp();
     const res = await request(app).get("/admin/batch-logs");
     expect(res.status).toBe(401);
+  });
+
+  it("member ロールの場合は 403 を返す（#136）", async () => {
+    const app = await makeApp(new InMemoryBatchRunLogRepository(), "member");
+    const agent = await loginAgent(app);
+    const res = await agent.get("/admin/batch-logs");
+    expect(res.status).toBe(403);
   });
 
   it("認証済みの場合は 200 と空配列を返す（ログ未登録時）", async () => {

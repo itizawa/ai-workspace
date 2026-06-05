@@ -1,9 +1,11 @@
 import Box from "@mui/material/Box";
 import Link from "@mui/material/Link";
 import Typography from "@mui/material/Typography";
+import { isAdmin } from "@hatchery/common";
 import { Link as RouterLink, Outlet } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 
+import { useAuth } from "../api/auth.js";
 import { AddChannelForm } from "../components/AddChannelForm";
 import { ChannelList } from "../components/ChannelList";
 import { UserFooter } from "../components/UserFooter";
@@ -14,6 +16,8 @@ import { SLACK_COLORS } from "../theme.js";
  * メイン領域（ルートの Outlet）で構成する。
  */
 export const RootLayout = (): ReactElement => {
+  const { data: user } = useAuth();
+
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
       <Box
@@ -35,11 +39,13 @@ export const RootLayout = (): ReactElement => {
         </Typography>
         <ChannelList />
         <AddChannelForm />
-        <Box sx={{ mt: 2 }}>
-          <Link component={RouterLink} to="/admin" sx={{ color: SLACK_COLORS.sidebarText }} underline="hover">
-            管理画面
-          </Link>
-        </Box>
+        {user && isAdmin(user) && (
+          <Box sx={{ mt: 2 }}>
+            <Link component={RouterLink} to="/admin" sx={{ color: SLACK_COLORS.sidebarText }} underline="hover">
+              管理画面
+            </Link>
+          </Box>
+        )}
         <UserFooter />
       </Box>
       <Box component="main" sx={{ flexGrow: 1, bgcolor: "background.default" }}>

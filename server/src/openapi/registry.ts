@@ -22,6 +22,7 @@ import {
   UpdateChannelSchema,
   UpdateEmployeeSchema,
   UpdateProfileSchema,
+  UserRoleSchema,
 } from "@hatchery/common";
 
 extendZodWithOpenApi(z);
@@ -66,6 +67,8 @@ const AddChannelMemberComponent = registry.register(
     description: "チャンネルへ Employee を追加するリクエストボディ（#33）",
   }),
 );
+
+registry.register("UserRole", UserRoleSchema.openapi({ description: "ユーザー権限ロール（#136）" }));
 
 const AuthUserComponent = registry.register(
   "AuthUser",

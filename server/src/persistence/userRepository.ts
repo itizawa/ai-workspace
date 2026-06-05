@@ -1,9 +1,12 @@
 import bcrypt from "bcrypt";
+import type { UserRole } from "@hatchery/common";
 
 export interface User {
   id: string;
   displayName: string;
   passwordHash: string;
+  /** 権限ロール（#136）。 */
+  role: UserRole;
   /** 紐づく Employee の id（#49）。未紐づけなら null。 */
   employeeId: string | null;
   /** プロフィール画像 URL（#51）。未設定なら null。 */
@@ -39,13 +42,15 @@ export class InMemoryUserRepository implements UserRepository {
   /**
    * テスト用ユーザー（testuser / testpass）を持つインスタンスを生成する。
    * employeeId を渡すと紐づく Employee の id として設定する（#49。既定は未紐づけ＝null）。
+   * role を渡すと権限ロールを設定する（#136。既定は admin）。
    */
   static async createWithTestUser(
     employeeId: string | null = null,
+    role: UserRole = "admin",
   ): Promise<InMemoryUserRepository> {
     const passwordHash = await bcrypt.hash("testpass", 10);
     return new InMemoryUserRepository([
-      { id: "testuser", displayName: "Test User", passwordHash, employeeId, avatarUrl: null },
+      { id: "testuser", displayName: "Test User", passwordHash, role, employeeId, avatarUrl: null },
     ]);
   }
 }

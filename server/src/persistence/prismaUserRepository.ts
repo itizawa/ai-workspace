@@ -1,3 +1,4 @@
+import { UserRoleSchema } from "@hatchery/common";
 import { Prisma, type PrismaClient } from "@prisma/client";
 
 import type { User, UserRepository } from "./userRepository.js";
@@ -16,6 +17,7 @@ export class PrismaUserRepository implements UserRepository {
       id: row.id,
       displayName: row.displayName,
       passwordHash: row.passwordHash,
+      role: UserRoleSchema.parse(row.role ?? "member"),
       employeeId: row.employee?.id ?? null,
       avatarUrl: row.avatarUrl ?? null,
     };
@@ -35,6 +37,7 @@ export class PrismaUserRepository implements UserRepository {
         id: row.id,
         displayName: row.displayName,
         passwordHash: row.passwordHash,
+        role: UserRoleSchema.parse(row.role ?? "member"),
         employeeId: row.employee?.id ?? null,
         avatarUrl: row.avatarUrl ?? null,
       };
