@@ -1,4 +1,4 @@
-import { AcceptInvitationSchema, getInvitationStatus } from "@hatchery/common";
+import { type AcceptInvitation, AcceptInvitationSchema, getInvitationStatus } from "@hatchery/common";
 import bcrypt from "bcrypt";
 import { Router } from "express";
 
@@ -39,11 +39,7 @@ export function createInvitationsRouter(
     validateBody(AcceptInvitationSchema),
     async (req, res, next) => {
       try {
-        const { id, displayName, password } = req.body as {
-          id: string;
-          displayName: string;
-          password: string;
-        };
+        const { id, displayName, password } = req.body as AcceptInvitation;
 
         const record = await invitationLinkRepository.findByToken(req.params.token);
         if (!record) {
@@ -57,12 +53,6 @@ export function createInvitationsRouter(
         );
         if (status !== "active") {
           res.status(409).json({ error: `Invitation is ${status}` });
-          return;
-        }
-
-        const existing = await userRepository.findById(id);
-        if (existing) {
-          res.status(409).json({ error: "User id already exists" });
           return;
         }
 
