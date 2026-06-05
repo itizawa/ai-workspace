@@ -63,15 +63,15 @@ pnpm 9↔10 は `lockfileVersion: '9.0'` で互換。
 
 pnpm メジャーバージョン変更は ADR-0002（パッケージマネージャ採用）の改訂事項。
 追記内容:
-- pnpm 10 への更新と理由（`minimumReleaseAge` サポート、ライフサイクルスクリプト既定無効化のセキュリティ強化）
+- pnpm 10 への更新と理由（`minimumReleaseAge` スアポート、ライフサイクルスクリプト既定無効化のセキュリティ強化）
 - `onlyBuiltDependencies` による明示的 allowlist の方針
 
 ## 5. 影響範囲 / 既存への変更
 
 | 対象 | 変更内容 |
-|------|---------|
+|------|----------|
 | `package.json` | `packageManager` 更新・`pnpm.onlyBuiltDependencies` 追加・`volta.pnpm` 追加 |
-| `pnpm-lock.yaml` | pnpm 10 で再生成（lockfileVersion 互換のため差分最小） |
+| `pnpm-lock.yaml` | pnpm 10 で再生成 |
 | `docs/adr/0002-package-manager-and-build-tooling.md` | pnpm 10 採用の改訂を追記 |
 
 CI/CD ワークフロー（`pnpm/action-setup@v4`）は `packageManager` フィールドから自動的に pnpm 10 を使うため変更不要。
