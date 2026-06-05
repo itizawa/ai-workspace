@@ -1,6 +1,7 @@
 import { UpdateAppSettingSchema } from "@hatchery/common";
 import { Router } from "express";
 
+import { requireAdmin } from "../middleware/requireAdmin.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { validateBody } from "../middleware/validateBody.js";
 import type { AppSettingRepository } from "../persistence/appSettingRepository.js";
@@ -25,7 +26,10 @@ function toResponse(key: string, encryptedValue: string) {
 export function createAdminRouter(appSettingRepository: AppSettingRepository): Router {
   const router = Router();
 
-  router.get("/settings", requireAuth, async (_req, res, next) => {
+  // #136: /admin/* は requireAuth → requireAdmin で一括保護する（admin ロール必須）。
+  router.use(requireAuth, requireAdmin);
+
+  router.get("/settings", async (_req, res, next) => {
     try {
       const settings = await appSettingRepository.findAll();
       res.json(settings.map((s) => toResponse(s.key, s.value)));
@@ -36,7 +40,6 @@ export function createAdminRouter(appSettingRepository: AppSettingRepository): R
 
   router.patch(
     "/settings",
-    requireAuth,
     validateBody(UpdateAppSettingSchema),
     async (req, res, next) => {
       try {

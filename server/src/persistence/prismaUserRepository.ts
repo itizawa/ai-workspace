@@ -16,6 +16,7 @@ export class PrismaUserRepository implements UserRepository {
       id: row.id,
       displayName: row.displayName,
       passwordHash: row.passwordHash,
+      role: row.role as "admin" | "member",
       employeeId: row.employee?.id ?? null,
       avatarUrl: row.avatarUrl ?? null,
     };
@@ -35,6 +36,7 @@ export class PrismaUserRepository implements UserRepository {
         id: row.id,
         displayName: row.displayName,
         passwordHash: row.passwordHash,
+        role: row.role as "admin" | "member",
         employeeId: row.employee?.id ?? null,
         avatarUrl: row.avatarUrl ?? null,
       };
