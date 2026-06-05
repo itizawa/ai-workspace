@@ -6,6 +6,7 @@ import {
   useLocation,
   type RouterHistory,
 } from "@tanstack/react-router";
+import { isAdmin } from "@hatchery/common";
 import type { ReactElement } from "react";
 
 import { fetchMe } from "./api/auth.js";
@@ -25,7 +26,7 @@ import { SettingsScene } from "./routes/SettingsScene";
 
 /**
  * 認証ガード: 未ログイン（fetchMe が null を返す）またはネットワークエラーの場合に /login へリダイレクト。
- * adminRoute・accountRoute の beforeLoad で共有する。
+ * accountRoute の beforeLoad で使う。
  */
 async function requireAuth(): Promise<void> {
   let user: Awaited<ReturnType<typeof fetchMe>>;
@@ -35,6 +36,21 @@ async function requireAuth(): Promise<void> {
     throw redirect({ to: "/login" });
   }
   if (!user) throw redirect({ to: "/login" });
+}
+
+/**
+ * admin ロール専用ガード（#136）: 未ログインなら /login、非 admin なら / へリダイレクト。
+ * adminRoute の beforeLoad で使う。
+ */
+async function requireAdminRoute(): Promise<void> {
+  let user: Awaited<ReturnType<typeof fetchMe>>;
+  try {
+    user = await fetchMe();
+  } catch {
+    throw redirect({ to: "/login" });
+  }
+  if (!user) throw redirect({ to: "/login" });
+  if (!isAdmin(user)) throw redirect({ to: "/" });
 }
 
 /**
@@ -83,12 +99,12 @@ const loginRoute = createRoute({
   component: LoginScene,
 });
 
-/** 管理画面（/admin）。未ログインまたはネットワークエラーの場合は /login へリダイレクト。 */
+/** 管理画面（/admin）。未ログインなら /login、非 admin なら / へリダイレクト（#136）。 */
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin",
   component: SettingsScene,
-  beforeLoad: requireAuth,
+  beforeLoad: requireAdminRoute,
   validateSearch: (search: Record<string, unknown>): { tab: SettingsTabValue } => {
     const tab = search.tab;
     if (

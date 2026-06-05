@@ -10,7 +10,7 @@ export interface SeedPrisma {
   user: {
     upsert(args: {
       where: { id: string };
-      update: Record<string, never>;
+      update: { role?: "admin" | "member" };
       create: { id: string; displayName: string; passwordHash: string; role?: "admin" | "member" };
     }): Promise<unknown>;
   };
@@ -70,7 +70,7 @@ export async function seedDevData(prisma: SeedPrisma): Promise<SeedResult> {
   const passwordHash = await bcrypt.hash(DEV_USER.password, 10);
   await prisma.user.upsert({
     where: { id: DEV_USER.id },
-    update: {},
+    update: { role: "admin" },
     create: { id: DEV_USER.id, displayName: DEV_USER.displayName, passwordHash, role: "admin" },
   });
 
