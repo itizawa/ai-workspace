@@ -9,8 +9,20 @@ import * as authApi from "../api/auth.js";
 import { createQueryClient } from "../queryClient.js";
 import { createAppRouter } from "../router.js";
 
-function renderApp(initialPath: string) {
+/**
+ * authUser を渡すと QueryClient に事前シードする。
+ * vi.spyOn(authApi, "fetchMe") は router.tsx の直接呼び出し（requireAdminRoute）は
+ * スパイできるが、useAuth() 内部の queryFn は同モジュール内ローカル参照のため届かない。
+ * QueryClient への事前シードで useAuth() の戻り値も制御する。
+ */
+function renderApp(
+  initialPath: string,
+  authUser?: { id: string; displayName: string; role: "admin" | "member" } | null,
+) {
   const queryClient = createQueryClient();
+  if (authUser !== undefined) {
+    queryClient.setQueryData(authApi.AUTH_ME_QUERY_KEY, authUser);
+  }
   const router = createAppRouter({
     history: createMemoryHistory({ initialEntries: [initialPath] }),
   });
@@ -28,8 +40,9 @@ describe("管理画面（#50）", () => {
   });
 
   it("ログイン済みでサイドバーの「管理画面」リンクをクリックすると管理画面が表示される", async () => {
-    vi.spyOn(authApi, "fetchMe").mockResolvedValue({ id: "user1", displayName: "Alice", role: "admin" });
-    renderApp("/");
+    const adminUser = { id: "user1", displayName: "Alice", role: "admin" as const };
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue(adminUser);
+    renderApp("/", adminUser);
 
     const adminLink = await screen.findByRole("link", { name: "管理画面" });
     await userEvent.click(adminLink);

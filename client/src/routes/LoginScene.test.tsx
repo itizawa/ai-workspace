@@ -32,7 +32,7 @@ describe("管理画面ガード", () => {
   });
 
   it("ログイン済み状態で /admin にアクセスすると管理画面が表示される", async () => {
-    vi.spyOn(authApi, "fetchMe").mockResolvedValue({ id: "user1", displayName: "Alice" });
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue({ id: "user1", displayName: "Alice", role: "admin" });
     renderApp("/admin");
     expect(await screen.findByRole("heading", { name: /管理画面/ })).toBeInTheDocument();
   });
