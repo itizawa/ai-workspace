@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import type { PrismaClient } from "@prisma/client";
 
 import type {
@@ -46,8 +47,11 @@ export class PrismaInvitationLinkRepository implements InvitationLinkRepository 
         data: { revokedAt: new Date() },
       });
       return this.toRecord(record);
-    } catch {
-      return null;
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+        return null;
+      }
+      throw err;
     }
   }
 
