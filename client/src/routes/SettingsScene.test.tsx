@@ -1,3 +1,4 @@
+import * as invitationsApi from "../api/invitations.js";
 import { DEFAULT_EMPLOYEES } from "@hatchery/common";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
@@ -127,6 +128,35 @@ describe("設定画面タブ URL 同期・アクセシビリティ（#67）", ()
 
     await waitFor(() => {
       expect(router.state.location.searchStr).toContain("tab=api-token");
+    });
+  });
+});
+
+describe("招待タブ（#133）", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue({ id: "user1", displayName: "Alice", role: "admin" });
+    vi.spyOn(invitationsApi, "fetchInvitations").mockResolvedValue([]);
+  });
+
+  it("「招待」タブが表示される", async () => {
+    renderApp("/admin");
+    expect(await screen.findByRole("tab", { name: /招待/ })).toBeInTheDocument();
+  });
+
+  it("?tab=invitations で開くと「招待」タブがアクティブになる", async () => {
+    renderApp("/admin?tab=invitations");
+    const invitationsTab = await screen.findByRole("tab", { name: /招待/ });
+    expect(invitationsTab).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("「招待」タブをクリックすると URL が ?tab=invitations になる", async () => {
+    const { router } = renderApp("/admin");
+    await screen.findByRole("tab", { name: /ユーザー一覧/ });
+    await userEvent.click(screen.getByRole("tab", { name: /招待/ }));
+
+    await waitFor(() => {
+      expect(router.state.location.searchStr).toContain("tab=invitations");
     });
   });
 });
