@@ -51,12 +51,20 @@ function InvitationRow({ invitation, onCopied }: InvitationRowProps): ReactEleme
   const { label, color } = STATUS_CONFIG[invitation.status];
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(buildInviteUrl(invitation.token));
-    onCopied();
+    try {
+      await navigator.clipboard.writeText(buildInviteUrl(invitation.token));
+      onCopied();
+    } catch {
+      // clipboard unavailable; fail silently
+    }
   };
 
   const handleRevoke = async () => {
-    await revoke.mutateAsync(invitation.id);
+    try {
+      await revoke.mutateAsync(invitation.id);
+    } catch {
+      // error state is tracked via revoke.isError
+    }
   };
 
   return (
@@ -64,7 +72,7 @@ function InvitationRow({ invitation, onCopied }: InvitationRowProps): ReactEleme
       <TableCell sx={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {invitation.memo ?? "-"}
       </TableCell>
-      <TableCell>{new Date(invitation.expiresAt).toLocaleString("ja-JP")}</TableCell>
+      <TableCell>{invitation.expiresAt.toLocaleString("ja-JP")}</TableCell>
       <TableCell>
         <Chip label={label} color={color} size="small" />
       </TableCell>
@@ -96,20 +104,29 @@ export function InvitationsTab(): ReactElement {
   const [memo, setMemo] = useState("");
   const [createdInvitation, setCreatedInvitation] = useState<Invitation | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [createErrorOpen, setCreateErrorOpen] = useState(false);
 
   const handleCreate = async () => {
-    const result = await createMutation.mutateAsync({
-      expiresInHours,
-      ...(memo.trim() ? { memo: memo.trim() } : {}),
-    });
-    setCreatedInvitation(result);
-    setMemo("");
+    try {
+      const result = await createMutation.mutateAsync({
+        expiresInHours,
+        ...(memo.trim() ? { memo: memo.trim() } : {}),
+      });
+      setCreatedInvitation(result);
+      setMemo("");
+    } catch {
+      setCreateErrorOpen(true);
+    }
   };
 
   const handleCopyCreated = async () => {
     if (!createdInvitation) return;
-    await navigator.clipboard.writeText(buildInviteUrl(createdInvitation.token));
-    setSnackbarOpen(true);
+    try {
+      await navigator.clipboard.writeText(buildInviteUrl(createdInvitation.token));
+      setSnackbarOpen(true);
+    } catch {
+      // clipboard unavailable; fail silently
+    }
   };
 
   return (
@@ -202,6 +219,15 @@ export function InvitationsTab(): ReactElement {
       >
         <Alert severity="success" onClose={() => setSnackbarOpen(false)}>
           招待 URL をコピーしました
+        </Alert>
+      </Snackbar>
+      <Snackbar
+        open={createErrorOpen}
+        autoHideDuration={4000}
+        onClose={() => setCreateErrorOpen(false)}
+      >
+        <Alert severity="error" onClose={() => setCreateErrorOpen(false)}>
+          招待リンクの発行に失敗しました
         </Alert>
       </Snackbar>
     </Box>

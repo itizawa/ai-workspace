@@ -18,20 +18,20 @@ export async function createInvitation(input: {
   expiresInHours: number;
   memo?: string;
 }): Promise<Invitation> {
-  const { data, response } = await openApiClient.POST("/api/admin/invitations", {
+  const { data, error, response } = await openApiClient.POST("/api/admin/invitations", {
     body: input,
     credentials: "include",
   });
-  if (!response.ok || !data) throw new Error(`POST /api/admin/invitations failed: ${response.status}`);
+  if (error || !response.ok) throw new Error(`POST /api/admin/invitations failed: ${response.status}`);
   return InvitationSchema.parse(data);
 }
 
 export async function revokeInvitation(id: string): Promise<Invitation> {
-  const { data, response } = await openApiClient.POST("/api/admin/invitations/{id}/revoke", {
+  const { data, error, response } = await openApiClient.POST("/api/admin/invitations/{id}/revoke", {
     params: { path: { id } },
     credentials: "include",
   });
-  if (!response.ok || !data) throw new Error(`POST /api/admin/invitations/${id}/revoke failed: ${response.status}`);
+  if (error || !response.ok) throw new Error(`POST /api/admin/invitations/${id}/revoke failed: ${response.status}`);
   return InvitationSchema.parse(data);
 }
 
