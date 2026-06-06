@@ -44,4 +44,32 @@ describe("InMemoryMessageRepository", () => {
     });
     expect(await repo.list()).toHaveLength(0);
   });
+
+  describe("listRecentByChannel (#53)", () => {
+    it("指定チャンネルの直近 limit 件を新しい順（order 降順）で返す", async () => {
+      const repo = new InMemoryMessageRepository();
+      await repo.createMany([
+        { speaker: "a", channel: "zatsudan", text: "1" },
+        { speaker: "a", channel: "zatsudan", text: "2" },
+        { speaker: "a", channel: "zatsudan", text: "3" },
+        { speaker: "a", channel: "shigoto", text: "x" },
+      ]);
+      const recent = await repo.listRecentByChannel("zatsudan", 2);
+      expect(recent.map((m) => m.text)).toEqual(["3", "2"]);
+    });
+
+    it("limit が件数より大きければ全件を返す", async () => {
+      const repo = new InMemoryMessageRepository();
+      await repo.createMany([
+        { speaker: "a", channel: "zatsudan", text: "1" },
+        { speaker: "a", channel: "zatsudan", text: "2" },
+      ]);
+      expect(await repo.listRecentByChannel("zatsudan", 30)).toHaveLength(2);
+    });
+
+    it("該当チャンネルが無ければ空配列を返す", async () => {
+      const repo = new InMemoryMessageRepository();
+      expect(await repo.listRecentByChannel("none", 30)).toEqual([]);
+    });
+  });
 });
