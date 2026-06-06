@@ -32,7 +32,7 @@ export const Empty: Story = {
       // story-level handlers は global handlers を置き換えるため、先頭に上書き handler を置き
       // 残りは global handlers をスプレッドして first-match-wins で上書きを確立する。
       handlers: [
-        http.get("/channels/:channelId/messages", () => HttpResponse.json([])),
+        http.get("/api/channels/:channelId/messages", () => HttpResponse.json([])),
         ...handlers,
       ],
     },

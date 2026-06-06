@@ -25,7 +25,7 @@ export const LoggedOut: Story = {
   parameters: {
     msw: {
       handlers: [
-        http.get("/auth/me", () => new HttpResponse(null, { status: 401 })),
+        http.get("/api/auth/me", () => new HttpResponse(null, { status: 401 })),
       ],
     },
   },
