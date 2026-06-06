@@ -58,7 +58,7 @@ describe("Channel / CHANNEL_IDS (A-7)", () => {
   it("DEFAULT_CHANNELS に kikaku チャンネルが type='planning' で含まれる (#76)", () => {
     const kikaku = DEFAULT_CHANNELS.find((c) => c.id === "kikaku");
     expect(kikaku).toBeDefined();
-    expect(kikaku?.label).toBe("#企画");
+    expect(kikaku?.label).toBe("企画");
     expect(kikaku?.type).toBe("planning");
   });
 });
@@ -139,7 +139,7 @@ describe("UpdateChannelSchema（PATCH /channels/:id ボディ・#54）", () => {
 
 describe("findChannelById", () => {
   it("既知のチャンネル ID から DEFAULT_CHANNELS の Channel を返す", () => {
-    expect(findChannelById("zatsudan")).toEqual({ id: "zatsudan", label: "#雑談", type: "zatsudan" });
+    expect(findChannelById("zatsudan")).toEqual({ id: "zatsudan", label: "雑談", type: "zatsudan" });
   });
 
   it("未知のチャンネル ID では undefined を返す", () => {
