@@ -111,7 +111,7 @@ describe("AcceptInvitationScene", () => {
         return Promise.resolve(jsonResponse(201, sampleUser));
       }
       if (url.match(/\/invitations\/[^/]+$/)) return Promise.resolve(jsonResponse(200, activeInvitation));
-      return Promise.resolve(jsonResponse(200, {}));
+      return Promise.resolve(jsonResponse(200, []));
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -160,7 +160,7 @@ describe("AcceptInvitationScene", () => {
       const url = input instanceof Request ? input.url : String(input);
       if (url.includes("/auth/me")) return Promise.resolve(jsonResponse(200, { id: "user1", displayName: "Alice" }));
       if (url.match(/\/invitations\/[^/]+$/)) return Promise.resolve(jsonResponse(200, activeInvitation));
-      return Promise.resolve(jsonResponse(200, {}));
+      return Promise.resolve(jsonResponse(200, []));
     }));
 
     renderApp("/invite/valid-token");
