@@ -18,6 +18,7 @@ import { type SyntheticEvent, useState, type ReactElement, type ReactNode } from
 import { useAdminSettings, useSaveAdminSetting } from "../api/admin.js";
 import { useBatchLogs, useRefreshBatchLogs } from "../api/batchLogs.js";
 import { EmployeeTable } from "../components/EmployeeTable";
+import { InvitationsTab } from "../components/InvitationsTab.js";
 import { type SettingsTabValue } from "./settingsTabValues.js";
 
 /** API トークン設定タブのコンテンツ（#52）。 */
@@ -155,6 +156,7 @@ const SETTINGS_TABS: readonly [SettingsTab, ...SettingsTab[]] = [
   { label: "ユーザー一覧", value: "users", content: <EmployeeTable /> },
   { label: "API トークン設定", value: "api-token", content: <ApiTokenSettings /> },
   { label: "バッチログ", value: "batch-logs", content: <BatchLogs /> },
+  { label: "招待", value: "invitations", content: <InvitationsTab /> },
 ];
 
 /** 管理画面（/admin）。タブ UI を持ち、ユーザー一覧タブに AI 社員をテーブル表示する（#25）。 */
