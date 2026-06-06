@@ -160,9 +160,9 @@ pnpm --filter @hatchery/server db:migrate
 
 | Variable 名 | 値 | 説明 |
 |------------|-----|------|
-| `CLOUD_RUN_DEV_URL` | `https://hatchery-server-XXXXX-an.a.run.app` | Cloud Run のサービス URL |
+| `CLOUD_RUN_DEV_URL` | `https://hatchery-XXXXX-an.a.run.app` | Cloud Run のサービス URL |
 
-Cloud Run の URL は初回デプロイ後に確定します。デプロイ後に GCP Console または `gcloud run services describe hatchery-server --region=asia-northeast1 --format='value(status.url)'` で取得してください。
+Cloud Run の URL は初回デプロイ後に確定します。デプロイ後に GCP Console または `gcloud run services describe hatchery --region=asia-northeast1 --format='value(status.url)'` で取得してください。
 
 ---
 
