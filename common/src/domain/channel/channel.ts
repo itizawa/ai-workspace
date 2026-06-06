@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-/** MVP のチャンネル ID（#雑談 / #仕事 / #企画）。既知 ID 群との突き合わせに用いる。 */
+/** MVP のチャンネル ID（雑談 / 仕事 / 企画）。既知 ID 群との突き合わせに用いる。 */
 export const CHANNEL_IDS = ["zatsudan", "shigoto", "kikaku"] as const;
 
 export type ChannelId = (typeof CHANNEL_IDS)[number];

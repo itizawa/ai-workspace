@@ -7,8 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createAppRouter, type AppRouter } from "./router";
 
 const CHANNELS_DATA = [
-  { id: "zatsudan", label: "#雑談", type: "zatsudan" },
-  { id: "shigoto", label: "#仕事", type: "task" },
+  { id: "zatsudan", label: "雑談", type: "zatsudan" },
+  { id: "shigoto", label: "仕事", type: "task" },
 ];
 
 /** ログイン済みを表す /auth/me のレスポンスボディ（AuthUser）。 */
@@ -87,12 +87,12 @@ describe("createAppRouter", () => {
     expect(await screen.findByRole("heading", { name: /タイムライン/ })).toBeInTheDocument();
   });
 
-  it("サイドバーにチャンネル一覧（#雑談）を描画する", async () => {
+  it("サイドバーにチャンネル一覧（雑談）を描画する", async () => {
     const router = createAppRouter({
       history: createMemoryHistory({ initialEntries: ["/"] }),
     });
     render(renderRouter(router));
-    expect(await screen.findByText("#雑談")).toBeInTheDocument();
+    expect(await screen.findByText("雑談")).toBeInTheDocument();
   });
 
   it("チャンネルルート（/channels/$channelId）で選択中チャンネルの詳細（ヘッダ）を描画する", async () => {
@@ -101,7 +101,7 @@ describe("createAppRouter", () => {
     });
     render(renderRouter(router));
     // ChannelView のヘッダ（見出し）として channel.label を描画する（サイドバーの一覧は heading ではない）。
-    expect(await screen.findByRole("heading", { name: "#雑談" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "雑談" })).toBeInTheDocument();
   });
 });
 

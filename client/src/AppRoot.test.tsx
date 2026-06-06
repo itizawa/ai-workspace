@@ -34,7 +34,7 @@ describe("AppRoot", () => {
           );
         }
         return Promise.resolve(
-          new Response(JSON.stringify([{ id: "zatsudan", label: "#雑談" }]), {
+          new Response(JSON.stringify([{ id: "zatsudan", label: "雑談" }]), {
             status: 200,
             headers: { "Content-Type": "application/json" },
           }),
@@ -51,7 +51,7 @@ describe("AppRoot", () => {
       history: createMemoryHistory({ initialEntries: ["/"] }),
     });
     render(<AppRoot router={router} />);
-    expect(await screen.findByText("#雑談")).toBeInTheDocument();
+    expect(await screen.findByText("雑談")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: /タイムライン/ })).toBeInTheDocument();
   });
 });
