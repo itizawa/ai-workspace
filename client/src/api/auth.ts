@@ -12,7 +12,7 @@ export const AUTH_ME_QUERY_KEY = ["auth", "me"] as const;
 export async function fetchMe(): Promise<AuthUser | null> {
   const { data, response } = await openApiClient.GET("/api/auth/me", { credentials: "include" });
   if (response.status === 401) return null;
-  if (!response.ok) throw new Error(`GET /auth/me failed: ${response.status}`);
+  if (!response.ok) throw new Error(`GET /api/auth/me failed: ${response.status}`);
   return data ?? null;
 }
 
@@ -26,14 +26,14 @@ export async function login(body: LoginRequest): Promise<AuthUser> {
     body,
     credentials: "include",
   });
-  if (!response.ok || !data) throw new Error(`POST /auth/login failed: ${response.status}`);
+  if (!response.ok || !data) throw new Error(`POST /api/auth/login failed: ${response.status}`);
   return data;
 }
 
 /** POST /auth/logout を呼び出す。openApiClient 経由で baseUrl を解決する（login と同様）。 */
 export async function logout(): Promise<void> {
   const { response } = await openApiClient.POST("/api/auth/logout", { credentials: "include" });
-  if (!response.ok) throw new Error(`POST /auth/logout failed: ${response.status}`);
+  if (!response.ok) throw new Error(`POST /api/auth/logout failed: ${response.status}`);
 }
 
 /** 現在の認証状態を TanStack Query で取得するフック。 */
@@ -70,7 +70,7 @@ export async function updateProfile(body: UpdateProfile): Promise<AuthUser> {
     body,
     credentials: "include",
   });
-  if (!response.ok || !data) throw new Error(`PATCH /auth/me failed: ${response.status}`);
+  if (!response.ok || !data) throw new Error(`PATCH /api/auth/me failed: ${response.status}`);
   return data;
 }
 

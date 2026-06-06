@@ -18,7 +18,7 @@ export async function fetchBatchLogs(): Promise<BatchRunLog[]> {
   });
   // openapi-fetch は非2xx + 空ボディ（Content-Length: 0）で error=undefined を返すため、
   // error だけでなく response.ok も見て元コード（!res.ok throw）の確実性を保つ。
-  if (error || !response.ok) throw new Error(`GET /admin/batch-logs failed: ${response.status}`);
+  if (error || !response.ok) throw new Error(`GET /api/admin/batch-logs failed: ${response.status}`);
   return BatchRunLogSchema.array().parse(data);
 }
 

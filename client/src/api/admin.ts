@@ -17,7 +17,7 @@ export async function fetchSettings(): Promise<AppSettingResponse[]> {
   });
   // openapi-fetch は非2xx + 空ボディ（Content-Length: 0）で error=undefined を返すため、
   // error だけでなく response.ok も見て元コード（!res.ok throw）の確実性を保つ。
-  if (error || !response.ok) throw new Error(`GET /admin/settings failed: ${response.status}`);
+  if (error || !response.ok) throw new Error(`GET /api/admin/settings failed: ${response.status}`);
   return data ?? [];
 }
 
@@ -27,7 +27,7 @@ export async function patchSetting(key: string, value: string): Promise<AppSetti
     body: { key, value },
     credentials: "include",
   });
-  if (!response.ok || !data) throw new Error(`PATCH /admin/settings failed: ${response.status}`);
+  if (!response.ok || !data) throw new Error(`PATCH /api/admin/settings failed: ${response.status}`);
   return data;
 }
 
