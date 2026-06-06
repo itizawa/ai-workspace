@@ -29,9 +29,9 @@ export type Channel = z.infer<typeof ChannelSchema>;
  * インメモリ実装・バッチ既定の初期値としてのみ用いる。CHANNEL_IDS と 1 対 1 に対応する。
  */
 export const DEFAULT_CHANNELS: readonly Channel[] = [
-  { id: "zatsudan", label: "#雑談", type: "zatsudan" },
-  { id: "shigoto", label: "#仕事", type: "task" },
-  { id: "kikaku", label: "#企画", type: "planning" },
+  { id: "zatsudan", label: "雑談", type: "zatsudan" },
+  { id: "shigoto", label: "仕事", type: "task" },
+  { id: "kikaku", label: "企画", type: "planning" },
 ];
 
 /**
