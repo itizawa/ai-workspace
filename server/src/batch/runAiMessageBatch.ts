@@ -56,6 +56,7 @@ export async function runAiMessageBatch(deps: RunAiMessageBatchDeps): Promise<Me
   const zatsudanChannels = channels.filter((c) => c.type === "zatsudan");
 
   const saved: MessageRecord[] = [];
+  const errors: string[] = [];
   for (const channel of zatsudanChannels) {
     try {
       const memberIds = await deps.membershipRepo.listEmployeeIdsByChannel(channel.id);
@@ -91,14 +92,18 @@ export async function runAiMessageBatch(deps: RunAiMessageBatchDeps): Promise<Me
       const created = await deps.messageRepo.createMany(messages);
       saved.push(...created);
     } catch (err) {
+      // リトライせず、ログを残して次チャンネルへ。失敗はバッチ実行ログに集約して監視可能にする。
+      const message = err instanceof Error ? err.message : String(err);
       console.error(`[aiMessageBatch] チャンネル ${channel.id} の会話生成に失敗しました:`, err);
+      errors.push(`${channel.id}: ${message}`);
     }
   }
 
+  // 1 チャンネルでも失敗していれば failure として記録し、監視で『正常だが投稿ゼロ』と区別できるようにする。
   await deps.batchRunLogRepository?.create({
-    status: "success",
+    status: errors.length > 0 ? "failure" : "success",
     messageCount: saved.length,
-    errorMessage: null,
+    errorMessage: errors.length > 0 ? errors.join("; ") : null,
     errorCode: null,
   });
 

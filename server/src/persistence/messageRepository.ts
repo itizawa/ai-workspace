@@ -31,6 +31,8 @@ export interface MessageRepository {
   listByChannel(channelId: string): Promise<MessageRecord[]>;
   /** channel の直近 limit 件を新しい順（createdAt 降順）で返す（#53・会話生成の文脈用）。 */
   listRecentByChannel(channelId: string, limit: number): Promise<MessageRecord[]>;
+  /** channel の createdAt >= since のメッセージを時系列昇順で返す（#53・あらすじ更新の当日分取得用）。 */
+  listByChannelSince(channelId: string, since: Date): Promise<MessageRecord[]>;
   /** UX 提案メッセージを 1 件作成する（#76）。 */
   createPlanningMessage(input: PlanningMessageInput): Promise<MessageRecord>;
   /** GitHub Issue 起票後にメッセージの issueNumber / issueUrl を更新する（#76）。 */
@@ -78,6 +80,14 @@ export class InMemoryMessageRepository implements MessageRepository {
       .slice(0, Math.max(0, limit))
       .map((x) => cloneRecord(x.r));
     return Promise.resolve(recent);
+  }
+
+  listByChannelSince(channelId: string, since: Date): Promise<MessageRecord[]> {
+    return Promise.resolve(
+      this.records
+        .filter((r) => r.channel === channelId && r.createdAt.getTime() >= since.getTime())
+        .map(cloneRecord),
+    );
   }
 
   createPlanningMessage(input: PlanningMessageInput): Promise<MessageRecord> {

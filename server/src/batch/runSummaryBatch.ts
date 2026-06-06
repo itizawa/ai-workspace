@@ -37,12 +37,16 @@ export async function runSummaryBatch(deps: RunSummaryBatchDeps): Promise<string
   const summarize = deps.summarize ?? generateSummaryWithClaude;
   const now = deps.now ?? new Date();
 
+  // 当日 0 時を起点に取得し、チャンネル肥大時も全履歴ロードを避ける（取得後に正確な当日分へ絞る）。
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+
   const channels = await deps.channelRepo.list();
   const updated: string[] = [];
   for (const channel of channels) {
     try {
-      const all = await deps.messageRepo.listByChannel(channel.id);
-      const todays = selectMessagesForDay(all, now);
+      const sinceToday = await deps.messageRepo.listByChannelSince(channel.id, startOfDay);
+      const todays = selectMessagesForDay(sinceToday, now);
       if (todays.length === 0) continue;
 
       const previous = await deps.channelRepo.getSummary(channel.id);

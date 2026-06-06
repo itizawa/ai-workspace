@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Channel } from "@hatchery/common";
 
 import { InMemoryAppSettingRepository } from "../persistence/appSettingRepository.js";
+import { InMemoryBatchRunLogRepository } from "../persistence/batchRunLogRepository.js";
 import { InMemoryChannelMembershipRepository } from "../persistence/channelMembershipRepository.js";
 import { InMemoryChannelRepository } from "../persistence/channelRepository.js";
 import { InMemoryEmployeeRepository, type EmployeeRecord } from "../persistence/employeeRepository.js";
@@ -38,7 +39,8 @@ describe("runAiMessageBatch (#53)", () => {
     const membershipRepo = new InMemoryChannelMembershipRepository();
     const employeeRepo = new InMemoryEmployeeRepository(bots);
     const appSettingRepo = new InMemoryAppSettingRepository();
-    return { channelRepo, messageRepo, membershipRepo, employeeRepo, appSettingRepo };
+    const batchRunLogRepository = new InMemoryBatchRunLogRepository();
+    return { channelRepo, messageRepo, membershipRepo, employeeRepo, appSettingRepo, batchRunLogRepository };
   };
 
   it("zatsudan チャンネルのみ対象にし、isBot の発言だけを保存する", async () => {
@@ -98,6 +100,31 @@ describe("runAiMessageBatch (#53)", () => {
     expect(saved).toHaveLength(1);
     expect(await deps.messageRepo.listByChannel("z1")).toHaveLength(0);
     expect(await deps.messageRepo.listByChannel("z2")).toHaveLength(1);
+  });
+
+  it("成功時は BatchRunLog に status:success と件数を記録する", async () => {
+    const deps = buildDeps([{ id: "zatsudan", label: "雑談", type: "zatsudan" }]);
+    await deps.membershipRepo.addMember("zatsudan", "haru");
+    await deps.membershipRepo.addMember("zatsudan", "ken");
+    const generate = vi.fn().mockResolvedValue(conversationJson);
+
+    await runAiMessageBatch({ ...deps, generate });
+    const logs = await deps.batchRunLogRepository.findRecent(10);
+    expect(logs).toHaveLength(1);
+    expect(logs[0]?.status).toBe("success");
+    expect(logs[0]?.messageCount).toBe(2);
+  });
+
+  it("チャンネル生成が失敗したら BatchRunLog に status:failure を記録する", async () => {
+    const deps = buildDeps([{ id: "zatsudan", label: "雑談", type: "zatsudan" }]);
+    await deps.membershipRepo.addMember("zatsudan", "haru");
+    const generate = vi.fn().mockRejectedValue(new Error("api error"));
+
+    await runAiMessageBatch({ ...deps, generate });
+    const logs = await deps.batchRunLogRepository.findRecent(10);
+    expect(logs[0]?.status).toBe("failure");
+    expect(logs[0]?.messageCount).toBe(0);
+    expect(logs[0]?.errorMessage).toContain("zatsudan");
   });
 
   it("bot 所属がいないチャンネルは生成しない", async () => {
