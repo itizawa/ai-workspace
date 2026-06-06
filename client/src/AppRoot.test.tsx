@@ -1,5 +1,5 @@
 import { createMemoryHistory } from "@tanstack/react-router";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppRoot } from "./AppRoot";
@@ -51,7 +51,9 @@ describe("AppRoot", () => {
       history: createMemoryHistory({ initialEntries: ["/"] }),
     });
     render(<AppRoot router={router} />);
-    expect(await screen.findByText("雑談")).toBeInTheDocument();
+    // 「雑談」は AddChannelForm のタイプ選択ラジオにも現れるため、サイドバーのチャンネル一覧内にスコープして確認する。
+    const channelList = await screen.findByRole("list", { name: "チャンネル一覧" });
+    expect(within(channelList).getByText("雑談")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: /タイムライン/ })).toBeInTheDocument();
   });
 });
