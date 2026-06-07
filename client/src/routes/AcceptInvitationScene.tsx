@@ -44,13 +44,13 @@ function InvalidMessage({ status }: { status: InvitationStatus | "notfound" | "e
 }
 
 export function AcceptInvitationScene(): ReactElement {
-  const { token } = useParams({ strict: false });
+  const { token } = useParams({ from: "/invite/$token" });
   const navigate = useNavigate();
   const [apiError, setApiError] = useState<string | null>(null);
 
   const { data: currentUser, isLoading: isAuthLoading } = useAuth();
-  const { data: invitation, isLoading: isInvitationLoading, isError: isInvitationError } = useInvitation(token ?? "");
-  const acceptMutation = useAcceptInvitation(token ?? "");
+  const { data: invitation, isLoading: isInvitationLoading, isError: isInvitationError } = useInvitation(token);
+  const acceptMutation = useAcceptInvitation(token);
 
   useEffect(() => {
     if (!isAuthLoading && currentUser) {
