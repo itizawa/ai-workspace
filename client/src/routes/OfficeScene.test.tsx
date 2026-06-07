@@ -25,7 +25,7 @@ beforeEach(() => {
 describe("OfficeScene", () => {
   it('renders "仮想オフィス" heading', () => {
     render(<OfficeScene />);
-    expect(screen.getByRole("heading", { name: "���想オフィス" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "仮想オフィス" })).toBeInTheDocument();
   });
 
   it("renders a button with aria-label for each DEFAULT_EMPLOYEE", () => {
@@ -39,11 +39,11 @@ describe("OfficeScene", () => {
     const user = userEvent.setup();
     render(<OfficeScene />);
 
-    expect(screen.queryByText("ムードメ��カー")).not.toBeInTheDocument();
+    expect(screen.queryByText("ムードメーカー")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "haru" }));
 
-    expect(screen.getByText("ムード���ーカー")).toBeInTheDocument();
+    expect(screen.getByText("ムードメーカー")).toBeInTheDocument();
     expect(screen.getByText("AI社員")).toBeInTheDocument();
   });
 

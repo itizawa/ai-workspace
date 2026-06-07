@@ -50,7 +50,7 @@ export const RootLayout = (): ReactElement => {
         {user && isAdmin(user) && (
           <Box sx={{ mt: 1 }}>
             <Link component={RouterLink} to="/admin" sx={{ color: SLACK_COLORS.sidebarText }} underline="hover">
-              ��理画面
+              管理画面
             </Link>
           </Box>
         )}
