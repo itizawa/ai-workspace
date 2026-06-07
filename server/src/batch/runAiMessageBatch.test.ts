@@ -62,8 +62,10 @@ describe("runAiMessageBatch (#53)", () => {
     expect(generate).toHaveBeenCalledTimes(1);
     // user1（非 bot）は除外され 2 件だけ保存
     expect(saved).toHaveLength(2);
-    const zatsudanMsgs = await deps.messageRepo.listByChannel("zatsudan");
-    expect(zatsudanMsgs.map((m) => m.speaker)).toEqual(["haru", "ken"]);
+    expect(saved.map((m) => m.speaker)).toEqual(["haru", "ken"]);
+    // バッチ生成メッセージは postedAt が未来時刻（#183: 予約表示）
+    const now = Date.now();
+    expect(saved[0].postedAt.getTime()).toBeGreaterThan(now);
     // 対象外チャンネルには何も保存されない
     expect(await deps.messageRepo.listByChannel("shigoto")).toHaveLength(0);
   });
@@ -99,7 +101,9 @@ describe("runAiMessageBatch (#53)", () => {
     expect(generate).toHaveBeenCalledTimes(2);
     expect(saved).toHaveLength(1);
     expect(await deps.messageRepo.listByChannel("z1")).toHaveLength(0);
-    expect(await deps.messageRepo.listByChannel("z2")).toHaveLength(1);
+    // z2 の生成済みメッセージは未来 postedAt なので listByChannel では見えない
+    const z2Recent = await deps.messageRepo.listRecentByChannel("z2", 10);
+    expect(z2Recent).toHaveLength(1);
   });
 
   it("成功時は BatchRunLog に status:success と件数を記録する", async () => {
