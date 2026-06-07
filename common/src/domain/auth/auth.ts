@@ -2,8 +2,8 @@ import { z } from "zod";
 
 export const LoginRequestSchema = z.object({
   // #185: id → loginId にリネーム（サロゲートキー化対応）。
-  loginId: z.string().min(1),
-  password: z.string().min(1),
+  loginId: z.string().min(1).max(50),
+  password: z.string().min(1).max(100),
 });
 
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
