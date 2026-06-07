@@ -1,6 +1,5 @@
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
+import { Box, Button, TextField } from "./uiParts";
+
 import { useState, type FormEvent, type ReactElement } from "react";
 
 import { MAX_MESSAGE_LENGTH } from "@hatchery/common";
