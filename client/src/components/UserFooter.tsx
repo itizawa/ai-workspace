@@ -40,7 +40,7 @@ export const UserFooter = (): ReactElement | null => {
         aria-label="ユーザーメニュー"
         aria-controls={open ? "user-menu" : undefined}
         aria-haspopup="true"
-        aria-expanded={open ? "true" : undefined}
+        aria-expanded={open}
         sx={{
           display: "flex",
           alignItems: "center",
