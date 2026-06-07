@@ -158,7 +158,7 @@ GitHub の Open Issue を確認し、各 Issue の `df:*` ラベルから「今 
 2. 判定（**上から順に評価し、最初に該当した分岐で確定・終了する＝短絡評価**。とくに `df:done` / `df:blocked` を 1 つでも含む場合は、他の df ラベルが併記されていても着手しない）:
    - `closed` → 何もしない旨を報告して終了。
    - **`df:done` / `df:blocked` を 1 つでも含む** → **着手禁止**。「これは人間の番」と理由付きで報告して終了（ゲート 6）。
-   - `df:*` ラベル無し → 着手せず「Dark Factory のラベルが付いていません（`df:todo` 等の付与が必要）」と報告して終了。
+   - `df:*` ラベル無し → **`df:todo` 相当として扱い**、フェーズ A から開始する。着手前に `df:todo` ラベルを自動付与する（`gh issue edit <N> --add-label "df:todo"`）。
    - **AI 実行可能 df ラベル（`df:todo` / `df:dev-review`）が 2 つ以上付いて状態が矛盾** → どのフェーズが正しいか不定なので、フェーズを実行せずゲート 3 に従い `df:blocked` を付けコメントして停止。
    - `df:todo` → **フェーズ A**（実装）から開始し、続けてフェーズ B（レビュー → マージ）まで完走する。
    - `df:dev-review` → **フェーズ B**（レビュー → マージ）のみ実行する。
@@ -390,7 +390,8 @@ STEP 0: 状況テーブルを出す（誰の番か分類）＋ git status クリ
    ↓
 引数あり?
  ├ Yes → その Issue。短絡評価で上から判定:
- │        closed / human-gate(done/blocked 併記含む) / ラベル無し / AI実行可能df複数(矛盾)→blocked
+ │        closed / human-gate(done/blocked 併記含む) / AI実行可能df複数(矛盾)→blocked
+ │        df:*ラベル無し → df:todoを自動付与してフェーズA→B
  │        のいずれでもなければ: df:todo→フェーズA→B / df:dev-review→フェーズBのみ
  └ No  → 候補から done/blocked と「milestone/*ラベル未設定」を除外 →
             milestone/*ラベルのアルファベット昇順 → 優先度(critical>high>medium=無印>low) →
