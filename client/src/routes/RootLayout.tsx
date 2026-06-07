@@ -55,7 +55,7 @@ export const RootLayout = (): ReactElement => {
         )}
         <UserFooter />
       </Box>
-      <Box component="main" sx={{ flexGrow: 1, bgcolor: "background.default", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <Box component="main" sx={{ flexGrow: 1, bgcolor: "background.default", overflow: "auto", display: "flex", flexDirection: "column" }}>
         <Outlet />
       </Box>
     </Box>
