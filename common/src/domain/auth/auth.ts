@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 export const LoginRequestSchema = z.object({
-  id: z.string().min(1),
+  // #185: id → loginId にリネーム（サロゲートキー化対応）。
+  loginId: z.string().min(1),
   password: z.string().min(1),
 });
 
@@ -13,6 +14,8 @@ export type UserRole = z.infer<typeof UserRoleSchema>;
 
 export const AuthUserSchema = z.object({
   id: z.string(),
+  // #185: ログイン用の人間可読 ID（サロゲートキー化後に loginId として公開）。
+  loginId: z.string(),
   displayName: z.string(),
   // #136: 権限ロール（必須）。
   role: UserRoleSchema,
