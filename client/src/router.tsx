@@ -56,13 +56,11 @@ async function requireAdminRoute(): Promise<void> {
 }
 
 /**
- * サイドバーなしで描画する auth ルートかどうかを判定する。
- * 動的セグメントを含むルート（/invite/:token 等）はプレフィックスで前方一致する。
- * 新しい auth ルートを追加した場合はここに条件を追加すること。
+ * サイドバーなしで描画する auth 系ルートのパスプレフィックス一覧。
+ * 新しい auth ルートを追加した場合はここにも追記すること。
+ * /invite/ は動的パスのためプレフィックス一致で判定する。
  */
-function isAuthPath(pathname: string): boolean {
-  return pathname === "/login" || pathname.startsWith("/invite/");
-}
+const AUTH_PATH_PREFIXES = ["/login", "/invite/"] as const satisfies readonly string[];
 
 /**
  * アプリ全体のシェル。現在のパスに応じて
@@ -72,7 +70,7 @@ function isAuthPath(pathname: string): boolean {
  */
 function AppShell(): ReactElement {
   const { pathname } = useLocation();
-  if (isAuthPath(pathname)) {
+  if (AUTH_PATH_PREFIXES.some((p) => pathname.startsWith(p))) {
     return <AuthLayout />;
   }
   return <RootLayout />;
@@ -136,7 +134,7 @@ const accountRoute = createRoute({
   beforeLoad: requireAuth,
 });
 
-/** 招待リンク受諾画面（/invite/$token）。認証不要・AuthLayout（サイドバーなし）。 */
+/** 招待リンク受諾画面（/invite/:token）。公開ルート（requireAuth なし・AuthLayout）。 */
 const inviteRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/invite/$token",
