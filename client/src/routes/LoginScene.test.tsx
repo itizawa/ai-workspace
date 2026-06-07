@@ -50,7 +50,7 @@ describe("ログインフォーム", () => {
     await userEvent.type(await screen.findByLabelText(/ID/), "user1");
     await userEvent.type(screen.getByLabelText(/パスワード/), "pass1");
     await userEvent.click(screen.getByRole("button", { name: /ログイン/ }));
-    await waitFor(() => expect(loginSpy).toHaveBeenCalledWith({ id: "user1", password: "pass1" }));
+    await waitFor(() => expect(loginSpy).toHaveBeenCalledWith({ loginId: "user1", password: "pass1" }));
   });
 
   it("ID フィールドが空の場合、送信しても login API が呼ばれない", async () => {

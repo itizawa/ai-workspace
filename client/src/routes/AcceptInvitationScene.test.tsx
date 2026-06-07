@@ -14,7 +14,7 @@ function jsonResponse(status: number, body?: unknown): Response {
   });
 }
 
-const sampleAuthUser = { id: "newuser", displayName: "新ユーザー", role: "member" };
+const sampleAuthUser = { id: "newuser", loginId: "newuser", displayName: "新ユーザー", role: "member" };
 
 function stubFetch({
   isLoggedIn = false,
