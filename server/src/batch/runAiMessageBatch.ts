@@ -1,5 +1,6 @@
 import {
   buildChannelConversationPrompt,
+  calcPostedAtOffsets,
   formatRecentLog,
   parseConversationMessages,
   type Message,
@@ -89,7 +90,11 @@ export async function runAiMessageBatch(deps: RunAiMessageBatchDeps): Promise<Me
       );
       if (messages.length === 0) continue;
 
-      const created = await deps.messageRepo.createMany(messages);
+      const batchTime = new Date();
+      const postedAts = calcPostedAtOffsets(batchTime, messages.length);
+      const created = await deps.messageRepo.createMany(
+        messages.map((m, i) => ({ ...m, postedAt: postedAts[i] })),
+      );
       saved.push(...created);
     } catch (err) {
       // リトライせず、ログを残して次チャンネルへ。失敗はバッチ実行ログに集約して監視可能にする。
