@@ -83,6 +83,7 @@ model ChannelEmployee {
 
 /// channel に直接紐づく 1 発言（ADR-0009: Scene 廃止）。
 /// createdAt でバッチ間の時系列順を保ち、order でバッチ内の発言順を保つ。
+/// postedAt はメッセージを表示する日時（#183）。この時刻を過ぎたメッセージのみ一覧に返す。
 /// proposalTitle / proposalReason / proposalTargetUrl / issueNumber / issueUrl は
 /// 企画 チャンネルの UX 提案メッセージ専用 optional フィールド（#76）。
 model Message {
@@ -91,6 +92,8 @@ model Message {
   channel           String
   text              String
   createdAt         DateTime @default(now())
+  /// メッセージの表示予約日時（#183）。この時刻を迎えたメッセージのみ listByChannel に返す。
+  postedAt          DateTime @default(now())
   order             Int
   proposalTitle     String?
   proposalReason    String?
@@ -99,6 +102,7 @@ model Message {
   issueUrl          String?
 
   @@index([channel, createdAt])
+  @@index([channel, postedAt])
 }
 
 /// MVP のタスク状態（common の TaskStatusSchema に対応）。

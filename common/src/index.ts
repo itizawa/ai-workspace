@@ -20,3 +20,4 @@ export * from "./logic/selectAppearingMembers.js";
 export * from "./logic/buildChannelConversationPrompt.js";
 export * from "./logic/parseConversationMessages.js";
 export * from "./logic/summarizeChannel.js";
+export * from "./logic/calcPostedAtOffsets.js";

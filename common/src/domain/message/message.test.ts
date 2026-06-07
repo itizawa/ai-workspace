@@ -48,6 +48,7 @@ describe("MessageRecordSchema (#40・永続化形)", () => {
     channel: "zatsudan",
     text: "おはよ〜",
     createdAt: new Date("2026-05-31T00:00:00Z"),
+    postedAt: new Date("2026-05-31T00:00:00Z"),
     order: 0,
   };
 

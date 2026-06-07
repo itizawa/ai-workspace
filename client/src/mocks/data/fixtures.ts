@@ -37,6 +37,7 @@ export const mockMessages: MessageRecord[] = [
     channel: "zatsudan",
     text: "おはようございます！今日もよろしくお願いします。",
     createdAt: new Date("2026-06-05T09:00:00Z"),
+    postedAt: new Date("2026-06-05T09:00:00Z"),
     order: 0,
   },
   {
@@ -45,6 +46,7 @@ export const mockMessages: MessageRecord[] = [
     channel: "zatsudan",
     text: "おはよう！昨日の件、確認しておきますね。",
     createdAt: new Date("2026-06-05T09:01:00Z"),
+    postedAt: new Date("2026-06-05T09:01:00Z"),
     order: 1,
   },
   {
@@ -53,6 +55,7 @@ export const mockMessages: MessageRecord[] = [
     channel: "zatsudan",
     text: "おはようございます。今日も頑張りましょう！",
     createdAt: new Date("2026-06-05T09:02:00Z"),
+    postedAt: new Date("2026-06-05T09:02:00Z"),
     order: 2,
   },
 ];

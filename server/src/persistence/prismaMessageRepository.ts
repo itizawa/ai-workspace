@@ -1,7 +1,6 @@
-import type { Message } from "@hatchery/common";
 import type { PrismaClient } from "@prisma/client";
 
-import type { MessageRecord, MessageRepository, PlanningMessageInput } from "./messageRepository.js";
+import type { MessageCreateInput, MessageRecord, MessageRepository, PlanningMessageInput } from "./messageRepository.js";
 
 function toMessageRecord(row: {
   id: string;
@@ -9,6 +8,7 @@ function toMessageRecord(row: {
   channel: string;
   text: string;
   createdAt: Date;
+  postedAt: Date;
   order: number;
   proposalTitle: string | null;
   proposalReason: string | null;
@@ -22,6 +22,7 @@ function toMessageRecord(row: {
     channel: row.channel,
     text: row.text,
     createdAt: row.createdAt,
+    postedAt: row.postedAt,
     order: row.order,
     ...(row.proposalTitle != null && { proposalTitle: row.proposalTitle }),
     ...(row.proposalReason != null && { proposalReason: row.proposalReason }),
@@ -42,7 +43,8 @@ export class PrismaMessageRepository implements MessageRepository {
     return rows.map(toMessageRecord);
   }
 
-  async createMany(input: Message[]): Promise<MessageRecord[]> {
+  async createMany(input: MessageCreateInput[]): Promise<MessageRecord[]> {
+    const now = new Date();
     const rows = await this.prisma.$transaction(
       input.map((m, index) =>
         this.prisma.message.create({
@@ -50,6 +52,7 @@ export class PrismaMessageRepository implements MessageRepository {
             speaker: m.speaker,
             channel: m.channel,
             text: m.text,
+            postedAt: m.postedAt ?? now,
             order: index,
           },
         }),
@@ -59,9 +62,10 @@ export class PrismaMessageRepository implements MessageRepository {
   }
 
   async listByChannel(channelId: string): Promise<MessageRecord[]> {
+    const now = new Date();
     const rows = await this.prisma.message.findMany({
-      where: { channel: channelId },
-      orderBy: [{ createdAt: "asc" }, { order: "asc" }],
+      where: { channel: channelId, postedAt: { lte: now } },
+      orderBy: [{ postedAt: "asc" }, { order: "asc" }],
     });
     return rows.map(toMessageRecord);
   }

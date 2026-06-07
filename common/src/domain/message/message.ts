@@ -42,6 +42,8 @@ export type CreateChannelMessage = z.infer<typeof CreateChannelMessageSchema>;
 export const MessageRecordSchema = MessageSchema.extend({
   id: z.string().min(1),
   createdAt: z.date(),
+  /** メッセージを表示する日時（#183）。この時刻を過ぎたメッセージのみ一覧に返される。 */
+  postedAt: z.date(),
   order: z.number().int().nonnegative(),
   proposalTitle: z.string().optional(),
   proposalReason: z.string().optional(),
