@@ -1,5 +1,5 @@
-import Box from "@mui/material/Box";
-import Skeleton from "@mui/material/Skeleton";
+import { Box, Skeleton } from "./uiParts";
+
 import type { ReactElement } from "react";
 
 const MESSAGE_SKELETON_COUNT = 4;

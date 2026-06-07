@@ -77,10 +77,32 @@ export default tseslint.config(
     },
   },
   // 補助: パッケージ名（@hatchery/*）経由の依存方向違反をワークスペースごとに塞ぐ。
+  // MUI 腐敗防止層: @mui/material への直接 import も禁止し uiParts 経由を強制する（Issue #178）。
   {
     files: ["client/**/*.{ts,tsx}"],
     rules: {
-      "no-restricted-imports": ["error", { patterns: ["@hatchery/server", "@hatchery/server/*"] }],
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            "@hatchery/server",
+            "@hatchery/server/*",
+            "@mui/material",
+            "@mui/material/*",
+          ],
+        },
+      ],
+    },
+  },
+  // 例外: uiParts 自身は MUI を直接 import してよい（ACL 層）。theme.ts / AppRoot.tsx はテーマ基盤として許可。
+  {
+    files: [
+      "client/src/components/uiParts/**",
+      "client/src/theme.ts",
+      "client/src/AppRoot.tsx",
+    ],
+    rules: {
+      "no-restricted-imports": "off",
     },
   },
   {

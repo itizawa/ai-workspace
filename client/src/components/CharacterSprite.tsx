@@ -1,4 +1,5 @@
-import Box from "@mui/material/Box";
+import { Box } from "./uiParts";
+
 import type { Employee } from "@hatchery/common";
 import type { KeyboardEvent, ReactElement } from "react";
 
