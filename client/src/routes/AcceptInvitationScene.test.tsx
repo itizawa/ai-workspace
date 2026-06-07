@@ -125,6 +125,23 @@ describe("招待リンク受諾画面（#134）", () => {
       expect(screen.queryByLabelText(/ログイン ID/)).not.toBeInTheDocument();
     });
 
+    it("500 サーバーエラーのとき「サーバーエラー」メッセージが表示される（notfound とは別メッセージ）", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockImplementation((input: RequestInfo | URL) => {
+          const url = input instanceof Request ? input.url : String(input);
+          if (url.includes("/api/auth/me")) return Promise.resolve(jsonResponse(401, undefined));
+          if (url.includes("/api/invitations/")) return Promise.resolve(jsonResponse(500, { error: "Server Error" }));
+          return Promise.resolve(jsonResponse(200, {}));
+        }),
+      );
+      renderApp("/invite/errtoken");
+
+      expect(await screen.findByText(/サーバーエラー/)).toBeInTheDocument();
+      expect(screen.queryByText(/無効です。招待リンクが正しいか/)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/ログイン ID/)).not.toBeInTheDocument();
+    });
+
     it("無効メッセージの画面にログインへのリンクが表示される", async () => {
       stubFetch({ isLoggedIn: false, invitationStatus: "used" });
       renderApp("/invite/used-token");

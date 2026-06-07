@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { InvitationPublicSchema, InvitationSchema } from "@hatchery/common";
+import { AuthUserSchema, InvitationPublicSchema, InvitationSchema } from "@hatchery/common";
 import type { AcceptInvitation, AuthUser, Invitation, InvitationPublic } from "@hatchery/common";
 
 import { AUTH_ME_QUERY_KEY } from "./auth.js";
@@ -95,7 +95,7 @@ export async function acceptInvitation(token: string, body: AcceptInvitation): P
       error,
     );
   }
-  return data as AuthUser;
+  return AuthUserSchema.parse(data);
 }
 
 export function useInvitation(token: string) {

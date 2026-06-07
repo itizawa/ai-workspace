@@ -56,11 +56,13 @@ async function requireAdminRoute(): Promise<void> {
 }
 
 /**
- * サイドバーなしで描画する auth 系ルートのパスプレフィックス一覧。
+ * サイドバーなしで描画する auth 系ルートかどうかを判定する。
+ * /login は完全一致、/invite/ は動的パスのためプレフィックス一致で判定する。
  * 新しい auth ルートを追加した場合はここにも追記すること。
- * /invite/ は動的パスのためプレフィックス一致で判定する。
  */
-const AUTH_PATH_PREFIXES = ["/login", "/invite/"] as const satisfies readonly string[];
+function isAuthLayout(pathname: string): boolean {
+  return pathname === "/login" || pathname.startsWith("/invite/");
+}
 
 /**
  * アプリ全体のシェル。現在のパスに応じて
@@ -70,7 +72,7 @@ const AUTH_PATH_PREFIXES = ["/login", "/invite/"] as const satisfies readonly st
  */
 function AppShell(): ReactElement {
   const { pathname } = useLocation();
-  if (AUTH_PATH_PREFIXES.some((p) => pathname.startsWith(p))) {
+  if (isAuthLayout(pathname)) {
     return <AuthLayout />;
   }
   return <RootLayout />;

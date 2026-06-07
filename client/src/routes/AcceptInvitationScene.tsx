@@ -20,13 +20,14 @@ import { useAuth } from "../api/auth.js";
 import { ApiError, useAcceptInvitation, useInvitation } from "../api/invitations.js";
 import type { InvitationStatus } from "@hatchery/common";
 
-function InvalidMessage({ status }: { status: InvitationStatus | "notfound" }): ReactElement {
-  const messages: Record<InvitationStatus | "notfound", string> = {
+function InvalidMessage({ status }: { status: InvitationStatus | "notfound" | "error" }): ReactElement {
+  const messages: Record<InvitationStatus | "notfound" | "error", string> = {
     used: "この招待リンクはすでに使用済みです。",
     expired: "この招待リンクは有効期限が切れています。",
     revoked: "この招待リンクは無効化されています。",
     active: "招待リンクが無効です。",
     notfound: "このリンクは無効です。招待リンクが正しいか確認してください。",
+    error: "サーバーエラーが発生しました。しばらく待ってから再度お試しください。",
   };
 
   return (
@@ -87,7 +88,11 @@ export function AcceptInvitationScene(): ReactElement {
     );
   }
 
-  if (isInvitationError || invitation === null) {
+  if (isInvitationError) {
+    return <InvalidMessage status="error" />;
+  }
+
+  if (invitation === null) {
     return <InvalidMessage status="notfound" />;
   }
 
@@ -179,7 +184,7 @@ export function AcceptInvitationScene(): ReactElement {
           />
         )}
       </form.Field>
-      <Button type="submit" variant="contained" fullWidth>
+      <Button type="submit" variant="contained" fullWidth disabled={form.state.isSubmitting || acceptMutation.isPending}>
         登録する
       </Button>
     </Box>
