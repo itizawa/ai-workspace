@@ -62,10 +62,20 @@ describe("安全ゲート (受け入れ条件 #5)", () => {
 });
 
 describe("エラー隔離 (受け入れ条件 #6)", () => {
-  it("df:blocked になっても次に進むエラー隔離が明記される", () => {
+  it("blocked になっても次に進むエラー隔離が明記される", () => {
     const body = readGoalCommand();
-    expect(body).toContain("df:blocked");
-    expect(body).toMatch(/df:blocked.*になっても.*次.*進む/);
+    expect(body).toMatch(/blocked.*になっても.*次.*進む/);
+  });
+
+  it("ブロックは df:* 状態ラベルに依存せず Issue コメント + マイルストーン解除で隔離する", () => {
+    const body = readGoalCommand();
+    // 廃止済みの df:* 状態ラベルを使わない
+    expect(body).not.toContain("df:blocked");
+    expect(body).not.toContain("df:todo");
+    expect(body).not.toContain("df:dev-review");
+    expect(body).not.toContain("df:done");
+    // ブロック時はマイルストーン解除で自動選択対象外にする
+    expect(body).toMatch(/マイルストーン.*解除/);
   });
 });
 
