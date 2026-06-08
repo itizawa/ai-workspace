@@ -2,13 +2,11 @@ import { Box, Link } from "../components/uiParts";
 
 import { isAdmin } from "@hatchery/common";
 import { Link as RouterLink, Outlet } from "@tanstack/react-router";
-import { Suspense, type ReactElement } from "react";
+import type { ReactElement } from "react";
 
 import { useAuth } from "../api/auth.js";
-import { AddChannelForm } from "../components/AddChannelForm";
 import { AppHeader } from "../components/AppHeader";
-import { ChannelList } from "../components/ChannelList";
-import { ChannelListSkeleton } from "../components/ChannelListSkeleton";
+import { SidebarChannelSection } from "../components/SidebarChannelSection";
 import { SLACK_COLORS } from "../theme.js";
 
 /**
@@ -36,10 +34,7 @@ export const RootLayout = (): ReactElement => {
             overflowY: "auto",
           }}
         >
-          <Suspense fallback={<ChannelListSkeleton />}>
-            <ChannelList />
-          </Suspense>
-          <AddChannelForm />
+          <SidebarChannelSection />
           <Box sx={{ mt: 2 }}>
             <Link component={RouterLink} to="/office" sx={{ color: SLACK_COLORS.sidebarText }} underline="hover">
               仮想オフィス
