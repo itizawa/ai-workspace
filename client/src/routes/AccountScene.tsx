@@ -3,7 +3,7 @@ import { Alert, Box, Button, Skeleton, Snackbar, TextField, Typography } from ".
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type ReactElement, useEffect, useRef, useState } from "react";
 
-import { DISPLAY_NAME_MAX_LENGTH } from "@hatchery/common";
+import { AVATAR_URL_MAX_LENGTH, DISPLAY_NAME_MAX_LENGTH } from "@hatchery/common";
 import * as authApi from "../api/auth.js";
 
 export const AccountScene = (): ReactElement => {
@@ -74,6 +74,7 @@ export const AccountScene = (): ReactElement => {
           fullWidth
           size="small"
           placeholder="https://example.com/avatar.png"
+          inputProps={{ maxLength: AVATAR_URL_MAX_LENGTH }}
         />
         <Button
           variant="contained"
