@@ -2,5 +2,6 @@ export function isShallowDirty(
   initial: Record<string, unknown>,
   current: Record<string, unknown>
 ): boolean {
-  return Object.keys(current).some((key) => current[key] !== initial[key]);
+  const keys = new Set([...Object.keys(initial), ...Object.keys(current)]);
+  return Array.from(keys).some((key) => current[key] !== initial[key]);
 }

@@ -115,10 +115,15 @@ describe("プロフィール編集フォーム (#51)", () => {
   });
 
   it("displayName が空のとき保存ボタンが無効化される", async () => {
-    vi.spyOn(authApi, "fetchMe").mockResolvedValue({ id: "user1", displayName: "Alice" });
+    const mockUser = { id: "user1", displayName: "Alice" };
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue(mockUser);
+    vi.spyOn(authApi, "useAuth").mockReturnValue({
+      data: mockUser,
+      isLoading: false,
+    } as ReturnType<typeof authApi.useAuth>);
     renderApp("/account");
 
-    const input = await screen.findByRole("textbox", { name: /表示名/ });
+    const input = await screen.findByDisplayValue("Alice");
     await userEvent.clear(input);
 
     const button = screen.getByRole("button", { name: /保存/ });
