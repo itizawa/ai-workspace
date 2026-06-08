@@ -172,8 +172,7 @@ describe("プロフィール編集フォーム (#51)", () => {
     await userEvent.tab(); // blur してバリデーションを発火
 
     await waitFor(() => {
-      const button = screen.getByRole("button", { name: /保存/ });
-      const hasError = screen.queryByText(/URL/) !== null || button.hasAttribute("disabled");
+      const hasError = screen.queryByText(/有効な URL/) !== null;
       expect(hasError).toBe(true);
     });
   });
