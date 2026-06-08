@@ -14,7 +14,6 @@ function jsonResponse(status: number, body?: unknown): Response {
   });
 }
 
-/** グローバル fetch をスタブしてログイン状態を制御する。 */
 function stubFetch(isLoggedIn: boolean) {
   const user = isLoggedIn ? { id: "user1", displayName: "Alice" } : undefined;
   vi.stubGlobal(
@@ -44,7 +43,7 @@ function renderApp(initialPath: string) {
   );
 }
 
-describe("UserFooter", () => {
+describe("AppHeader", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -142,7 +141,6 @@ describe("UserFooter", () => {
     stubFetch(false);
     renderApp("/");
 
-    // UserFooter は user=null のとき null を返すため "Alice" は表示されない。
     await waitFor(() => {
       expect(screen.queryByText("Alice")).not.toBeInTheDocument();
     });
@@ -152,9 +150,15 @@ describe("UserFooter", () => {
     stubFetch(false);
     renderApp("/");
 
-    // UserFooter は user=null のとき null を返すためトリガーボタンは表示されない。
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: /ユーザーメニュー/ })).not.toBeInTheDocument();
     });
+  });
+
+  it("Hatchery ブランド名がヘッダーに表示される", async () => {
+    stubFetch(true);
+    renderApp("/");
+
+    expect(await screen.findByRole("link", { name: /Hatchery/ })).toBeInTheDocument();
   });
 });
