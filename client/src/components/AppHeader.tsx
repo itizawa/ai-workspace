@@ -65,6 +65,23 @@ export const AppHeader = ({ onMenuOpen }: AppHeaderProps): ReactElement => {
       </Link>
 
       <Box sx={{ ml: "auto" }}>
+        {!user && (
+          <Link
+            component={RouterLink}
+            to="/login"
+            underline="none"
+            sx={{
+              color: SLACK_COLORS.sidebarText,
+              fontWeight: "bold",
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 1,
+              "&:hover": { bgcolor: "rgba(255,255,255,0.1)" },
+            }}
+          >
+            ログイン
+          </Link>
+        )}
         {user && (
           <>
             <ButtonBase

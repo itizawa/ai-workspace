@@ -103,7 +103,7 @@ const indexRoute = createRoute({
   beforeLoad: requireAuth,
 });
 
-/** チャンネル別ビューの枠（/channels/$channelId）。未ログインまたはネットワークエラーの場合は /login へリダイレクト。 */
+/** チャンネル別ビューの枠（/channels/$channelId）。未認証ユーザーも閲覧可能（#255）。 */
 const channelRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/channels/$channelId",
@@ -112,7 +112,6 @@ const channelRoute = createRoute({
       <LazyChannelScene />
     </Suspense>
   ),
-  beforeLoad: requireAuth,
 });
 
 /** ログイン画面（/login）。サイドバーなしの AuthLayout 経由で描画する。 */
