@@ -132,6 +132,19 @@ describe("設定画面タブ URL 同期・アクセシビリティ（#67）", ()
   });
 });
 
+describe("APIキー入力欄 autocomplete 属性（#180）", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue({ id: "user1", displayName: "Alice", role: "admin" });
+  });
+
+  it("Claude API キー欄に autocomplete='off' が設定されている", async () => {
+    renderApp("/admin?tab=api-token", { id: "user1", displayName: "Alice", role: "admin" });
+    const apiKeyInput = await screen.findByLabelText(/Claude API キー/);
+    expect(apiKeyInput).toHaveAttribute("autocomplete", "off");
+  });
+});
+
 describe("招待タブ（#133）", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
