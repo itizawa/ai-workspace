@@ -59,7 +59,7 @@ describe("AppHeader", () => {
     expect(await screen.findByText("Alice")).toBeInTheDocument();
   });
 
-  it("初期表示時にアカウント設定が DOM 上に存在しない（Menu は閉じている）", async () => {
+  it("初期表示時にアカウント設定が DOM 上に存在しない（Menu は閃じている）", async () => {
     stubFetch(true);
     renderApp("/");
 
@@ -68,7 +68,7 @@ describe("AppHeader", () => {
     expect(screen.queryByRole("menuitem", { name: /アカウント設定/ })).not.toBeInTheDocument();
   });
 
-  it("初期表示時にログアウト menuitem が DOM 上に存在しない（Menu は閉じている）", async () => {
+  it("初期表示時にログアウト menuitem が DOM 上に存在しない（Menu は閃じている）", async () => {
     stubFetch(true);
     renderApp("/");
 
@@ -160,5 +160,21 @@ describe("AppHeader", () => {
     renderApp("/");
 
     expect(await screen.findByRole("link", { name: /Hatchery/ })).toBeInTheDocument();
+  });
+
+  // Issue #255: 未認証ユーザーへのログイン誘導 UI
+  it("未ログイン時にヘッダーにログインリンクが表示される", async () => {
+    stubFetch(false);
+    renderApp("/channels/zatsudan");
+
+    expect(await screen.findByRole("link", { name: /ログイン/ })).toBeInTheDocument();
+  });
+
+  it("ログイン済み時にヘッダーにログインリンクが表示されない", async () => {
+    stubFetch(true);
+    renderApp("/");
+
+    await screen.findByRole("button", { name: /ユーザーメニュー/ });
+    expect(screen.queryByRole("link", { name: /ログイン/ })).not.toBeInTheDocument();
   });
 });

@@ -13,7 +13,7 @@ export interface AppHeaderProps {
 }
 
 export const AppHeader = ({ onMenuOpen }: AppHeaderProps): ReactElement => {
-  const { data: user } = useAuth();
+  const { data: user, isPending } = useAuth();
   const { mutate: logout } = useLogout();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -65,7 +65,7 @@ export const AppHeader = ({ onMenuOpen }: AppHeaderProps): ReactElement => {
       </Link>
 
       <Box sx={{ ml: "auto" }}>
-        {user && (
+        {!isPending && (user ? (
           <>
             <ButtonBase
               onClick={handleOpen}
@@ -108,7 +108,23 @@ export const AppHeader = ({ onMenuOpen }: AppHeaderProps): ReactElement => {
               <MenuItem onClick={handleLogout}>ログアウト</MenuItem>
             </Menu>
           </>
-        )}
+        ) : (
+          <Link
+            component={RouterLink}
+            to="/login"
+            underline="none"
+            sx={{
+              color: SLACK_COLORS.sidebarText,
+              fontWeight: "bold",
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 1,
+              "&:hover": { bgcolor: "rgba(255,255,255,0.1)" },
+            }}
+          >
+            ログイン
+          </Link>
+        ))}
       </Box>
     </Box>
   );
