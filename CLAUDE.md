@@ -96,6 +96,15 @@ common: Zod スキーマ → server: zod-to-openapi で openapi.json 生成 → 
 上限値は表示・DB・UX を考慮して各フィールドごとに決める（例: チャンネル名 50 文字）。
 `.max()` が無い `z.string()` は不正データ・表示崩れ・DB 負荷の原因になるため、レビューで指摘対象とする。
 
+## フォーム規約
+
+**フォームの状態管理は `@tanstack/react-form`（`useForm` / `form.Field`）を使うこと**（#262）。
+
+- `useState` によるフォームフィールドの自前管理・自前 `isDirty` 実装は禁止。
+- バリデーション・ダーティ検知・送信ハンドリングはすべて `useForm` に委ねる。
+- 参照実装: `client/src/routes/LoginScene.tsx`（`useForm` + `form.Field` + MUI `TextField` の連携例）。
+- 違反（生の `useState` によるフォーム管理・自前 isDirty 等）はレビューで指摘対象とする。
+
 ## ADR の追加・更新
 
 技術的な決定は `docs/adr/NNNN-kebab-case-title.md`（連番 4 桁）に MADR 風フォーマットで 1 ファイル 1 決定で残す。新規は `docs/adr/template.md` をコピーし、`docs/adr/README.md` の一覧表に行を追加する。

@@ -3,6 +3,7 @@ import { z } from "zod";
 export const LOGIN_ID_MAX_LENGTH = 50;
 export const PASSWORD_MAX_LENGTH = 100;
 export const DISPLAY_NAME_MAX_LENGTH = 100;
+/** プロフィール画像 URL の最大文字数（#202）。URL の事実上の上限（RFC 準拠の実用値）。 */
 export const AVATAR_URL_MAX_LENGTH = 2048;
 
 export const LoginRequestSchema = z.object({

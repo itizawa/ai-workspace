@@ -207,23 +207,17 @@ describe("UpdateProfileSchema (#51)", () => {
     expect(result.success).toBe(false);
   });
 
-  it("avatarUrl が AVATAR_URL_MAX_LENGTH 文字ちょうどなら成功する（#187）", () => {
-    const suffix = "https://example.com/";
-    const padLength = AVATAR_URL_MAX_LENGTH - suffix.length;
-    const result = UpdateProfileSchema.safeParse({
-      displayName: "Alice",
-      avatarUrl: suffix + "a".repeat(padLength),
-    });
+  it("avatarUrl が AVATAR_URL_MAX_LENGTH 文字ちょうどなら成功する（#202）", () => {
+    const base = "https://example.com/";
+    const path = "a".repeat(AVATAR_URL_MAX_LENGTH - base.length);
+    const result = UpdateProfileSchema.safeParse({ displayName: "Alice", avatarUrl: base + path });
     expect(result.success).toBe(true);
   });
 
-  it("avatarUrl が AVATAR_URL_MAX_LENGTH + 1 文字なら失敗する（#187）", () => {
-    const suffix = "https://example.com/";
-    const padLength = AVATAR_URL_MAX_LENGTH - suffix.length + 1;
-    const result = UpdateProfileSchema.safeParse({
-      displayName: "Alice",
-      avatarUrl: suffix + "a".repeat(padLength),
-    });
+  it("avatarUrl が AVATAR_URL_MAX_LENGTH + 1 文字なら失敗する（#202）", () => {
+    const base = "https://example.com/";
+    const path = "a".repeat(AVATAR_URL_MAX_LENGTH - base.length + 1);
+    const result = UpdateProfileSchema.safeParse({ displayName: "Alice", avatarUrl: base + path });
     expect(result.success).toBe(false);
   });
 });
