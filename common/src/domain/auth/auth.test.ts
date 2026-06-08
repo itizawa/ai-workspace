@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   AuthUserSchema,
+  AVATAR_URL_MAX_LENGTH,
   DISPLAY_NAME_MAX_LENGTH,
   LOGIN_ID_MAX_LENGTH,
   LoginRequestSchema,
@@ -203,6 +204,26 @@ describe("UpdateProfileSchema (#51)", () => {
 
   it("displayName が DISPLAY_NAME_MAX_LENGTH + 1 文字なら失敗する（#91）", () => {
     const result = UpdateProfileSchema.safeParse({ displayName: "a".repeat(DISPLAY_NAME_MAX_LENGTH + 1) });
+    expect(result.success).toBe(false);
+  });
+
+  it("avatarUrl が AVATAR_URL_MAX_LENGTH 文字ちょうどなら成功する（#187）", () => {
+    const suffix = "https://example.com/";
+    const padLength = AVATAR_URL_MAX_LENGTH - suffix.length;
+    const result = UpdateProfileSchema.safeParse({
+      displayName: "Alice",
+      avatarUrl: suffix + "a".repeat(padLength),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("avatarUrl が AVATAR_URL_MAX_LENGTH + 1 文字なら失敗する（#187）", () => {
+    const suffix = "https://example.com/";
+    const padLength = AVATAR_URL_MAX_LENGTH - suffix.length + 1;
+    const result = UpdateProfileSchema.safeParse({
+      displayName: "Alice",
+      avatarUrl: suffix + "a".repeat(padLength),
+    });
     expect(result.success).toBe(false);
   });
 });
