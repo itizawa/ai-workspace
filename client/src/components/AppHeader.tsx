@@ -7,6 +7,8 @@ import { type ReactElement, useState } from "react";
 import { useAuth, useLogout } from "../api/auth.js";
 import { SLACK_COLORS } from "../theme.js";
 
+const ACCOUNT_ICON_SIZE = 32;
+
 export interface AppHeaderProps {
   /** モバイル幅でサイドバードロワーを開くコールバック。未指定の場合はハンバーガーボタンを表示しない。 */
   onMenuOpen?: () => void;
@@ -68,8 +70,8 @@ export const AppHeader = ({ onMenuOpen }: AppHeaderProps): ReactElement => {
         {isPending ? (
           <Skeleton
             variant="circular"
-            width={32}
-            height={32}
+            width={ACCOUNT_ICON_SIZE}
+            height={ACCOUNT_ICON_SIZE}
             sx={{ bgcolor: "rgba(255,255,255,0.2)" }}
             data-testid="account-skeleton"
           />
@@ -90,7 +92,7 @@ export const AppHeader = ({ onMenuOpen }: AppHeaderProps): ReactElement => {
               }}
             >
               <Avatar
-                sx={{ width: 32, height: 32, bgcolor: SLACK_COLORS.blue, fontSize: 14 }}
+                sx={{ width: ACCOUNT_ICON_SIZE, height: ACCOUNT_ICON_SIZE, bgcolor: SLACK_COLORS.blue, fontSize: 14 }}
               >
                 {user.displayName.charAt(0).toUpperCase()}
               </Avatar>
