@@ -1,5 +1,5 @@
 import MenuIcon from "@mui/icons-material/Menu";
-import { Avatar, Box, ButtonBase, IconButton, Link, Menu, MenuItem, Typography } from "./uiParts";
+import { Avatar, Box, ButtonBase, IconButton, Link, Menu, MenuItem, Skeleton } from "./uiParts";
 
 import { Link as RouterLink, useNavigate } from "@tanstack/react-router";
 import { type ReactElement, useState } from "react";
@@ -65,7 +65,15 @@ export const AppHeader = ({ onMenuOpen }: AppHeaderProps): ReactElement => {
       </Link>
 
       <Box sx={{ ml: "auto" }}>
-        {!isPending && (user ? (
+        {isPending ? (
+          <Skeleton
+            variant="circular"
+            width={32}
+            height={32}
+            sx={{ bgcolor: "rgba(255,255,255,0.2)" }}
+            data-testid="account-skeleton"
+          />
+        ) : user ? (
           <>
             <ButtonBase
               onClick={handleOpen}
@@ -76,7 +84,6 @@ export const AppHeader = ({ onMenuOpen }: AppHeaderProps): ReactElement => {
               sx={{
                 display: "flex",
                 alignItems: "center",
-                gap: 1,
                 borderRadius: 1,
                 p: 0.5,
                 "&:hover": { bgcolor: "rgba(255,255,255,0.1)" },
@@ -87,12 +94,6 @@ export const AppHeader = ({ onMenuOpen }: AppHeaderProps): ReactElement => {
               >
                 {user.displayName.charAt(0).toUpperCase()}
               </Avatar>
-              <Typography
-                variant="body2"
-                sx={{ color: SLACK_COLORS.sidebarText, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-              >
-                {user.displayName}
-              </Typography>
             </ButtonBase>
             <Menu
               id="app-header-user-menu"
@@ -124,7 +125,7 @@ export const AppHeader = ({ onMenuOpen }: AppHeaderProps): ReactElement => {
           >
             ログイン
           </Link>
-        ))}
+        )}
       </Box>
     </Box>
   );
