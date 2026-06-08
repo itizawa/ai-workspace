@@ -12,6 +12,6 @@ describe("MainContentSkeleton（#241）", () => {
   it("スケルトン要素（本文行）を描画する", () => {
     render(<MainContentSkeleton />);
     const items = screen.getAllByTestId("main-content-skeleton-item");
-    expect(items.length).toBeGreaterThanOrEqual(3);
+    expect(items).toHaveLength(5);
   });
 });
