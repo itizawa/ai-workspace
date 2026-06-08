@@ -3,6 +3,8 @@ import { z } from "zod";
 export const LOGIN_ID_MAX_LENGTH = 50;
 export const PASSWORD_MAX_LENGTH = 100;
 export const DISPLAY_NAME_MAX_LENGTH = 100;
+/** プロフィール画像 URL の最大文字数（#202）。URL の事実上の上限（RFC 準拠の実用値）。 */
+export const AVATAR_URL_MAX_LENGTH = 2048;
 
 export const LoginRequestSchema = z.object({
   // #185: id → loginId にリネーム（サロゲートキー化対応）。
@@ -39,7 +41,7 @@ export function isAdmin(user: Pick<AuthUser, "role">): boolean {
 // #51: PATCH /auth/me リクエストボディ。
 export const UpdateProfileSchema = z.object({
   displayName: z.string().min(1).max(DISPLAY_NAME_MAX_LENGTH),
-  avatarUrl: z.string().url().optional(),
+  avatarUrl: z.string().url().max(AVATAR_URL_MAX_LENGTH).optional(),
 });
 
 export type UpdateProfile = z.infer<typeof UpdateProfileSchema>;
