@@ -1,5 +1,5 @@
-import { CreateInvitationSchema, NotFoundError, UpdateAppSettingSchema } from "@hatchery/common";
-import { randomBytes } from "crypto";
+import { CreateEmployeeSchema, CreateInvitationSchema, NotFoundError, UpdateAppSettingSchema } from "@hatchery/common";
+import { randomBytes, randomUUID } from "crypto";
 import { Router } from "express";
 
 import { requireAdmin } from "../middleware/requireAdmin.js";
@@ -125,6 +125,27 @@ export function createAdminRouter(
       next(err);
     }
   });
+
+  // Employee 作成（#217）。admin ロール専用。isBot は常に true。
+  router.post(
+    "/employees",
+    validateBody(CreateEmployeeSchema),
+    async (req, res, next) => {
+      try {
+        const input = req.body as { displayName: string; role?: string; personality?: string };
+        const employee = await employeeRepository.create({
+          id: randomUUID(),
+          displayName: input.displayName,
+          role: input.role,
+          personality: input.personality,
+          isBot: true,
+        });
+        res.status(201).json(employee);
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
 
   return router;
 }

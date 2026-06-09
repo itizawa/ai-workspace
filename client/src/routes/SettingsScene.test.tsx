@@ -1,6 +1,5 @@
 import * as invitationsApi from "../api/invitations.js";
 import * as adminApi from "../api/admin.js";
-import * as employeesApi from "../api/employees.js";
 import { DEFAULT_EMPLOYEES } from "@hatchery/common";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
@@ -53,19 +52,17 @@ describe("管理画面（#50）", () => {
     expect(await screen.findByRole("heading", { name: /管理画面/ })).toBeInTheDocument();
   });
 
-  it("管理画面（/admin）のワーカー管理タブに全 AI ボットの表示名が表示される", async () => {
+  it("管理画面（/admin）のワーカー管理タブに「社員を追加」ボタンが表示される（#217）", async () => {
     vi.spyOn(authApi, "fetchMe").mockResolvedValue({ id: "user1", displayName: "Alice", role: "admin" });
-    vi.spyOn(employeesApi, "useBotEmployees").mockReturnValue({
-      data: [...DEFAULT_EMPLOYEES],
+    vi.spyOn(adminApi, "useAdminEmployees").mockReturnValue({
+      data: DEFAULT_EMPLOYEES.map((e) => ({ ...e })),
       isLoading: false,
-    } as ReturnType<typeof employeesApi.useBotEmployees>);
+    } as ReturnType<typeof adminApi.useAdminEmployees>);
     renderApp("/admin");
 
     expect(await screen.findByRole("tab", { name: /ワーカー管理/ })).toBeInTheDocument();
     await waitFor(() => {
-      for (const employee of DEFAULT_EMPLOYEES) {
-        expect(screen.getByText(employee.displayName)).toBeInTheDocument();
-      }
+      expect(screen.getByRole("button", { name: "社員を追加" })).toBeInTheDocument();
     });
   });
 });

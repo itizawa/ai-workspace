@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AppSettingResponse } from "@hatchery/common";
+import type { AppSettingResponse, Employee } from "@hatchery/common";
 
 import { openApiClient } from "./client.js";
+import { BOT_EMPLOYEES_QUERY_KEY } from "./employees.js";
 
 export const ADMIN_SETTINGS_QUERY_KEY = ["admin", "settings"] as const;
+export const ADMIN_EMPLOYEES_QUERY_KEY = ["admin", "employees"] as const;
 
 export type { AppSettingResponse };
 
@@ -66,6 +68,52 @@ export function useDeleteEmployee() {
     onSuccess: () => {
       // 社員一覧を再取得するためキャッシュを無効化
       void queryClient.invalidateQueries({ queryKey: ["employees"] });
+    },
+  });
+}
+
+/** GET /api/employees で isBot=true の Employee 一覧を取得する（管理画面ユーザー一覧用・#217）。 */
+export async function fetchAdminEmployees(): Promise<Employee[]> {
+  const { data, error, response } = await openApiClient.GET("/api/employees", {
+    credentials: "include",
+  });
+  if (error || !response.ok) throw new Error(`GET /api/employees failed: ${response.status}`);
+  return (data ?? []) as unknown as Employee[];
+}
+
+/** POST /api/admin/employees で新規 Employee（isBot=true）を作成する（#217）。 */
+export async function createAdminEmployee(input: {
+  displayName: string;
+  role?: string;
+  personality?: string;
+}): Promise<Employee> {
+  const { data, response } = await openApiClient.POST("/api/admin/employees", {
+    body: input,
+    credentials: "include",
+  });
+  if (!response.ok || !data) throw new Error(`POST /api/admin/employees failed: ${response.status}`);
+  return data as unknown as Employee;
+}
+
+/** 管理画面のユーザー一覧（isBot=true の全 Employee）を取得するフック（#217）。 */
+export function useAdminEmployees() {
+  return useQuery({
+    queryKey: ADMIN_EMPLOYEES_QUERY_KEY,
+    queryFn: fetchAdminEmployees,
+  });
+}
+
+/** 管理画面から新規 AI 社員（isBot=true）を作成するミューテーションフック（#217）。 */
+export function useCreateAdminEmployee() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { displayName: string; role?: string; personality?: string }) =>
+      createAdminEmployee(input),
+    onSuccess: () => {
+      // 管理画面の一覧 + OfficeScene・ChannelScene で共有する Bot Employee キャッシュを両方無効化する。
+      // 両者は同一の GET /api/employees を参照しているが queryKey が異なるため、それぞれ invalidate する。
+      void queryClient.invalidateQueries({ queryKey: ADMIN_EMPLOYEES_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: BOT_EMPLOYEES_QUERY_KEY });
     },
   });
 }
