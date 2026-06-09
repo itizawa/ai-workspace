@@ -1,6 +1,6 @@
 import { findChannelById, type Channel } from "@hatchery/common";
 import { useParams } from "@tanstack/react-router";
-import { useEffect, useState, type ReactElement } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 
 import { useAuth } from "../api/auth.js";
 import { useChannelMessages, useChannels, usePostChannelMessage } from "../api/channels.js";
@@ -39,16 +39,21 @@ export const ChannelScene = (): ReactElement => {
   const { mutate: postMessage, isPending } = usePostChannelMessage(id);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { visible: headerVisible, onScroll, reset: resetScroll } = useHideOnScroll();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // TanStack Router は channelId が変わっても同一コンポーネントインスタンスを再利用するため
   // useState / useRef は自動リセットされない。チャンネル切り替え時に明示的にリセットする。
+  // DOM の scrollTop もリセットしないと prevScrollTopRef(=0) との乖離でヘッダが誤非表示になる。
   useEffect(() => {
     resetScroll();
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
   }, [id, resetScroll]);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <Box sx={{ flex: 1, overflow: "auto" }} onScroll={onScroll}>
+      <Box ref={scrollContainerRef} sx={{ flex: 1, overflow: "auto" }} onScroll={onScroll}>
         <ChannelView
           channel={channel}
           messages={messages}
