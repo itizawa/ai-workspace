@@ -35,8 +35,8 @@ export interface RunAiMessageBatchDeps {
 }
 
 /**
- * 定時バッチ本体（#53）。zatsudan タイプの各チャンネルで、所属する AI 社員（isBot=true）の
- * 掛け合い会話を 1 API コールで生成・検証し、channel 紐づきで永続化する。
+ * 定時バッチ本体（#53 / #284）。goal.type='chat' の各チャンネルで、所属する AI 社員（isBot=true）の
+ * 掛け合い会話を 1 API コールで生成・検証し、channel 紐づきで永続化する（ADR-0016）。
  * Express を一切 import しない＝API プロセスと独立に起動できる（ADR-0004 / ADR-0009）。
  *
  * エラーハンドリング:
@@ -54,7 +54,7 @@ export async function runAiMessageBatch(deps: RunAiMessageBatchDeps): Promise<Me
   const recentLimit = deps.recentLimit ?? DEFAULT_RECENT_LIMIT;
 
   const channels = await deps.channelRepo.list();
-  const zatsudanChannels = channels.filter((c) => c.type === "zatsudan");
+  const zatsudanChannels = channels.filter((c) => c.goal.type === "chat");
 
   const saved: MessageRecord[] = [];
   const errors: string[] = [];
