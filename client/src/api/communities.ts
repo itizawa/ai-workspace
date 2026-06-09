@@ -36,9 +36,12 @@ export const communitySubscriptionQueryKey = (slug: string) =>
 
 // ─── 管理者向け API 関数（/api/admin/communities）─────────────────────────
 
-/** GET /api/admin/communities — コミュニティ一覧を取得する（admin のみ）。 */
+/** GET /api/admin/communities — コミュニティ一覧を取得する（admin のみ）。
+ * NOTE: このエンドポイントは openapi.gen.ts に未登録（#305 マージ待ち）のため as any で呼ぶ。
+ */
 export async function fetchAdminCommunities(): Promise<AdminCommunity[]> {
-  const { data, error, response } = await openApiClient.GET("/api/admin/communities", {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error, response } = await (openApiClient as any).GET("/api/admin/communities", {
     credentials: "include",
   });
   if (error || !response.ok || !data)
@@ -54,9 +57,12 @@ export async function fetchAdminCommunities(): Promise<AdminCommunity[]> {
 /** 後方互換: CommunitiesTab.tsx などが参照する fetchCommunities は管理者向けを指す。 */
 export const fetchCommunities = fetchAdminCommunities;
 
-/** POST /api/admin/communities — コミュニティを作成する（admin のみ）。 */
+/** POST /api/admin/communities — コミュニティを作成する（admin のみ）。
+ * NOTE: このエンドポイントは openapi.gen.ts に未登録（#305 マージ待ち）のため as any で呼ぶ。
+ */
 export async function createCommunity(input: CreateCommunityInput): Promise<AdminCommunity> {
-  const { data, error, response } = await openApiClient.POST("/api/admin/communities", {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error, response } = await (openApiClient as any).POST("/api/admin/communities", {
     body: input,
     credentials: "include",
   });
@@ -68,12 +74,15 @@ export async function createCommunity(input: CreateCommunityInput): Promise<Admi
   });
 }
 
-/** PATCH /api/admin/communities/:id — コミュニティを更新する（admin のみ）。 */
+/** PATCH /api/admin/communities/:id — コミュニティを更新する（admin のみ）。
+ * NOTE: このエンドポイントは openapi.gen.ts に未登録（#305 マージ待ち）のため as any で呼ぶ。
+ */
 export async function updateCommunity(
   id: string,
   input: UpdateCommunityInput,
 ): Promise<AdminCommunity> {
-  const { data, error, response } = await openApiClient.PATCH("/api/admin/communities/{id}", {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error, response } = await (openApiClient as any).PATCH("/api/admin/communities/{id}", {
     params: { path: { id } },
     body: input,
     credentials: "include",
