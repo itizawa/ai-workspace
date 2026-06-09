@@ -100,6 +100,26 @@ describe("InMemoryEmployeeRepository (#38)", () => {
     });
   });
 
+  describe("listAllBotEmployees (#218)", () => {
+    it("論理削除済みも含む isBot=true の Employee を全件返す", async () => {
+      const repo = new InMemoryEmployeeRepository([
+        { id: "bot1", displayName: "Bot", role: null, isBot: true, personality: null },
+        { id: "bot2", displayName: "DeletedBot", role: null, isBot: true, personality: null, deletedAt: new Date() },
+        { id: "user1", displayName: "User", role: null, isBot: false, personality: null },
+      ]);
+      const list = await repo.listAllBotEmployees();
+      expect(list.map((e) => e.id).sort()).toEqual(["bot1", "bot2"]);
+    });
+
+    it("isBot=false は含まれない", async () => {
+      const repo = new InMemoryEmployeeRepository([
+        { id: "user1", displayName: "User", role: null, isBot: false, personality: null },
+      ]);
+      const list = await repo.listAllBotEmployees();
+      expect(list).toHaveLength(0);
+    });
+  });
+
   describe("softDelete (#218)", () => {
     it("存在する Employee を論理削除すると deletedAt が設定される", async () => {
       const repo = new InMemoryEmployeeRepository(seed);

@@ -19,6 +19,8 @@ export const EmployeeSchema = z.object({
   personality: z.string().max(500).optional(),
   // #220: 社員の画像 URL（任意）。#204 でアップロード基盤実装後に設定値が入る。
   imageUrl: z.string().url().max(EMPLOYEE_IMAGE_URL_MAX_LENGTH).optional(),
+  // #204: GCS アップロード画像のアバター URL（任意）。2048 文字以内。
+  avatarUrl: z.string().url().max(2048).optional(),
   // #218: 論理削除日時（任意）。null=有効、値=削除済み（ISO 文字列 or Date）。
   deletedAt: z.union([z.string().datetime(), z.date()]).nullable().optional(),
 });

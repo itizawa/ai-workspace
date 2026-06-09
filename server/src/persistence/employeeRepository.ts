@@ -17,8 +17,10 @@ export interface EmployeeRepository {
   update(id: string, input: UpdateEmployeeInput): Promise<EmployeeRecord | null>;
   /** 複数 id の Employee をまとめて取得する。存在しない id は除外する（#53・定時バッチの発言者解決）。 */
   listByIds(ids: string[]): Promise<EmployeeRecord[]>;
-  /** isBot=true の Employee を全件取得する（#240・仮想オフィス用）。 */
+  /** isBot=true の Employee を全件取得する（#240・仮想オフィス用）。論理削除済みは除外。 */
   listBotEmployees(): Promise<EmployeeRecord[]>;
+  /** isBot=true の Employee を論理削除済みも含めて全件取得する（#218・メッセージ発言者名解決用）。 */
+  listAllBotEmployees(): Promise<EmployeeRecord[]>;
   /** Employee を論理削除する（#218）。deletedAt をセットする。対象が存在しない場合は null を返す。 */
   softDelete(id: string): Promise<EmployeeRecord | null>;
   /** 論理削除済み含む Employee を id で取得する（#218・削除後の確認用）。 */
@@ -55,6 +57,10 @@ export class InMemoryEmployeeRepository implements EmployeeRepository {
 
   async listBotEmployees(): Promise<EmployeeRecord[]> {
     return this.employees.filter((e) => e.isBot && e.deletedAt === null).map((e) => ({ ...e }));
+  }
+
+  async listAllBotEmployees(): Promise<EmployeeRecord[]> {
+    return this.employees.filter((e) => e.isBot).map((e) => ({ ...e }));
   }
 
   async softDelete(id: string): Promise<EmployeeRecord | null> {

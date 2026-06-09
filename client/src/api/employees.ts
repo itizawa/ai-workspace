@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { openApiClient } from "./client.js";
 
 export const BOT_EMPLOYEES_QUERY_KEY = ["employees", "bots"] as const;
+export const BOT_EMPLOYEES_ALL_QUERY_KEY = ["employees", "bots", "all"] as const;
 
 /**
  * GET /api/employees を openapi-fetch 経由で取得するフック（ADR-0006）。
@@ -47,5 +48,22 @@ export function useUpdateEmployee() {
       return data as unknown as Employee;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: BOT_EMPLOYEES_QUERY_KEY }),
+  });
+}
+
+/**
+ * GET /api/employees?includeDeleted=true を openapi-fetch 経由で取得するフック（#218）。
+ * 論理削除済み社員も含む isBot=true の Employee 一覧を返す（メッセージ発言者名解決用）。
+ */
+export function useAllBotEmployees() {
+  return useQuery({
+    queryKey: BOT_EMPLOYEES_ALL_QUERY_KEY,
+    queryFn: async (): Promise<Employee[]> => {
+      const { data, error } = await openApiClient.GET("/api/employees", {
+        params: { query: { includeDeleted: "true" } },
+      });
+      if (error) throw new Error(JSON.stringify(error));
+      return (data ?? []) as unknown as Employee[];
+    },
   });
 }

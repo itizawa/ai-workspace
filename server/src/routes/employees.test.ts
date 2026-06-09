@@ -207,4 +207,27 @@ describe("GET /api/employees（Bot Employee 一覧 / #240）", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
+
+  it("論理削除済み Bot は通常一覧に含まれない（#218）", async () => {
+    const { app } = await buildApp(
+      new InMemoryEmployeeRepository([
+        { id: "bot1", displayName: "BotA", role: null, isBot: true, personality: null, deletedAt: new Date() },
+      ]),
+    );
+    const res = await request(app).get("/api/employees");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("includeDeleted=true を指定すると論理削除済み Bot も含まれる（#218）", async () => {
+    const { app } = await buildApp(
+      new InMemoryEmployeeRepository([
+        { id: "bot1", displayName: "ActiveBot", role: null, isBot: true, personality: null },
+        { id: "bot2", displayName: "DeletedBot", role: null, isBot: true, personality: null, deletedAt: new Date() },
+      ]),
+    );
+    const res = await request(app).get("/api/employees?includeDeleted=true");
+    expect(res.status).toBe(200);
+    expect(res.body.map((e: { id: string }) => e.id).sort()).toEqual(["bot1", "bot2"]);
+  });
 });

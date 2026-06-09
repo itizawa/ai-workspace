@@ -71,6 +71,11 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
     return rows.map((row) => toRecord(row));
   }
 
+  async listAllBotEmployees(): Promise<EmployeeRecord[]> {
+    const rows = await this.prisma.employee.findMany({ where: { isBot: true } });
+    return rows.map((row) => toRecord(row));
+  }
+
   async softDelete(id: string): Promise<EmployeeRecord | null> {
     try {
       const row = await this.prisma.employee.update({

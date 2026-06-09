@@ -10,9 +10,13 @@ import { resultToResponse } from "../utils/resultToResponse.js";
 export function createEmployeesRouter(employeeRepository: EmployeeRepository): Router {
   const router = Router();
 
-  router.get("/", (_req, res, next) => {
-    employeeRepository
-      .listBotEmployees()
+  router.get("/", (req, res, next) => {
+    // #218: includeDeleted=true の場合、論理削除済み社員も含めて返す（メッセージ発言者名解決用）。
+    const includeDeleted = req.query["includeDeleted"] === "true";
+    const listFn = includeDeleted
+      ? () => employeeRepository.listAllBotEmployees()
+      : () => employeeRepository.listBotEmployees();
+    listFn()
       .then((employees) => res.status(200).json(employees))
       .catch(next);
   });

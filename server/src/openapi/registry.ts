@@ -158,10 +158,17 @@ const employeePathIdParam = z.string().openapi({ param: { name: "id", in: "path"
 registry.registerPath({
   method: "get",
   path: "/api/employees",
-  summary: "Bot Employee 一覧を取得（認証不要・#240）",
+  summary: "Bot Employee 一覧を取得（認証不要・#240・#218）",
+  request: {
+    query: z.object({
+      includeDeleted: z.enum(["true", "false"]).optional().openapi({
+        description: "true にすると論理削除済み社員も含めて返す（#218）。省略時は除外。",
+      }),
+    }),
+  },
   responses: {
     200: {
-      description: "isBot=true の Employee 一覧",
+      description: "isBot=true の Employee 一覧（includeDeleted=true の場合は削除済みも含む）",
       content: { "application/json": { schema: z.array(EmployeeComponent) } },
     },
   },
