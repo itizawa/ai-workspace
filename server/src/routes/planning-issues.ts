@@ -1,10 +1,10 @@
+import { err, internalError, isErr, notFound, ok } from "@hatchery/common";
 import { Octokit } from "@octokit/rest";
 import { Router } from "express";
 
-import { InternalServerError, NotFoundError } from "@hatchery/common";
-
 import { requireAuth } from "../middleware/requireAuth.js";
 import type { MessageRepository } from "../persistence/messageRepository.js";
+import { resultToResponse } from "../utils/resultToResponse.js";
 
 /**
  * GitHub Issue 起票ルータ（#76）。
@@ -26,25 +26,24 @@ export function createPlanningIssuesRouter(messageRepo: MessageRepository): Rout
       const repo = process.env.GITHUB_REPO;
 
       if (!token || !owner || !repo) {
-        next(new InternalServerError("GITHUB_TOKEN / GITHUB_OWNER / GITHUB_REPO が設定されていません"));
+        resultToResponse(res, err(internalError("GITHUB_TOKEN / GITHUB_OWNER / GITHUB_REPO が設定されていません")));
         return;
       }
 
       const channelMessages = await messageRepo.listByChannel(channelId);
       const message = channelMessages.find((m) => m.id === messageId);
-      if (!message) {
-        next(new NotFoundError("MessageNotFound"));
-        return;
-      }
+      const messageResult = message ? ok(message) : err(notFound("MessageNotFound"));
+      if (isErr(messageResult)) { resultToResponse(res, messageResult); return; }
+      const foundMessage = messageResult.value;
 
-      const title = message.proposalTitle
-        ? `[UX提案] ${message.proposalTitle}`
-        : `[UX提案] ${message.text}`;
+      const title = foundMessage.proposalTitle
+        ? `[UX提案] ${foundMessage.proposalTitle}`
+        : `[UX提案] ${foundMessage.text}`;
 
       const body = [
-        message.proposalReason ?? message.text,
+        foundMessage.proposalReason ?? foundMessage.text,
         "",
-        message.proposalTargetUrl ? `**対象画面**: ${message.proposalTargetUrl}` : null,
+        foundMessage.proposalTargetUrl ? `**対象画面**: ${foundMessage.proposalTargetUrl}` : null,
         "",
         "_AI が 企画 チャンネルから自動起票_",
       ]
@@ -69,8 +68,8 @@ export function createPlanningIssuesRouter(messageRepo: MessageRepository): Rout
           issueNumber: data.number,
           issueUrl: data.html_url,
         });
-      } catch (err) {
-        next(err);
+      } catch (e) {
+        next(e);
       }
     },
   );

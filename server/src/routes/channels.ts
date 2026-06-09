@@ -1,10 +1,12 @@
 import {
   AddChannelMemberSchema,
-  BadRequestError,
   CreateChannelMessageSchema,
   CreateChannelSchema,
-  NotFoundError,
   UpdateChannelSchema,
+  err,
+  isErr,
+  notFound,
+  ok,
   type CreateChannelInput,
   type UpdateChannelInput,
 } from "@hatchery/common";
@@ -20,6 +22,7 @@ import type { EmployeeRepository } from "../persistence/employeeRepository.js";
 import type { MessageRepository } from "../persistence/messageRepository.js";
 import { addChannelMember, removeChannelMember } from "../usecases/channelMembers.js";
 import { generateAiResponsesForChannel } from "../usecases/generateAiResponsesForChannel.js";
+import { resultToResponse } from "../utils/resultToResponse.js";
 
 /** AI 会話生成に必要な追加依存（#183）。未指定時は AI 生成をスキップ。 */
 export interface AiGenerationDeps {
@@ -67,10 +70,9 @@ export function createChannelsRouter(
     channelRepo
       .update(id, input)
       .then((channel) => {
-        if (!channel) {
-          throw new NotFoundError("ChannelNotFound");
-        }
-        res.status(200).json(channel);
+        const result = channel ? ok(channel) : err(notFound("ChannelNotFound"));
+        if (isErr(result)) { resultToResponse(res, result); return; }
+        res.status(200).json(result.value);
       })
       .catch(next);
   });
@@ -94,16 +96,16 @@ export function createChannelsRouter(
       const { channelId } = req.params as { channelId: string };
       const user = req.user!;
       if (!user.employeeId) {
-        next(new BadRequestError("EmployeeNotLinked"));
+        res.status(400).json({ error: "EmployeeNotLinked" });
         return;
       }
       const { text } = req.body as { text: string };
       channelRepo
         .findById(channelId)
         .then((channel) => {
-          if (!channel) {
-            throw new NotFoundError("ChannelNotFound");
-          }
+          const channelResult = channel ? ok(channel) : err(notFound("ChannelNotFound"));
+          if (isErr(channelResult)) { resultToResponse(res, channelResult); return; }
+          const foundChannel = channelResult.value;
           const now = new Date();
           return messageRepo
             .createMany([{ createdEmployeeId: user.employeeId!, channel: channelId, text, postedAt: now }])
@@ -111,7 +113,7 @@ export function createChannelsRouter(
               res.status(201).json(created);
               // 非同期 AI 生成（#183）。レスポンス後に実行し、失敗してもユーザー投稿は守る。
               if (aiDeps) {
-                void generateAiResponsesForChannel(channelId, channel.label, now, {
+                void generateAiResponsesForChannel(channelId, foundChannel.label, now, {
                   membershipRepo,
                   employeeRepo: aiDeps.employeeRepo,
                   messageRepo,
