@@ -8,6 +8,7 @@ import { useAdminSettings, useSaveAdminSetting } from "../api/admin.js";
 import { useBatchLogs, useRefreshBatchLogs } from "../api/batchLogs.js";
 import { useTokenUsage, useRefreshTokenUsage } from "../api/tokenUsage.js";
 import { AdminEmployeeTable } from "../components/AdminEmployeeTable.js";
+import { CommunitiesTab } from "../components/CommunitiesTab.js";
 import { InvitationsTab } from "../components/InvitationsTab.js";
 import { type SettingsTabValue } from "./settingsTabValues.js";
 
@@ -239,6 +240,7 @@ const SETTINGS_TABS: readonly [SettingsTab, ...SettingsTab[]] = [
   { label: "バッチログ", value: "batch-logs", content: <BatchLogs /> },
   { label: "招待", value: "invitations", content: <InvitationsTab /> },
   { label: "トークン使用量", value: "token-usage", content: <TokenUsageTab /> },
+  { label: "コミュニティ", value: "communities", content: <CommunitiesTab /> },
 ];
 
 /** 管理画面（/admin）。タブ UI を持ち、ユーザー一覧タブに AI 社員をテーブル表示する（#25）。 */

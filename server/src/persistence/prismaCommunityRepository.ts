@@ -1,6 +1,13 @@
+import { randomUUID } from "node:crypto";
+
 import type { PrismaClient } from "@prisma/client";
 
-import type { CommunityRecord, CommunityRepository } from "./communityRepository.js";
+import type {
+  CommunityRecord,
+  CommunityRepository,
+  CreateCommunityRecordInput,
+  UpdateCommunityRecordInput,
+} from "./communityRepository.js";
 
 function toRecord(row: {
   id: string;
@@ -41,5 +48,30 @@ export class PrismaCommunityRepository implements CommunityRepository {
       orderBy: { createdAt: "asc" },
     });
     return rows.map(toRecord);
+  }
+
+  async create(input: CreateCommunityRecordInput): Promise<CommunityRecord> {
+    const row = await this.prisma.community.create({
+      data: {
+        id: randomUUID(),
+        slug: input.slug,
+        name: input.name,
+        description: input.description,
+      },
+    });
+    return toRecord(row);
+  }
+
+  async update(id: string, input: UpdateCommunityRecordInput): Promise<CommunityRecord | null> {
+    const existing = await this.prisma.community.findUnique({ where: { id } });
+    if (!existing) return null;
+    const row = await this.prisma.community.update({
+      where: { id },
+      data: {
+        ...(input.name !== undefined && { name: input.name }),
+        ...(input.description !== undefined && { description: input.description }),
+      },
+    });
+    return toRecord(row);
   }
 }

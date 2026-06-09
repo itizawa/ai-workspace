@@ -3,6 +3,7 @@ import { InMemoryAppSettingRepository } from "../persistence/appSettingRepositor
 import { InMemoryBatchRunLogRepository } from "../persistence/batchRunLogRepository.js";
 import { InMemoryChannelMembershipRepository } from "../persistence/channelMembershipRepository.js";
 import { InMemoryChannelRepository } from "../persistence/channelRepository.js";
+import { InMemoryCommunityRepository } from "../persistence/communityRepository.js";
 import { InMemoryEmployeeRepository } from "../persistence/employeeRepository.js";
 import { InMemoryInvitationLinkRepository } from "../persistence/invitationLinkRepository.js";
 import { InMemoryMessageRepository } from "../persistence/messageRepository.js";
@@ -38,6 +39,7 @@ export async function createTestDeps(overrides?: TestDepsOverrides): Promise<App
     batchRunLogRepository: new InMemoryBatchRunLogRepository(),
     invitationLinkRepository: new InMemoryInvitationLinkRepository(),
     tokenUsageLogRepository: new InMemoryTokenUsageLogRepository(),
+    communityRepository: new InMemoryCommunityRepository(),
     storageService: new InMemoryStorageService(),
     ...overrides,
   };

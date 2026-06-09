@@ -13,6 +13,7 @@ import type { AppSettingRepository } from "./persistence/appSettingRepository.js
 import type { BatchRunLogRepository } from "./persistence/batchRunLogRepository.js";
 import type { ChannelMembershipRepository } from "./persistence/channelMembershipRepository.js";
 import type { ChannelRepository } from "./persistence/channelRepository.js";
+import type { CommunityRepository } from "./persistence/communityRepository.js";
 import type { EmployeeRepository } from "./persistence/employeeRepository.js";
 import type { InvitationLinkRepository } from "./persistence/invitationLinkRepository.js";
 import type { MessageRepository } from "./persistence/messageRepository.js";
@@ -99,6 +100,8 @@ export interface AppDeps {
   invitationLinkRepository: InvitationLinkRepository;
   /** トークン使用量ログの永続化（#153）。 */
   tokenUsageLogRepository: TokenUsageLogRepository;
+  /** コミュニティ CRUD の永続化（#310）。 */
+  communityRepository: CommunityRepository;
   /** GCS ストレージサービス（#204 / ADR-0022）。本番は GcsStorageService、テスト・ローカルは InMemoryStorageService。 */
   storageService: StorageService;
   /** DDoS/過負荷対策の設定（#34）。省略時は既定値。 */
@@ -185,7 +188,7 @@ export function createApp(deps: AppDeps): Express {
   app.use("/api/employees", createEmployeesRouter(deps.employeeRepository));
   app.use("/api/admin/batch-logs", createBatchLogsRouter(deps.batchRunLogRepository));
   app.use("/api/admin/token-usage", createTokenUsageRouter(deps.tokenUsageLogRepository));
-  app.use("/api/admin", createAdminRouter(deps.appSettingRepository, deps.invitationLinkRepository, deps.employeeRepository));
+  app.use("/api/admin", createAdminRouter(deps.appSettingRepository, deps.invitationLinkRepository, deps.employeeRepository, deps.communityRepository));
   app.use(
     "/api/admin",
     createAdminEmployeeImageRouter(deps.employeeRepository, deps.storageService),
