@@ -19,6 +19,8 @@ export const EmployeeSchema = z.object({
   personality: z.string().max(500).optional(),
   // #220: 社員の画像 URL（任意）。#204 でアップロード基盤実装後に設定値が入る。
   imageUrl: z.string().url().max(EMPLOYEE_IMAGE_URL_MAX_LENGTH).optional(),
+  // #218: 論理削除日時（任意）。null=有効、値=削除済み（ISO 文字列 or Date）。
+  deletedAt: z.union([z.string().datetime(), z.date()]).nullable().optional(),
 });
 
 // 出力型（parse 後）を採用し、`isBot` は常に boolean とする（#49）。
@@ -46,15 +48,33 @@ export const DEFAULT_EMPLOYEES: readonly Employee[] = [
 ];
 
 /**
+ * 論理削除状態を考慮して表示名をフォーマットする（#218）。
+ * deletedAt が設定されている（Date または ISO 文字列）場合は `【削除済み】` プレフィックスを付与する。
+ * 純粋関数として common に置き、client / server が共有する（ADR-0005）。
+ */
+export const formatEmployeeDisplayName = (employee: {
+  displayName: string;
+  deletedAt?: Date | string | null;
+}): string => {
+  if (employee.deletedAt != null) {
+    return `【削除済み】${employee.displayName}`;
+  }
+  return employee.displayName;
+};
+
+/**
  * employee ID → displayName の解決関数を生成する（メッセージの発言者名表示などで共有）。
  * 内部で id→displayName の索引を 1 度だけ構築し、以降の解決を O(1) にする。
  * 未解決の ID は ID をそのままフォールバックとして返す（呼び出し側で表示の破綻を防ぐ）。
+ * deletedAt が設定されている社員は `【削除済み】` プレフィックスを付与する（#218）。
  * 純粋関数（React/DOM 非依存）として common に置き、client / server が共有する（ADR-0005）。
  */
 export const createDisplayNameResolver = (
   employees: readonly Employee[] = DEFAULT_EMPLOYEES,
 ): ((employeeId: string) => string) => {
-  const displayNameById = new Map(employees.map((e) => [e.id, e.displayName]));
+  const displayNameById = new Map(
+    employees.map((e) => [e.id, formatEmployeeDisplayName({ displayName: e.displayName, deletedAt: e.deletedAt ?? null })]),
+  );
   return (employeeId: string): string => displayNameById.get(employeeId) ?? employeeId;
 };
 

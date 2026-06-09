@@ -9,6 +9,7 @@ import {
   DEFAULT_EMPLOYEES,
   EmployeeSchema,
   UpdateEmployeeSchema,
+  formatEmployeeDisplayName,
 } from "./employee.js";
 
 describe("EmployeeSchema (A-1 / A-2)", () => {
@@ -199,6 +200,52 @@ describe("UpdateEmployeeSchema (#38)", () => {
   });
 });
 
+describe("EmployeeSchema: avatarUrl フィールド（#204）", () => {
+  it("avatarUrl を省略しても parse 成功する（任意フィールド）", () => {
+    const result = EmployeeSchema.safeParse({ id: "haru", displayName: "haru" });
+    expect(result.success).toBe(true);
+    expect(result.data?.avatarUrl).toBeUndefined();
+  });
+
+  it("有効な URL なら parse 成功する", () => {
+    const result = EmployeeSchema.safeParse({
+      id: "haru",
+      displayName: "haru",
+      avatarUrl: "https://storage.googleapis.com/bucket/workers/haru/uuid.png",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("URL でない文字列なら parse に失敗する", () => {
+    const result = EmployeeSchema.safeParse({
+      id: "haru",
+      displayName: "haru",
+      avatarUrl: "not-a-url",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("2048 文字ちょうどの URL なら parse 成功する（#91）", () => {
+    const longPath = "a".repeat(2048 - "https://x.com/".length);
+    const result = EmployeeSchema.safeParse({
+      id: "haru",
+      displayName: "haru",
+      avatarUrl: `https://x.com/${longPath}`,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("2049 文字以上の URL なら parse に失敗する（#91）", () => {
+    const longPath = "a".repeat(2049 - "https://x.com/".length + 1);
+    const result = EmployeeSchema.safeParse({
+      id: "haru",
+      displayName: "haru",
+      avatarUrl: `https://x.com/${longPath}`,
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
 describe("createDisplayNameResolver", () => {
   const employees = [
     { id: "haru", displayName: "ハル" },
@@ -247,5 +294,19 @@ describe("createAvatarUrlResolver (#300)", () => {
   it("引数省略時は DEFAULT_EMPLOYEES で解決する（全員 imageUrl 未設定 → undefined）", () => {
     const resolve = createAvatarUrlResolver();
     expect(resolve("haru")).toBeUndefined();
+  });
+});
+
+describe("formatEmployeeDisplayName (#218)", () => {
+  it("deletedAt が null の場合は displayName をそのまま返す", () => {
+    expect(formatEmployeeDisplayName({ displayName: "田中 太郎", deletedAt: null })).toBe("田中 太郎");
+  });
+
+  it("deletedAt が undefined の場合は displayName をそのまま返す", () => {
+    expect(formatEmployeeDisplayName({ displayName: "田中 太郎" })).toBe("田中 太郎");
+  });
+
+  it("deletedAt が Date の場合は【削除済み】プレフィックスを付与する", () => {
+    expect(formatEmployeeDisplayName({ displayName: "田中 太郎", deletedAt: new Date() })).toBe("【削除済み】田中 太郎");
   });
 });
