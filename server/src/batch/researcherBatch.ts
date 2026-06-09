@@ -136,7 +136,8 @@ async function* runQueryWithAgentSdk(ctx: RunQueryContext): AsyncIterable<SdkRes
   }
 }
 
-function readIntEnv(name: string, fallback: number): number {
+/** 数値環境変数を読む（不正値・未設定は fallback）。予算は小数を許すため Number で解釈する。 */
+function readNumberEnv(name: string, fallback: number): number {
   const raw = process.env[name];
   if (!raw) return fallback;
   const parsed = Number(raw);
@@ -187,8 +188,8 @@ export async function runResearcherBatch(deps: RunResearcherBatchDeps): Promise<
     });
 
   const model = process.env.RESEARCHER_MODEL ?? DEFAULT_MODEL;
-  const maxTurns = readIntEnv("RESEARCHER_MAX_TURNS", DEFAULT_MAX_TURNS);
-  const maxBudgetUsd = readIntEnv("RESEARCHER_MAX_BUDGET_USD", DEFAULT_MAX_BUDGET_USD);
+  const maxTurns = readNumberEnv("RESEARCHER_MAX_TURNS", DEFAULT_MAX_TURNS);
+  const maxBudgetUsd = readNumberEnv("RESEARCHER_MAX_BUDGET_USD", DEFAULT_MAX_BUDGET_USD);
 
   const saved: MessageRecord[] = [];
 
