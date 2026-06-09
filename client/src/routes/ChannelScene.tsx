@@ -1,10 +1,13 @@
 import { findChannelById, type Channel } from "@hatchery/common";
 import { useParams } from "@tanstack/react-router";
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 
 import { useAuth } from "../api/auth.js";
 import { useChannelMessages, useChannels, usePostChannelMessage } from "../api/channels.js";
+import { useBotEmployees } from "../api/employees.js";
+import { Box } from "../components/uiParts";
 import { ChannelView } from "../components/ChannelView.js";
+import { EditChannelNameDialog } from "../components/EditChannelNameDialog.js";
 import { MessageInput } from "../components/MessageInput.js";
 
 /**
@@ -14,12 +17,13 @@ import { MessageInput } from "../components/MessageInput.js";
  */
 const resolveChannel = (channels: readonly Channel[], channelId: string): Channel =>
   channels.find((c) => c.id === channelId) ??
-  findChannelById(channelId) ?? { id: channelId, label: `#${channelId}`, type: "zatsudan" };
+  findChannelById(channelId) ?? { id: channelId, label: `#${channelId}`, type: "zatsudan", goal: { type: "chat" } };
 
 /**
  * チャンネル別ビュー（/channels/$channelId）のコンテナ（#30）。
  * channelId から Channel を解決し、実 API でメッセージを取得して presentational な
  * ChannelView に渡す（#48）。ログイン済みユーザーはメッセージ投稿フォームも表示する。
+ * ログイン済みのときはヘッダに編集ボタンを表示し、チャンネル名編集ダイアログを管理する（#206）。
  */
 export const ChannelScene = (): ReactElement => {
   const { channelId } = useParams({ strict: false });
@@ -28,13 +32,29 @@ export const ChannelScene = (): ReactElement => {
   const channel = resolveChannel(channels, id);
 
   const { data: messages } = useChannelMessages(id);
+  const { data: employees } = useBotEmployees();
   const { data: authUser } = useAuth();
   const { mutate: postMessage, isPending } = usePostChannelMessage(id);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   return (
-    <>
-      <ChannelView channel={channel} messages={messages} />
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <Box sx={{ flex: 1, overflow: "auto" }}>
+        <ChannelView
+          channel={channel}
+          messages={messages}
+          employees={employees ?? []}
+          onEditName={authUser ? () => setEditDialogOpen(true) : undefined}
+        />
+      </Box>
       {authUser && <MessageInput onSubmit={postMessage} disabled={isPending} />}
-    </>
+      {authUser && (
+        <EditChannelNameDialog
+          open={editDialogOpen}
+          channel={channel}
+          onClose={() => setEditDialogOpen(false)}
+        />
+      )}
+    </Box>
   );
 };

@@ -3,24 +3,25 @@ import { describe, expect, it } from "vitest";
 
 import { createApp } from "../app.js";
 import { InMemoryInvitationLinkRepository } from "../persistence/invitationLinkRepository.js";
-import { InMemoryMessageRepository } from "../persistence/messageRepository.js";
 import { InMemoryUserRepository } from "../persistence/userRepository.js";
+import { createTestDeps } from "../testing/createTestDeps.js";
 
 async function makeApp(
   invitationRepo = new InMemoryInvitationLinkRepository(),
   role: "admin" | "member" = "admin",
 ) {
   const userRepo = await InMemoryUserRepository.createWithTestUser(null, role);
-  return createApp({
-    messageRepository: new InMemoryMessageRepository(),
-    userRepository: userRepo,
-    invitationLinkRepository: invitationRepo,
-  });
+  return createApp(
+    await createTestDeps({
+      userRepository: userRepo,
+      invitationLinkRepository: invitationRepo,
+    }),
+  );
 }
 
 async function loginAgent(app: ReturnType<typeof createApp>) {
   const agent = request.agent(app);
-  await agent.post("/api/auth/login").send({ id: "testuser", password: "testpass" });
+  await agent.post("/api/auth/login").send({ loginId: "testuser", password: "testpass" });
   return agent;
 }
 
@@ -191,10 +192,6 @@ describe("POST /api/admin/invitations/:id/revoke", () => {
   });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
-// 公開エンドポイント（#132）
-// ──────────────────────────────────────────────────────────────────────────────
-
 describe("GET /api/invitations/:token (#132)", () => {
   it("存在しない token は 404 を返す", async () => {
     const app = await makeApp();
@@ -216,9 +213,8 @@ describe("GET /api/invitations/:token (#132)", () => {
     const app = await makeApp(repo);
     const token = await createInvitationToken(app);
 
-    // 受諾して使用済みにする
     await request(app).post(`/api/invitations/${token}/accept`).send({
-      id: "newuser1",
+      loginId: "newuser1",
       displayName: "新ユーザー",
       password: "password123",
     });
@@ -241,7 +237,7 @@ describe("GET /api/invitations/:token (#132)", () => {
 
 describe("POST /api/invitations/:token/accept (#132)", () => {
   const validBody = {
-    id: "newuser",
+    loginId: "newuser",
     displayName: "新規ユーザー",
     password: "password123",
   };
@@ -260,7 +256,7 @@ describe("POST /api/invitations/:token/accept (#132)", () => {
     const res = await request(app).post(`/api/invitations/${token}/accept`).send(validBody);
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({
-      id: "newuser",
+      loginId: "newuser",
       displayName: "新規ユーザー",
       role: "member",
     });
@@ -283,7 +279,7 @@ describe("POST /api/invitations/:token/accept (#132)", () => {
 
     const meRes = await agent.get("/api/auth/me");
     expect(meRes.status).toBe(200);
-    expect(meRes.body).toMatchObject({ id: "newuser", displayName: "新規ユーザー" });
+    expect(meRes.body).toMatchObject({ loginId: "newuser", displayName: "新規ユーザー" });
   });
 
   it("同じ token への 2 回目の accept は 409 を返す（single-use）", async () => {
@@ -292,7 +288,7 @@ describe("POST /api/invitations/:token/accept (#132)", () => {
     await request(app).post(`/api/invitations/${token}/accept`).send(validBody);
     const res2 = await request(app)
       .post(`/api/invitations/${token}/accept`)
-      .send({ id: "newuser2", displayName: "別ユーザー", password: "password123" });
+      .send({ loginId: "newuser2", displayName: "別ユーザー", password: "password123" });
     expect(res2.status).toBe(409);
   });
 
@@ -326,19 +322,17 @@ describe("POST /api/invitations/:token/accept (#132)", () => {
     expect(res.status).toBe(409);
   });
 
-  it("id 重複時は 409 を返し usedAt が立たない", async () => {
+  it("loginId 重複時は 409 を返し usedAt が立たない", async () => {
     const app = await makeApp();
     const token = await createInvitationToken(app);
 
-    // 同じ id で accept を試みる
     const res = await request(app).post(`/api/invitations/${token}/accept`).send({
-      id: "testuser", // 既存ユーザーと同じ id
+      loginId: "testuser",
       displayName: "重複ユーザー",
       password: "password123",
     });
     expect(res.status).toBe(409);
 
-    // usedAt が立っていないことを確認（招待は消費されていない）
     const statusRes = await request(app).get(`/api/invitations/${token}`);
     expect(statusRes.body.status).toBe("active");
   });
@@ -352,12 +346,12 @@ describe("POST /api/invitations/:token/accept (#132)", () => {
     expect(res.status).toBe(400);
   });
 
-  it("id が空文字列は 400 を返す", async () => {
+  it("loginId が空文字列は 400 を返す", async () => {
     const app = await makeApp();
     const token = await createInvitationToken(app);
     const res = await request(app)
       .post(`/api/invitations/${token}/accept`)
-      .send({ ...validBody, id: "" });
+      .send({ ...validBody, loginId: "" });
     expect(res.status).toBe(400);
   });
 });

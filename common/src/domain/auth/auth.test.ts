@@ -1,33 +1,63 @@
 import { describe, expect, it } from "vitest";
 
-import { AuthUserSchema, LoginRequestSchema, UpdateProfileSchema, UserRoleSchema, isAdmin } from "./auth.js";
+import {
+  AuthUserSchema,
+  AVATAR_URL_MAX_LENGTH,
+  DISPLAY_NAME_MAX_LENGTH,
+  LOGIN_ID_MAX_LENGTH,
+  LoginRequestSchema,
+  PASSWORD_MAX_LENGTH,
+  UpdateProfileSchema,
+  UserRoleSchema,
+  isAdmin,
+} from "./auth.js";
 
 describe("LoginRequestSchema", () => {
   it("有効な id と password でパースが成功する", () => {
-    const result = LoginRequestSchema.safeParse({ id: "user1", password: "pass1" });
+    const result = LoginRequestSchema.safeParse({ loginId: "user1", password: "pass1" });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toEqual({ id: "user1", password: "pass1" });
+      expect(result.data).toEqual({ loginId: "user1", password: "pass1" });
     }
   });
 
   it("id が空文字のとき失敗する", () => {
-    const result = LoginRequestSchema.safeParse({ id: "", password: "pass1" });
+    const result = LoginRequestSchema.safeParse({ loginId: "", password: "pass1" });
     expect(result.success).toBe(false);
   });
 
   it("password が空文字のとき失敗する", () => {
-    const result = LoginRequestSchema.safeParse({ id: "user1", password: "" });
+    const result = LoginRequestSchema.safeParse({ loginId: "user1", password: "" });
     expect(result.success).toBe(false);
   });
 
   it("id が欠落しているとき失敗する", () => {
-    const result = LoginRequestSchema.safeParse({ password: "pass1" });
+    const result = LoginRequestSchema.safeParse({ password: "pass1" }) // loginId欠落;
     expect(result.success).toBe(false);
   });
 
   it("password が欠落しているとき失敗する", () => {
-    const result = LoginRequestSchema.safeParse({ id: "user1" });
+    const result = LoginRequestSchema.safeParse({ loginId: "user1" });
+    expect(result.success).toBe(false);
+  });
+
+  it("loginId が LOGIN_ID_MAX_LENGTH 文字ちょうどなら成功する（#91）", () => {
+    const result = LoginRequestSchema.safeParse({ loginId: "a".repeat(LOGIN_ID_MAX_LENGTH), password: "pass1" });
+    expect(result.success).toBe(true);
+  });
+
+  it("loginId が LOGIN_ID_MAX_LENGTH + 1 文字なら失敗する（#91）", () => {
+    const result = LoginRequestSchema.safeParse({ loginId: "a".repeat(LOGIN_ID_MAX_LENGTH + 1), password: "pass1" });
+    expect(result.success).toBe(false);
+  });
+
+  it("password が PASSWORD_MAX_LENGTH 文字ちょうどなら成功する（#91）", () => {
+    const result = LoginRequestSchema.safeParse({ loginId: "user1", password: "a".repeat(PASSWORD_MAX_LENGTH) });
+    expect(result.success).toBe(true);
+  });
+
+  it("password が PASSWORD_MAX_LENGTH + 1 文字なら失敗する（#91）", () => {
+    const result = LoginRequestSchema.safeParse({ loginId: "user1", password: "a".repeat(PASSWORD_MAX_LENGTH + 1) });
     expect(result.success).toBe(false);
   });
 });
@@ -63,7 +93,7 @@ describe("isAdmin (#136)", () => {
 
 describe("AuthUserSchema", () => {
   it("id / displayName / role（admin）でパースが成功する", () => {
-    const result = AuthUserSchema.safeParse({ id: "user1", displayName: "Alice", role: "admin" });
+    const result = AuthUserSchema.safeParse({ id: "user1", loginId: "user1", displayName: "Alice", role: "admin" });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data).toMatchObject({ id: "user1", displayName: "Alice", role: "admin" });
@@ -71,17 +101,17 @@ describe("AuthUserSchema", () => {
   });
 
   it("role が欠落しているときパースが失敗する（必須フィールド）", () => {
-    const result = AuthUserSchema.safeParse({ id: "user1", displayName: "Alice" });
+    const result = AuthUserSchema.safeParse({ id: "user1", loginId: "user1", displayName: "Alice" });
     expect(result.success).toBe(false);
   });
 
   it("role が不正値のときパースが失敗する", () => {
-    const result = AuthUserSchema.safeParse({ id: "user1", displayName: "Alice", role: "superadmin" });
+    const result = AuthUserSchema.safeParse({ id: "user1", loginId: "user1", displayName: "Alice", role: "superadmin" });
     expect(result.success).toBe(false);
   });
 
   it("passwordHash を含んでいても parseStrict しない（余分なフィールドは strip される）", () => {
-    const result = AuthUserSchema.safeParse({ id: "user1", displayName: "Alice", role: "admin", passwordHash: "secret" });
+    const result = AuthUserSchema.safeParse({ id: "user1", loginId: "user1", displayName: "Alice", role: "admin", passwordHash: "secret" });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data).not.toHaveProperty("passwordHash");
@@ -90,7 +120,7 @@ describe("AuthUserSchema", () => {
 
   // #49: 自身の Employee を指す employeeId（任意）。
   it("employeeId を付与してもパースが成功する（AC-8）", () => {
-    const result = AuthUserSchema.safeParse({ id: "user1", displayName: "Alice", role: "admin", employeeId: "emp1" });
+    const result = AuthUserSchema.safeParse({ id: "user1", loginId: "user1", displayName: "Alice", role: "admin", employeeId: "emp1" });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.employeeId).toBe("emp1");
@@ -98,7 +128,7 @@ describe("AuthUserSchema", () => {
   });
 
   it("employeeId を省略してもパースが成功する（AC-8 / 任意フィールド）", () => {
-    const result = AuthUserSchema.safeParse({ id: "user1", displayName: "Alice", role: "member" });
+    const result = AuthUserSchema.safeParse({ id: "user1", loginId: "user1", displayName: "Alice", role: "member" });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.employeeId).toBeUndefined();
@@ -108,6 +138,7 @@ describe("AuthUserSchema", () => {
   it("avatarUrl を付与してもパースが成功する（#51）", () => {
     const result = AuthUserSchema.safeParse({
       id: "user1",
+      loginId: "user1",
       displayName: "Alice",
       role: "admin",
       avatarUrl: "https://example.com/avatar.png",
@@ -119,7 +150,7 @@ describe("AuthUserSchema", () => {
   });
 
   it("avatarUrl を省略してもパースが成功する（#51 / 任意フィールド）", () => {
-    const result = AuthUserSchema.safeParse({ id: "user1", displayName: "Alice", role: "member" });
+    const result = AuthUserSchema.safeParse({ id: "user1", loginId: "user1", displayName: "Alice", role: "member" });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.avatarUrl).toBeUndefined();
@@ -163,6 +194,30 @@ describe("UpdateProfileSchema (#51)", () => {
       displayName: "Alice",
       avatarUrl: "not-a-url",
     });
+    expect(result.success).toBe(false);
+  });
+
+  it("displayName が DISPLAY_NAME_MAX_LENGTH 文字ちょうどなら成功する（#91）", () => {
+    const result = UpdateProfileSchema.safeParse({ displayName: "a".repeat(DISPLAY_NAME_MAX_LENGTH) });
+    expect(result.success).toBe(true);
+  });
+
+  it("displayName が DISPLAY_NAME_MAX_LENGTH + 1 文字なら失敗する（#91）", () => {
+    const result = UpdateProfileSchema.safeParse({ displayName: "a".repeat(DISPLAY_NAME_MAX_LENGTH + 1) });
+    expect(result.success).toBe(false);
+  });
+
+  it("avatarUrl が AVATAR_URL_MAX_LENGTH 文字ちょうどなら成功する（#202）", () => {
+    const base = "https://example.com/";
+    const path = "a".repeat(AVATAR_URL_MAX_LENGTH - base.length);
+    const result = UpdateProfileSchema.safeParse({ displayName: "Alice", avatarUrl: base + path });
+    expect(result.success).toBe(true);
+  });
+
+  it("avatarUrl が AVATAR_URL_MAX_LENGTH + 1 文字なら失敗する（#202）", () => {
+    const base = "https://example.com/";
+    const path = "a".repeat(AVATAR_URL_MAX_LENGTH - base.length + 1);
+    const result = UpdateProfileSchema.safeParse({ displayName: "Alice", avatarUrl: base + path });
     expect(result.success).toBe(false);
   });
 });

@@ -11,7 +11,7 @@ export interface SeedPrisma {
     upsert(args: {
       where: { id: string };
       update: { role?: "admin" | "member" };
-      create: { id: string; displayName: string; passwordHash: string; role?: "admin" | "member" };
+      create: { id: string; loginId: string; displayName: string; passwordHash: string; role?: "admin" | "member" };
     }): Promise<unknown>;
   };
   employee: {
@@ -30,8 +30,8 @@ export interface SeedPrisma {
   channel: {
     upsert(args: {
       where: { id: string };
-      update: { type: "zatsudan" | "task" | "planning" };
-      create: { id: string; label: string; type: "zatsudan" | "task" | "planning" };
+      update: { type: "zatsudan" | "task" | "planning"; goalType: "chat" | "issue"; goalInstructions: string | null };
+      create: { id: string; label: string; type: "zatsudan" | "task" | "planning"; goalType: "chat" | "issue"; goalInstructions: string | null };
     }): Promise<unknown>;
   };
   channelEmployee: {
@@ -49,7 +49,7 @@ export interface SeedResult {
 }
 
 /** 開発用テストユーザーの資格情報（既存コードベースの標準: testuser / testpass）。 */
-const DEV_USER = { id: "testuser", displayName: "Test User", password: "testpass" } as const;
+const DEV_USER = { id: "testuser", loginId: "testuser", displayName: "Test User", password: "testpass" } as const;
 
 /** ログインユーザーに紐づく Employee の id（#49）。 */
 const DEV_USER_EMPLOYEE_ID = "emp-testuser";
@@ -71,7 +71,7 @@ export async function seedDevData(prisma: SeedPrisma): Promise<SeedResult> {
   await prisma.user.upsert({
     where: { id: DEV_USER.id },
     update: { role: "admin" },
-    create: { id: DEV_USER.id, displayName: DEV_USER.displayName, passwordHash, role: "admin" },
+    create: { id: DEV_USER.id, loginId: DEV_USER.loginId, displayName: DEV_USER.displayName, passwordHash, role: "admin" },
   });
 
   // AI 社員（既定 3 名）は isBot=true / userId は紐付けない（#49）。
@@ -87,6 +87,13 @@ export async function seedDevData(prisma: SeedPrisma): Promise<SeedResult> {
       },
     });
   }
+
+  // 企画バッチ専用の AI プランナー社員（#222: FK 制約下で planningBatch の INSERT が失敗しないよう seed）。
+  await prisma.employee.upsert({
+    where: { id: "ai-planner" },
+    update: {},
+    create: { id: "ai-planner", displayName: "AI Planner", role: null, isBot: true },
+  });
 
   // ログインユーザーに対応する Employee は isBot=false / userId で User と 1:1 紐付け（#49）。
   await prisma.employee.upsert({
@@ -104,8 +111,8 @@ export async function seedDevData(prisma: SeedPrisma): Promise<SeedResult> {
   for (const channel of DEFAULT_CHANNELS) {
     await prisma.channel.upsert({
       where: { id: channel.id },
-      update: { type: channel.type },
-      create: { id: channel.id, label: channel.label, type: channel.type },
+      update: { type: channel.type, goalType: channel.goal.type, goalInstructions: channel.goal.instructions ?? null },
+      create: { id: channel.id, label: channel.label, type: channel.type, goalType: channel.goal.type, goalInstructions: channel.goal.instructions ?? null },
     });
   }
 

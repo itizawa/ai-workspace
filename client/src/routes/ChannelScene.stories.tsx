@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { http, HttpResponse } from "msw";
 import { handlers } from "../mocks/handlers.js";
+import { mockMessages } from "../mocks/data/fixtures.js";
 import { renderWithRouter } from "../mocks/RouterDecorator";
 
 /**
@@ -32,7 +33,29 @@ export const Empty: Story = {
       // story-level handlers は global handlers を置き換えるため、先頭に上書き handler を置き
       // 残りは global handlers をスプレッドして first-match-wins で上書きを確立する。
       handlers: [
-        http.get("/channels/:channelId/messages", () => HttpResponse.json([])),
+        http.get("/api/channels/:channelId/messages", () => HttpResponse.json([])),
+        ...handlers,
+      ],
+    },
+  },
+};
+
+/** チャンネル詳細（雑談）: 多数メッセージ（入力フォームが下部固定されることを目視確認するため）。 */
+export const ManyMessages: Story = {
+  render: () => renderWithRouter("/channels/zatsudan"),
+  parameters: {
+    msw: {
+      handlers: [
+        http.get("/api/channels/:channelId/messages", () =>
+          HttpResponse.json(
+            Array.from({ length: 30 }, (_, i) => ({
+              ...mockMessages[i % mockMessages.length],
+              id: `msg-many-${i}`,
+              text: `メッセージ ${i + 1}: Slack 風に入力フォームが下部に固定されていることを確認する。`,
+              order: i,
+            })),
+          ),
+        ),
         ...handlers,
       ],
     },

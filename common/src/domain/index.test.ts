@@ -10,8 +10,8 @@ import { TaskSchema } from "./task/index.js";
 
 describe("domain フォルダ構成（#24）", () => {
   it("auth フォルダの index からスキーマを参照できる", () => {
-    expect(LoginRequestSchema.safeParse({ id: "u", password: "p" }).success).toBe(true);
-    expect(AuthUserSchema.safeParse({ id: "u", displayName: "U", role: "admin" }).success).toBe(true);
+    expect(LoginRequestSchema.safeParse({ loginId: "u", password: "p" }).success).toBe(true);
+    expect(AuthUserSchema.safeParse({ id: "u", loginId: "u", displayName: "U", role: "admin" }).success).toBe(true);
   });
 
   it("channel フォルダの index から定義を参照できる", () => {
@@ -27,7 +27,7 @@ describe("domain フォルダ構成（#24）", () => {
   it("message フォルダの index からスキーマと定数を参照できる", () => {
     expect(MAX_MESSAGE_LENGTH).toBe(280);
     expect(
-      MessageSchema.safeParse({ speaker: "e1", channel: "zatsudan", text: "やあ" }).success,
+      MessageSchema.safeParse({ createdEmployeeId: "e1", channel: "zatsudan", text: "やあ" }).success,
     ).toBe(true);
   });
 

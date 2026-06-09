@@ -2,6 +2,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  lazyRouteComponent,
   redirect,
   useLocation,
   type RouterHistory,
@@ -16,14 +17,22 @@ import {
 } from "./routes/settingsTabValues.js";
 
 export { SETTINGS_TAB_VALUES, type SettingsTabValue } from "./routes/settingsTabValues.js";
-import { AccountScene } from "./routes/AccountScene";
 import { AuthLayout } from "./routes/AuthLayout";
-import { ChannelScene } from "./routes/ChannelScene";
-import { HomeScene } from "./routes/HomeScene";
-import { LoginScene } from "./routes/LoginScene";
 import { RootLayout } from "./routes/RootLayout";
-import { SettingsScene } from "./routes/SettingsScene";
 import { ChannelViewSkeleton } from "./components/ChannelViewSkeleton";
+
+// ルートコンポーネントを lazyRouteComponent で動的 import（コード分割）する。
+// TanStack Router の defaultPreload: "intent" と組み合わせ、ホバー時にプリロードされる。
+const LazyHomeScene = lazyRouteComponent(() => import("./routes/HomeScene"), "HomeScene");
+const LazyChannelScene = lazyRouteComponent(() => import("./routes/ChannelScene"), "ChannelScene");
+const LazyLoginScene = lazyRouteComponent(() => import("./routes/LoginScene"), "LoginScene");
+const LazySettingsScene = lazyRouteComponent(() => import("./routes/SettingsScene"), "SettingsScene");
+const LazyAccountScene = lazyRouteComponent(() => import("./routes/AccountScene"), "AccountScene");
+const LazyOfficeScene = lazyRouteComponent(() => import("./routes/OfficeScene"), "OfficeScene");
+const LazyAcceptInvitationScene = lazyRouteComponent(
+  () => import("./routes/AcceptInvitationScene"),
+  "AcceptInvitationScene",
+);
 
 /**
  * 認証ガード: 未ログイン（fetchMe が null を返す）またはネットワークエラーの場合に /login へリダイレクト。
@@ -55,20 +64,23 @@ async function requireAdminRoute(): Promise<void> {
 }
 
 /**
- * サイドバーなしで描画する auth ルートのパス一覧。
- * 新しい auth ルート（/signup 等）を追加した場合はここにも追記すること。
+ * サイドバーなしで描画する auth 系ルートかどうかを判定する。
+ * /login は完全一致、/invite/ は動的パスのためプレフィックス一致で判定する。
+ * 新しい auth ルートを追加した場合はここにも追記すること。
  */
-const AUTH_PATHS = ["/login"] as const satisfies readonly string[];
+function isAuthLayout(pathname: string): boolean {
+  return pathname === "/login" || pathname.startsWith("/invite/");
+}
 
 /**
  * アプリ全体のシェル。現在のパスに応じて
- * - auth 系ルート（/login 等）→ AuthLayout（サイドバーなし）
+ * - auth 系ルート（/login, /invite/:token 等）→ AuthLayout（サイドバーなし）
  * - その他 → RootLayout（サイドバーあり）
  * を切り替える。ルートの ID を変えない方式のため、既存の useSearch 等への影響がない。
  */
 function AppShell(): ReactElement {
   const { pathname } = useLocation();
-  if (AUTH_PATHS.some((p) => p === pathname)) {
+  if (isAuthLayout(pathname)) {
     return <AuthLayout />;
   }
   return <RootLayout />;
@@ -83,34 +95,45 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: HomeScene,
+  component: () => (
+    <Suspense fallback={null}>
+      <LazyHomeScene />
+    </Suspense>
+  ),
   beforeLoad: requireAuth,
 });
 
-/** チャンネル別ビューの枠（/channels/$channelId）。未ログインまたはネットワークエラーの場合は /login へリダイレクト。 */
+/** チャンネル別ビューの枠（/channels/$channelId）。未認証ユーザーも閲覧可能（#255）。 */
 const channelRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/channels/$channelId",
   component: () => (
     <Suspense fallback={<ChannelViewSkeleton />}>
-      <ChannelScene />
+      <LazyChannelScene />
     </Suspense>
   ),
-  beforeLoad: requireAuth,
 });
 
 /** ログイン画面（/login）。サイドバーなしの AuthLayout 経由で描画する。 */
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
-  component: LoginScene,
+  component: () => (
+    <Suspense fallback={null}>
+      <LazyLoginScene />
+    </Suspense>
+  ),
 });
 
 /** 管理画面（/admin）。未ログインなら /login、非 admin なら / へリダイレクト（#136）。 */
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin",
-  component: SettingsScene,
+  component: () => (
+    <Suspense fallback={null}>
+      <LazySettingsScene />
+    </Suspense>
+  ),
   beforeLoad: requireAdminRoute,
   validateSearch: (search: Record<string, unknown>): { tab: SettingsTabValue } => {
     const tab = search.tab;
@@ -128,8 +151,35 @@ const adminRoute = createRoute({
 const accountRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account",
-  component: AccountScene,
+  component: () => (
+    <Suspense fallback={null}>
+      <LazyAccountScene />
+    </Suspense>
+  ),
   beforeLoad: requireAuth,
+});
+
+/** 仮想オフィス画面（/office）。未ログインまたはネットワークエラーの場合は /login へリダイレクト（#240）。 */
+const officeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/office",
+  component: () => (
+    <Suspense fallback={null}>
+      <LazyOfficeScene />
+    </Suspense>
+  ),
+  beforeLoad: requireAuth,
+});
+
+/** 招待リンク受諾画面（/invite/:token）。公開ルート（requireAuth なし・AuthLayout）。 */
+const inviteRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/invite/$token",
+  component: () => (
+    <Suspense fallback={null}>
+      <LazyAcceptInvitationScene />
+    </Suspense>
+  ),
 });
 
 const routeTree = rootRoute.addChildren([
@@ -138,6 +188,8 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   adminRoute,
   accountRoute,
+  officeRoute,
+  inviteRoute,
 ]);
 
 export interface CreateAppRouterOptions {

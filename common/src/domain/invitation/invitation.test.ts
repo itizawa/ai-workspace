@@ -51,22 +51,22 @@ describe("getInvitationStatus", () => {
 });
 
 describe("AcceptInvitationSchema (#132)", () => {
-  const valid = { id: "user01", displayName: "テストユーザー", password: "password123" };
+  const valid = { loginId: "user01", displayName: "テストユーザー", password: "password123" };
 
   it("有効なデータはパースできる", () => {
     expect(AcceptInvitationSchema.safeParse(valid).success).toBe(true);
   });
 
   it("id が空文字列の場合は失敗", () => {
-    expect(AcceptInvitationSchema.safeParse({ ...valid, id: "" }).success).toBe(false);
+    expect(AcceptInvitationSchema.safeParse({ ...valid, loginId: "" }).success).toBe(false);
   });
 
   it("id が 50 文字を超えると失敗", () => {
-    expect(AcceptInvitationSchema.safeParse({ ...valid, id: "a".repeat(51) }).success).toBe(false);
+    expect(AcceptInvitationSchema.safeParse({ ...valid, loginId: "a".repeat(51) }).success).toBe(false);
   });
 
   it("id が 50 文字ちょうどは成功", () => {
-    expect(AcceptInvitationSchema.safeParse({ ...valid, id: "a".repeat(50) }).success).toBe(true);
+    expect(AcceptInvitationSchema.safeParse({ ...valid, loginId: "a".repeat(50) }).success).toBe(true);
   });
 
   it("displayName が空文字列の場合は失敗", () => {

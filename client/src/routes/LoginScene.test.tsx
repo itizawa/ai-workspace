@@ -38,6 +38,27 @@ describe("管理画面ガード", () => {
   });
 });
 
+describe("autocomplete 属性（#180）", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("ID 入力欄に autocomplete='username' が設定されている", async () => {
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue(null);
+    renderApp("/login");
+    const idInput = await screen.findByLabelText(/ID/);
+    expect(idInput).toHaveAttribute("autocomplete", "username");
+  });
+
+  it("パスワード入力欄に autocomplete='current-password' が設定されている", async () => {
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue(null);
+    renderApp("/login");
+    await screen.findByLabelText(/ID/);
+    const passwordInput = screen.getByLabelText(/パスワード/);
+    expect(passwordInput).toHaveAttribute("autocomplete", "current-password");
+  });
+});
+
 describe("ログインフォーム", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -50,7 +71,7 @@ describe("ログインフォーム", () => {
     await userEvent.type(await screen.findByLabelText(/ID/), "user1");
     await userEvent.type(screen.getByLabelText(/パスワード/), "pass1");
     await userEvent.click(screen.getByRole("button", { name: /ログイン/ }));
-    await waitFor(() => expect(loginSpy).toHaveBeenCalledWith({ id: "user1", password: "pass1" }));
+    await waitFor(() => expect(loginSpy).toHaveBeenCalledWith({ loginId: "user1", password: "pass1" }));
   });
 
   it("ID フィールドが空の場合、送信しても login API が呼ばれない", async () => {

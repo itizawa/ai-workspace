@@ -1,13 +1,12 @@
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
-import Typography from "@mui/material/Typography";
+import { Box, Button, TextField, Typography } from "../components/uiParts";
+
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { LOGIN_ID_MAX_LENGTH, PASSWORD_MAX_LENGTH } from "@hatchery/common";
 import { AUTH_ME_QUERY_KEY, login } from "../api/auth.js";
 
 export const LoginScene = (): ReactElement => {
@@ -16,11 +15,11 @@ export const LoginScene = (): ReactElement => {
   const queryClient = useQueryClient();
 
   const form = useForm({
-    defaultValues: { id: "", password: "" },
+    defaultValues: { loginId: "", password: "" },
     onSubmit: async ({ value }) => {
       setApiError(null);
       try {
-        await login({ id: value.id, password: value.password });
+        await login({ loginId: value.loginId, password: value.password });
         await queryClient.invalidateQueries({ queryKey: AUTH_ME_QUERY_KEY });
         await navigate({ to: "/" });
       } catch {
@@ -47,7 +46,7 @@ export const LoginScene = (): ReactElement => {
         </Typography>
       )}
       <form.Field
-        name="id"
+        name="loginId"
         validators={{
           onSubmit: ({ value }) => (!value ? "ID は必須です" : undefined),
         }}
@@ -56,7 +55,7 @@ export const LoginScene = (): ReactElement => {
           <TextField
             label="ID"
             id="login-id"
-            inputProps={{ "aria-label": "ID" }}
+            inputProps={{ "aria-label": "ID", maxLength: LOGIN_ID_MAX_LENGTH, autoComplete: "username" }}
             value={field.state.value}
             onChange={(e) => field.handleChange(e.target.value)}
             onBlur={field.handleBlur}
@@ -77,7 +76,7 @@ export const LoginScene = (): ReactElement => {
           <TextField
             label="パスワード"
             id="login-password"
-            inputProps={{ "aria-label": "パスワード" }}
+            inputProps={{ "aria-label": "パスワード", maxLength: PASSWORD_MAX_LENGTH, autoComplete: "current-password" }}
             type="password"
             value={field.state.value}
             onChange={(e) => field.handleChange(e.target.value)}

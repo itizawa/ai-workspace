@@ -8,6 +8,7 @@ import type {
 
 export const mockAdminUser: AuthUser = {
   id: "admin-user",
+  loginId: "admin-user",
   displayName: "管理者ユーザー",
   role: "admin",
   avatarUrl: undefined,
@@ -16,6 +17,7 @@ export const mockAdminUser: AuthUser = {
 
 export const mockMemberUser: AuthUser = {
   id: "member-user",
+  loginId: "member-user",
   displayName: "一般ユーザー",
   role: "member",
   avatarUrl: undefined,
@@ -23,34 +25,37 @@ export const mockMemberUser: AuthUser = {
 };
 
 export const mockChannels: Channel[] = [
-  { id: "zatsudan", label: "雑談", type: "zatsudan" },
-  { id: "shigoto", label: "仕事", type: "task" },
-  { id: "kikaku", label: "企画", type: "planning" },
+  { id: "zatsudan", label: "雑談", type: "zatsudan", goal: { type: "chat" } },
+  { id: "shigoto", label: "仕事", type: "task", goal: { type: "chat" } },
+  { id: "kikaku", label: "企画", type: "planning", goal: { type: "issue" } },
 ];
 
 export const mockMessages: MessageRecord[] = [
   {
     id: "msg-1",
-    speaker: "haru",
+    createdEmployeeId: "haru",
     channel: "zatsudan",
     text: "おはようございます！今日もよろしくお願いします。",
     createdAt: new Date("2026-06-05T09:00:00Z"),
+    postedAt: new Date("2026-06-05T09:00:00Z"),
     order: 0,
   },
   {
     id: "msg-2",
-    speaker: "ken",
+    createdEmployeeId: "ken",
     channel: "zatsudan",
     text: "おはよう！昨日の件、確認しておきますね。",
     createdAt: new Date("2026-06-05T09:01:00Z"),
+    postedAt: new Date("2026-06-05T09:01:00Z"),
     order: 1,
   },
   {
     id: "msg-3",
-    speaker: "mei",
+    createdEmployeeId: "mei",
     channel: "zatsudan",
     text: "おはようございます。今日も頑張りましょう！",
     createdAt: new Date("2026-06-05T09:02:00Z"),
+    postedAt: new Date("2026-06-05T09:02:00Z"),
     order: 2,
   },
 ];

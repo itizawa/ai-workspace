@@ -5,6 +5,7 @@
  */
 export * from "./domain/appSetting/index.js";
 export * from "./domain/batchRunLog/index.js";
+export * from "./domain/tokenUsageLog/index.js";
 export * from "./domain/auth/index.js";
 export * from "./domain/channel/index.js";
 export * from "./domain/channelMembership/index.js";
@@ -20,3 +21,4 @@ export * from "./logic/selectAppearingMembers.js";
 export * from "./logic/buildChannelConversationPrompt.js";
 export * from "./logic/parseConversationMessages.js";
 export * from "./logic/summarizeChannel.js";
+export * from "./logic/calcPostedAtOffsets.js";

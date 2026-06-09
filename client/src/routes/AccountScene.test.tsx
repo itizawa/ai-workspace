@@ -41,6 +41,27 @@ function renderApp(initialPath: string) {
   );
 }
 
+describe("AccountScene スケルトン UI（#241）", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("useAuth() が isLoading=true のときスケルトンが表示される", async () => {
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue({ id: "user1", displayName: "Alice" });
+    vi.spyOn(authApi, "useAuth").mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    } as ReturnType<typeof authApi.useAuth>);
+    renderApp("/account");
+
+    expect(await screen.findByTestId("account-scene-skeleton")).toBeInTheDocument();
+  });
+});
+
 describe("アカウント設定画面（#50）", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -64,21 +85,22 @@ describe("アカウント設定画面（#50）", () => {
     expect(await screen.findByRole("heading", { name: /ログイン/ })).toBeInTheDocument();
   });
 
-  it("ログイン済み時はサイドバーに「アカウント設定」リンクが表示される", async () => {
+  it("ログイン済み時はサイドバーのメニューに「アカウント設定」が表示される", async () => {
     stubFetch(true);
     renderApp("/");
 
-    expect(await screen.findByRole("link", { name: "アカウント設定" })).toBeInTheDocument();
+    const trigger = await screen.findByRole("button", { name: /ユーザーメニュー/ });
+    await userEvent.click(trigger);
+
+    expect(await screen.findByRole("menuitem", { name: "アカウント設定" })).toBeInTheDocument();
   });
 
-  it("未ログイン時はサイドバーに「アカウント設定」リンクが表示されない", async () => {
+  it("未ログイン時はサイドバーにユーザーメニュートリガーが表示されない", async () => {
     stubFetch(false);
     renderApp("/");
 
-    // #136 で「管理画面」リンクが admin 専用になったため、非ログイン時の安定指標として使えなくなった。
-    // UserFooter は user が null/undefined のとき null を返すため「アカウント設定」は表示されない。
     await waitFor(() => {
-      expect(screen.queryByRole("link", { name: "アカウント設定" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /ユーザーメニュー/ })).not.toBeInTheDocument();
     });
   });
 });
@@ -93,10 +115,15 @@ describe("プロフィール編集フォーム (#51)", () => {
   });
 
   it("displayName が空のとき保存ボタンが無効化される", async () => {
-    vi.spyOn(authApi, "fetchMe").mockResolvedValue({ id: "user1", displayName: "Alice" });
+    const mockUser = { id: "user1", displayName: "Alice" };
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue(mockUser);
+    vi.spyOn(authApi, "useAuth").mockReturnValue({
+      data: mockUser,
+      isLoading: false,
+    } as ReturnType<typeof authApi.useAuth>);
     renderApp("/account");
 
-    const input = await screen.findByRole("textbox", { name: /表示名/ });
+    const input = await screen.findByDisplayValue("Alice");
     await userEvent.clear(input);
 
     const button = screen.getByRole("button", { name: /保存/ });
@@ -104,14 +131,19 @@ describe("プロフィール編集フォーム (#51)", () => {
   });
 
   it("保存ボタン押下で updateProfile が呼ばれる", async () => {
+    const mockUser = { id: "user1", displayName: "Alice" };
     const mockUpdate = vi.spyOn(authApi, "updateProfile").mockResolvedValue({
       id: "user1",
       displayName: "New Name",
     });
-    vi.spyOn(authApi, "fetchMe").mockResolvedValue({ id: "user1", displayName: "Alice" });
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue(mockUser);
+    vi.spyOn(authApi, "useAuth").mockReturnValue({
+      data: mockUser,
+      isLoading: false,
+    } as ReturnType<typeof authApi.useAuth>);
     renderApp("/account");
 
-    const input = await screen.findByRole("textbox", { name: /表示名/ });
+    const input = await screen.findByDisplayValue("Alice");
     await userEvent.clear(input);
     await userEvent.type(input, "New Name");
 
@@ -124,14 +156,19 @@ describe("プロフィール編集フォーム (#51)", () => {
   });
 
   it("保存成功時にスナックバーが表示される", async () => {
+    const mockUser = { id: "user1", displayName: "Alice" };
     vi.spyOn(authApi, "updateProfile").mockResolvedValue({
       id: "user1",
       displayName: "New Name",
     });
-    vi.spyOn(authApi, "fetchMe").mockResolvedValue({ id: "user1", displayName: "Alice" });
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue(mockUser);
+    vi.spyOn(authApi, "useAuth").mockReturnValue({
+      data: mockUser,
+      isLoading: false,
+    } as ReturnType<typeof authApi.useAuth>);
     renderApp("/account");
 
-    const input = await screen.findByRole("textbox", { name: /表示名/ });
+    const input = await screen.findByDisplayValue("Alice");
     await userEvent.clear(input);
     await userEvent.type(input, "New Name");
 
@@ -139,5 +176,77 @@ describe("プロフィール編集フォーム (#51)", () => {
     await userEvent.click(button);
 
     expect(await screen.findByText(/保存しました/)).toBeInTheDocument();
+  });
+
+  it("avatarUrl に不正な URL を入力したとき保存ボタンが無効化またはエラーが表示される（#187）", async () => {
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue({ id: "user1", displayName: "Alice" });
+    renderApp("/account");
+
+    const avatarInput = await screen.findByRole("textbox", { name: /プロフィール画像 URL/ });
+    await userEvent.type(avatarInput, "not-a-url");
+    await userEvent.tab(); // blur してバリデーションを発火
+
+    await waitFor(() => {
+      const hasError = screen.queryByText(/有効な URL/) !== null;
+      expect(hasError).toBe(true);
+    });
+  });
+});
+
+describe("編集フォームのdirty判定 (#179)", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("変更なし → 保存ボタンが disabled", async () => {
+    const mockUser = { id: "user1", displayName: "Alice" };
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue(mockUser);
+    vi.spyOn(authApi, "useAuth").mockReturnValue({
+      data: mockUser,
+      isLoading: false,
+    } as ReturnType<typeof authApi.useAuth>);
+    renderApp("/account");
+
+    await screen.findByDisplayValue("Alice");
+
+    expect(screen.getByRole("button", { name: /保存/ })).toBeDisabled();
+  });
+
+  it("変更あり → 保存ボタンが enabled", async () => {
+    const mockUser = { id: "user1", displayName: "Alice" };
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue(mockUser);
+    vi.spyOn(authApi, "useAuth").mockReturnValue({
+      data: mockUser,
+      isLoading: false,
+    } as ReturnType<typeof authApi.useAuth>);
+    renderApp("/account");
+
+    const input = await screen.findByDisplayValue("Alice");
+    await userEvent.clear(input);
+    await userEvent.type(input, "Bob");
+
+    expect(screen.getByRole("button", { name: /保存/ })).not.toBeDisabled();
+  });
+
+  it("変更後に初期値へ戻す → 保存ボタンが disabled", async () => {
+    const mockUser = { id: "user1", displayName: "Alice" };
+    vi.spyOn(authApi, "fetchMe").mockResolvedValue(mockUser);
+    vi.spyOn(authApi, "useAuth").mockReturnValue({
+      data: mockUser,
+      isLoading: false,
+    } as ReturnType<typeof authApi.useAuth>);
+    renderApp("/account");
+
+    const input = await screen.findByDisplayValue("Alice");
+    await userEvent.clear(input);
+    await userEvent.type(input, "Bob");
+    await userEvent.clear(input);
+    await userEvent.type(input, "Alice");
+
+    expect(screen.getByRole("button", { name: /保存/ })).toBeDisabled();
   });
 });

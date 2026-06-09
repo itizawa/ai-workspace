@@ -1,4 +1,4 @@
-import type { Channel, ChannelType, MessageRecord } from "@hatchery/common";
+import type { Channel, ChannelGoal, ChannelType, MessageRecord } from "@hatchery/common";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 
 import { openApiClient } from "./client.js";
@@ -30,7 +30,7 @@ export function useChannels() {
 export function useCreateChannel() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { label: string; type?: ChannelType }): Promise<Channel> => {
+    mutationFn: async (input: { label: string; type?: ChannelType; goal?: ChannelGoal }): Promise<Channel> => {
       const { data, error } = await openApiClient.POST("/api/channels", {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         body: input as any,
@@ -57,6 +57,27 @@ export function useChannelMessages(channelId: string) {
       if (error) throw new Error(JSON.stringify(error));
       return (data ?? []) as unknown as MessageRecord[];
     },
+  });
+}
+
+/**
+ * PATCH /channels/{id} でチャンネル名を更新するミューテーションフック（認証必須・#206）。
+ * 成功後にチャンネル一覧キャッシュを無効化して再取得させる。
+ */
+export function useUpdateChannel() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; label: string }): Promise<Channel> => {
+      const { data, error } = await openApiClient.PATCH("/api/channels/{id}", {
+        params: { path: { id: input.id } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        body: { label: input.label } as any,
+        credentials: "include",
+      });
+      if (error || !data) throw new Error(JSON.stringify(error));
+      return data as Channel;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CHANNELS_QUERY_KEY }),
   });
 }
 

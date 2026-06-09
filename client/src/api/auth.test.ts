@@ -55,7 +55,7 @@ describe("login / logout / updateProfile（openApiClient 経由・絶対 URL）"
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, user));
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(login({ id: "alice", password: "pw" })).resolves.toEqual(user);
+    await expect(login({ loginId: "alice", password: "pw" })).resolves.toEqual(user);
     const request = fetchMock.mock.calls[0][0] as Request;
     expect(request).toBeInstanceOf(Request);
     expect(request.url).toContain("/auth/login");

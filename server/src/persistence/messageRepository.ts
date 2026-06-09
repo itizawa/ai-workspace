@@ -8,12 +8,21 @@ export type { MessageRecord };
 
 /** 企画 チャンネルの UX 提案メッセージ作成入力（#76）。 */
 export interface PlanningMessageInput {
-  speaker: string;
+  createdEmployeeId: string;
   channel: string;
   text: string;
   proposalTitle: string;
   proposalReason: string;
   proposalTargetUrl: string;
+}
+
+/**
+ * メッセージ作成入力（#183）。Message に optional な postedAt を加えたもの。
+ * postedAt 省略時はサーバ側で保存時刻（now）をセットする。
+ * Message 型（common）は postedAt を持たないため代入可能。
+ */
+export interface MessageCreateInput extends Message {
+  postedAt?: Date;
 }
 
 function cloneRecord(record: MessageRecord): MessageRecord {
@@ -26,8 +35,9 @@ function cloneRecord(record: MessageRecord): MessageRecord {
  */
 export interface MessageRepository {
   list(): Promise<MessageRecord[]>;
-  createMany(input: Message[]): Promise<MessageRecord[]>;
-  /** channelId でフィルタリングしたメッセージ一覧を返す（#48）。 */
+  /** メッセージを一括作成する。postedAt は MessageCreateInput で指定可。省略時は now。 */
+  createMany(input: MessageCreateInput[]): Promise<MessageRecord[]>;
+  /** channelId でフィルタリングし postedAt <= now のメッセージを返す（#183）。 */
   listByChannel(channelId: string): Promise<MessageRecord[]>;
   /** channel の直近 limit 件を新しい順（createdAt 降順）で返す（#53・会話生成の文脈用）。 */
   listRecentByChannel(channelId: string, limit: number): Promise<MessageRecord[]>;
@@ -48,15 +58,16 @@ export class InMemoryMessageRepository implements MessageRepository {
     return Promise.resolve(this.records.map(cloneRecord));
   }
 
-  createMany(input: Message[]): Promise<MessageRecord[]> {
+  createMany(input: MessageCreateInput[]): Promise<MessageRecord[]> {
     const created = input.map((m, index) => {
       this.seq += 1;
       const record: MessageRecord = {
         id: `mem-${this.seq}`,
-        speaker: m.speaker,
+        createdEmployeeId: m.createdEmployeeId,
         channel: m.channel,
         text: m.text,
         createdAt: new Date(0),
+        postedAt: m.postedAt ?? new Date(0),
         order: index,
       };
       this.records.push(record);
@@ -66,8 +77,12 @@ export class InMemoryMessageRepository implements MessageRepository {
   }
 
   listByChannel(channelId: string): Promise<MessageRecord[]> {
+    const now = new Date();
     return Promise.resolve(
-      this.records.filter((r) => r.channel === channelId).map(cloneRecord),
+      this.records
+        .filter((r) => r.channel === channelId && r.postedAt.getTime() <= now.getTime())
+        .sort((a, b) => a.postedAt.getTime() - b.postedAt.getTime() || a.order - b.order)
+        .map(cloneRecord),
     );
   }
 
@@ -94,10 +109,11 @@ export class InMemoryMessageRepository implements MessageRepository {
     this.seq += 1;
     const record: MessageRecord = {
       id: `mem-${this.seq}`,
-      speaker: input.speaker,
+      createdEmployeeId: input.createdEmployeeId,
       channel: input.channel,
       text: input.text,
       createdAt: new Date(0),
+      postedAt: new Date(0),
       order: 0,
       proposalTitle: input.proposalTitle,
       proposalReason: input.proposalReason,
