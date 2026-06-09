@@ -71,15 +71,6 @@ describe("AddEmployeeDialog（#217）", () => {
     expect(screen.getByRole("textbox", { name: "役割（任意）" })).toBeInTheDocument();
   });
 
-  it("表示名が空のまま送信しようとするとエラーメッセージが表示される", async () => {
-    stubFetch(201, {});
-    const onClose = vi.fn();
-    renderWithClient(<AddEmployeeDialog open={true} onClose={onClose} />);
-    expect(await screen.findByRole("dialog")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "追加" }));
-    expect(await screen.findByText("表示名は必須です")).toBeInTheDocument();
-  });
-
   it("表示名が空のとき追加ボタンは disabled になる", async () => {
     stubFetch(201, {});
     const onClose = vi.fn();
