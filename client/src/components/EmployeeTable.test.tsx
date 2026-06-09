@@ -1,6 +1,7 @@
 import { DEFAULT_EMPLOYEES } from "@hatchery/common";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { EmployeeTable } from "./EmployeeTable";
@@ -117,5 +118,48 @@ describe("EmployeeTable", () => {
       // ダイアログタイトルが表示されていることを確認
       expect(screen.getByRole("dialog")).toBeInTheDocument();
     });
+  });
+
+  // #218: 削除ボタンと確認ダイアログ
+  it("onDelete プロップがある場合は削除ボタンが表示される（#218）", () => {
+    const handleDelete = vi.fn();
+    renderWithClient(<EmployeeTable onDelete={handleDelete} />);
+    const deleteButtons = screen.getAllByRole("button", { name: /削除/ });
+    expect(deleteButtons).toHaveLength(DEFAULT_EMPLOYEES.length);
+  });
+
+  it("onDelete プロップがない場合は削除ボタンが表示されない（#218）", () => {
+    renderWithClient(<EmployeeTable />);
+    const deleteButtons = screen.queryAllByRole("button", { name: /削除/ });
+    expect(deleteButtons).toHaveLength(0);
+  });
+
+  it("削除ボタンをクリックすると確認ダイアログが開く（#218）", async () => {
+    const handleDelete = vi.fn();
+    renderWithClient(<EmployeeTable onDelete={handleDelete} />);
+    const deleteButtons = screen.getAllByRole("button", { name: /削除/ });
+    await userEvent.click(deleteButtons[0]);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("確認ダイアログで「削除する」をクリックすると onDelete が呼ばれる（#218）", async () => {
+    const handleDelete = vi.fn();
+    const employees = [{ id: "emp-1", displayName: "田中 太郎", isBot: true as const }];
+    renderWithClient(<EmployeeTable employees={employees} onDelete={handleDelete} />);
+    const deleteButton = screen.getByRole("button", { name: /削除/ });
+    await userEvent.click(deleteButton);
+    const confirmButton = screen.getByRole("button", { name: /削除する/ });
+    await userEvent.click(confirmButton);
+    expect(handleDelete).toHaveBeenCalledWith("emp-1");
+  });
+
+  it("確認ダイアログで「キャンセル」をクリックすると onDelete は呼ばれない（#218）", async () => {
+    const handleDelete = vi.fn();
+    renderWithClient(<EmployeeTable onDelete={handleDelete} />);
+    const deleteButtons = screen.getAllByRole("button", { name: /削除/ });
+    await userEvent.click(deleteButtons[0]);
+    const cancelButton = screen.getByRole("button", { name: /キャンセル/ });
+    await userEvent.click(cancelButton);
+    expect(handleDelete).not.toHaveBeenCalled();
   });
 });
