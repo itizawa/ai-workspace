@@ -1,5 +1,6 @@
 import { Box, Typography } from "./uiParts";
 import type { ReactElement } from "react";
+import type React from "react";
 import type { Post } from "../api/communities.js";
 import { UpVoteButton } from "./UpVoteButton.js";
 
@@ -23,14 +24,6 @@ export const PostCard = ({
   voteDisabled = false,
   voteStopPropagation = false,
 }: PostCardProps): ReactElement => {
-  const handleVote: () => void = voteStopPropagation
-    ? () => {
-        // voteStopPropagation の実際のイベント止めは、UpVoteButton に onClick で委ねず
-        // 上位コンポーネントから e.stopPropagation を処理する。
-        // PostCard 内部では単純に onVote() を呼ぶだけ（イベント取得なし）。
-        onVote();
-      }
-    : onVote;
   return (
     <Box
       sx={{
@@ -43,8 +36,11 @@ export const PostCard = ({
       }}
     >
       <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
-        <Box sx={{ pt: 0.5 }}>
-          <UpVoteButton score={post.score} onVote={handleVote} voted={voted} disabled={voteDisabled} />
+        <Box
+          sx={{ pt: 0.5 }}
+          onClick={voteStopPropagation ? (e: React.MouseEvent) => e.stopPropagation() : undefined}
+        >
+          <UpVoteButton score={post.score} onVote={onVote} voted={voted} disabled={voteDisabled} />
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography

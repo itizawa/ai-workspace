@@ -2,8 +2,7 @@ import { Box, Typography, Button } from "../components/uiParts";
 import { Link as RouterLink } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 
-import { useHomeFeed } from "../api/communities.js";
-import { useVotePost } from "../api/communities.js";
+import { useHomeFeed, useVotePost } from "../api/communities.js";
 import { PostCard } from "../components/PostCard.js";
 
 /**

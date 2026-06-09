@@ -1,6 +1,5 @@
 import { Box, Typography } from "../components/uiParts";
-import { useParams } from "@tanstack/react-router";
-import { Link as RouterLink } from "@tanstack/react-router";
+import { Link as RouterLink, useParams } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 
 import { useCommunityFeed, useSubscribe, useUnsubscribe, useVotePost, usePublicCommunities } from "../api/communities.js";
