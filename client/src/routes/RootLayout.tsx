@@ -1,6 +1,8 @@
-import { Box, Drawer, Link, useMediaQuery, useTheme } from "../components/uiParts";
+import { Box, Divider, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useMediaQuery, useTheme } from "../components/uiParts";
 
 import { isAdmin } from "@hatchery/common";
+import BusinessIcon from "@mui/icons-material/Business";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { Link as RouterLink, Outlet, useLocation } from "@tanstack/react-router";
 import { Suspense, useEffect, useState, type ReactElement } from "react";
 
@@ -12,6 +14,7 @@ import { SidebarChannelSection } from "../components/SidebarChannelSection";
 import { SLACK_COLORS } from "../theme.js";
 
 const SIDEBAR_WIDTH = 260;
+const SIDEBAR_ICON_SX = { color: SLACK_COLORS.sidebarText, minWidth: 36 } as const;
 
 /**
  * サイドバーの内容。デスクトップの恒久サイドバーとモバイルのドロワー両方で共用する。
@@ -22,18 +25,27 @@ const SidebarContent = (): ReactElement => {
   return (
     <>
       <SidebarChannelSection />
-      <Box sx={{ mt: 2 }}>
-        <Link component={RouterLink} to="/office" sx={{ color: SLACK_COLORS.sidebarText }} underline="hover">
-          仮想オフィス
-        </Link>
-      </Box>
-      {user && isAdmin(user) && (
-        <Box sx={{ mt: 1 }}>
-          <Link component={RouterLink} to="/admin" sx={{ color: SLACK_COLORS.sidebarText }} underline="hover">
-            管理画面
-          </Link>
-        </Box>
-      )}
+      <Divider sx={{ my: 1 }} />
+      <List dense>
+        <ListItem disablePadding>
+          <ListItemButton component={RouterLink} to="/office" sx={{ color: SLACK_COLORS.sidebarText }}>
+            <ListItemIcon sx={SIDEBAR_ICON_SX}>
+              <BusinessIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="仮想オフィス" />
+          </ListItemButton>
+        </ListItem>
+        {user && isAdmin(user) && (
+          <ListItem disablePadding>
+            <ListItemButton component={RouterLink} to="/admin" sx={{ color: SLACK_COLORS.sidebarText }}>
+              <ListItemIcon sx={SIDEBAR_ICON_SX}>
+                <AdminPanelSettingsIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText primary="管理画面" />
+            </ListItemButton>
+          </ListItem>
+        )}
+      </List>
     </>
   );
 };
