@@ -1,47 +1,117 @@
-# 設計書 #282 — チャンネル新着メッセージのドリップ表示
+# 設計書: チャンネルの新着メッセージをクライアント側で逐次表示（ドリップ） (#282)
 
-## 目的
+## 1. 目的 / 背景
 
-1 回の生成でまとまって増えた複数メッセージを、一括同時描画ではなく **時間差 + タイピングインジケータ付きで 1 件ずつ** タイムラインに現すことで、AI 社員の会話が「いま立ち上がっている」観戦感を出す。サーバ・生成・API・OpenAPI は一切変更せず、client 内に閉じる（追加 API コールゼロ）。
+1回の生成で増えた複数メッセージを、一括ではなく時間差＋タイピングインジケータ付きで1件ずつタイムラインに表示することで、AI 社員の会話が「いま立ち上がっている」観戦感を出す。サーバ・生成・API は変更しない（client 内に閉じる）。
 
-## 受け入れ条件 → 実装方針の対応
+## 2. スコープ（やること / やらないこと）
 
-| AC | 実装方針 |
-|----|----------|
-| 1. 新規増加分のみ時間差で 1 件ずつ表示（時系列維持） | `useMessageDrip` フックで「既に表示済みの id 集合」を ref 保持し、新規 id を末尾から順に `DRIP_INTERVAL_MS` 間隔で 1 件ずつ可視化。元配列の順序をそのまま使う。 |
-| 2. 各メッセージ出現直前に発言者のタイピングインジケータを短時間表示 | 専用 `TypingIndicator` コンポーネント（`●●●` アニメ）。次に出すメッセージの発言者名で `TYPING_DURATION_MS` 表示してから本文へ切替。 |
-| 3. 初回ロードは即時表示、以降の新着のみドリップ、リロードで再生しない | フック初回 commit 時点の全 id を「表示済み」として即マーク（ドリップ対象 0 件）。リロードでも初回扱いになるため過去ログは再生されない。 |
-| 4. 間隔・表示時間を定数化、`prefers-reduced-motion` で即時表示 | `DRIP_INTERVAL_MS` / `TYPING_DURATION_MS` を module 定数化。`useMediaQuery("(prefers-reduced-motion: reduce)")` が true ならドリップ／タイピングを無効化し全件即時表示（`OfficeView` と整合）。 |
-| 5. 表示制御ロジックを副作用から分離しテスト可能に | 純粋関数 `computeDrip`（`src/utils/messageDrip.ts`）で「表示済み id 集合 + 現メッセージ列」から「可視 id 集合・次にドリップする id」を算出。RTL + fake timers でフック挙動を検証。 |
-| 6. サーバ・生成・API・OpenAPI 不変、追加コールなし | client コンポーネント／フック／util のみ追加・変更。API 呼び出しは増やさない。 |
-| 7. `build test lint` 緑・一方向 import 維持 | 追加ファイルは `@hatchery/common` のみ参照（server 非依存）。 |
+### やること
+- `ChannelView` で新着メッセージをドリップ表示（時間差・1件ずつ）
+- 各メッセージ表示直前のタイピングインジケータ（「●●●」アニメーション）
+- 初回ロード（過去ログ）は即時表示
+- `prefers-reduced-motion` 時はドリップ無効化・即時表示
+- 表示制御ロジックを `useDripMessages` hook に分離
 
-## 設計判断
+### やらないこと
+- サーバ・生成・API・OpenAPI スキーマ変更
+- スレッドグルーピング（#250）
+- SSE/WebSocket によるリアルタイムストリーミング
+- 効果音
 
-### (a) 新着検出: メッセージ id 集合の diff
+## 3. 受け入れ条件（テストに落とせる粒度で箇条書き）
 
-`useChannelMessages` は `MessageRecord[]`（永続化形・**安定 `id` 付き**）を返す。ID 集合の diff を採用する（件数差分だと先頭挿入・並び替えに弱い）。`ChannelView` の `messages` prop を `Message & { id?: string }` 相当に広げ、`id` があればそれを、無ければ index ベースのフォールバックキーを用いる（Storybook fixture は id 無しでも従来どおり即時全件表示される）。
+1. 新規に増えたメッセージ群は時間差で1件ずつ順に表示（ドリップ）。表示順は時系列を維持。
+2. 各メッセージ表示直前に発言者のタイピングインジケータを短時間表示してから本文に切り替える。
+3. 初回ロード時の既存メッセージは即時表示（ドリップしない）。リロードで過去ログが毎回ドリップ再生されない。
+4. ドリップ間隔・タイピング表示時間は定数（`DRIP_TYPING_MS` / `DRIP_INTERVAL_MS`）で調整可能。`prefers-reduced-motion` 時は即時表示。
+5. 表示制御ロジックを `useDripMessages` hook に分離しテスト可能にする。RTL + fake timers で検証。
+6. サーバ・生成・API・OpenAPI スキーマは変更しない。追加 API コールなし。
+7. `pnpm turbo run build test lint` が緑。client → common の一方向 import 境界を維持。
 
-- 初回 commit: 観測した全 id を `displayedIds` ref に投入 → ドリップ対象なし（即時表示）。
-- 再 render で未知の id が出現 → それらを「新着キュー」とし、配列順のまま 1 件ずつ可視化していく。
+## 4. 設計方針
 
-### (b) タイピングインジケータ: 専用コンポーネント化
+### アーキテクチャ
 
-`TypingIndicator`（presentational・props: `name`）として切り出す。`ChannelView` 内のドリップ最中、次メッセージの直前に挿入表示する。Storybook / 単体テストで再利用・検証しやすい。
+```
+ChannelScene
+  └─ ChannelView (presentational + drip state)
+       └─ useDripMessages (hook: 新着検出・キュー管理・タイマー)
+```
 
-### 状態の置き場所
+`ChannelView` は `useMediaQuery` で `prefers-reduced-motion` を検出し、`useDripMessages` に渡す。`useDripMessages` はタイマーを管理し、`{ visibleMessages, typingEmployeeId }` を返す。
 
-ドリップ進行状態（可視 id 集合・タイピング中の発言者・タイマー）はすべて `ChannelView` 内の `useMessageDrip` ローカル state に閉じる。サーバ状態は引き続き TanStack Query（`useChannelMessages`）に集約し、グローバル状態管理は導入しない（ADR-0003）。
+### useDripMessages の状態機械
 
-## 追加・変更ファイル
+```
+初回マウント時:
+  seenIds ← allMessages の全 ID
+  visibleMessages ← allMessages (全件即時表示)
+  queue ← []
 
-- `client/src/utils/messageDrip.ts`（新規・純粋ロジック `computeDrip` と定数）
-- `client/src/utils/messageDrip.test.ts`（新規・純粋ロジックのテスト）
-- `client/src/hooks/useMessageDrip.ts`（新規・タイマー副作用を持つフック）
-- `client/src/components/TypingIndicator.tsx`（新規・presentational）
-- `client/src/components/ChannelView.tsx`（変更・ドリップ描画へ）
-- `client/src/components/ChannelView.test.tsx`（追記・ドリップ／初回即時／reduced-motion）
+allMessages 変化時:
+  newMsgs ← allMessages から seenIds にない ID だけ抽出
+  seenIds.add(newMsgs の ID)
+  if prefersReducedMotion: visibleMessages.push(...newMsgs); return
+  queue.push(...newMsgs)
+  if !isProcessing: processNext()
 
-## スコープ外
+processNext():
+  if queue.empty: isProcessing=false; return
+  isProcessing=true
+  next ← queue[0]
+  typingEmployeeId ← next.createdEmployeeId
+  setTimeout(DRIP_TYPING_MS) → {
+    typingEmployeeId ← null
+    visibleMessages.push(next)
+    queue.shift()
+    setTimeout(DRIP_INTERVAL_MS) → processNext()
+  }
+```
 
-スレッドグルーピング表示（#250）、SSE/WebSocket による逐次ストリーミング、効果音。本 Issue はクライアント側表示アニメーションに限定。
+### 定数
+
+| 定数 | 値 | 意味 |
+|------|-----|------|
+| `DRIP_TYPING_MS` | 700ms | タイピングインジケータ表示時間 |
+| `DRIP_INTERVAL_MS` | 400ms | 次メッセージ表示開始までの待機時間 |
+
+### タイピングインジケータ
+
+`TypingIndicator` コンポーネント（`ChannelView.tsx` 内にインライン実装）：
+- 発言者名 + 「●●●」アニメーション（CSS keyframes で点滅）
+- `aria-label="入力中"` で支援技術に通知
+
+## 5. 影響範囲 / 既存への変更
+
+| ファイル | 変更内容 |
+|----------|----------|
+| `client/src/hooks/useDripMessages.ts` | 新規作成 |
+| `client/src/components/ChannelView.tsx` | `useDripMessages` を使用するよう変更 |
+| `client/src/components/ChannelView.test.tsx` | ドリップ系テストを追加 |
+
+サーバ・common・OpenAPI スキーマは変更なし。
+
+## 6. テスト計画（TDD で書くテスト一覧）
+
+### `ChannelView.test.tsx` に追加するテスト
+
+**ドリップ表示（新着検出）**
+- 初回ロード時の全メッセージが即時表示される（fake timer 不要）
+- 新着メッセージが追加された直後は visible に含まれない（typing 中）
+- `DRIP_TYPING_MS` 経過後に最初の新着メッセージが表示される
+- 複数の新着が順番に（1件ずつ）表示される
+- 初回ロードのメッセージはリロード後も即時表示（再ドリップしない）
+
+**reduced-motion**
+- `prefers-reduced-motion` 環境では新着が即時表示される
+
+**タイピングインジケータ**
+- 新着待ち中にタイピングインジケータが表示される
+- メッセージ表示後にタイピングインジケータが消える
+
+## 7. リスク・未決事項
+
+- **React StrictMode での二重起動**: `useEffect` が開発時に2回実行されうる。`seenIds` ref の初期化は `useState` lazy initializer で行い冪等性を確保する。
+- **キューへの同時追加**: 複数の新着がまとまって来た場合、`isProcessing` フラグでキュー処理の多重起動を防ぐ。
+- **アンマウント時のリーク**: `timerId` ref に最後の `setTimeout` ID を保持し、クリーンアップ時に `clearTimeout` する。

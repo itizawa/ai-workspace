@@ -9,9 +9,7 @@ import {
 } from "@hatchery/common";
 
 import type { ReactElement } from "react";
-
-import { useMessageDrip } from "../hooks/useMessageDrip.js";
-import { TypingIndicator } from "./TypingIndicator.js";
+import { useDripMessages } from "../hooks/useDripMessages.js";
 
 const postedAtFormatter = new Intl.DateTimeFormat("ja-JP", { hour: "2-digit", minute: "2-digit", hour12: false });
 
@@ -33,6 +31,7 @@ export interface ChannelViewProps {
 /**
  * チャンネル詳細画面の presentational コンポーネント（#30）。
  * channel に属する message[] を「発言者名 + 本文」のフラットな一覧として描画する。
+ * 新着メッセージはドリップ表示（タイピングインジケータ付き時間差）し、観戦感を演出する（#282）。
  * API・ルータ・グローバル状態には依存せず、props 駆動で Storybook の fixture 描画ができる
  * （client → common の一方向依存のみ）。createdEmployeeId は employees の displayName に解決し、
  * 未解決の ID はそのままフォールバック表示する（#222）。
@@ -44,17 +43,10 @@ export const ChannelView = ({
   onEditName,
 }: ChannelViewProps): ReactElement => {
   const resolveDisplayName = createDisplayNameResolver(employees);
-
-  // 新着メッセージを 1 件ずつ「めくって見せる」ドリップ表示制御（#282）。
-  // 過去ログ（初回ロード）は即時全件表示、以降の新着のみ時間差で 1 件ずつ現す。
-  // prefers-reduced-motion 時は即時表示する（AC-4・OfficeView と整合）。
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
-  const { isVisible, typingKey } = useMessageDrip(messages, prefersReducedMotion);
+  const { visibleMessages, typingEmployeeId } = useDripMessages(messages, prefersReducedMotion);
 
-  // 本文を表示してよいメッセージ（可視のもの）のみを時系列順で描画する。
-  const visibleMessages = messages.filter((message) => isVisible(message.id));
-  // タイピングインジケータ表示対象の発言者（次に現れる新着メッセージ）。
-  const typingMessage = typingKey ? messages.find((message) => message.id === typingKey) : undefined;
+  const isEmpty = visibleMessages.length === 0 && typingEmployeeId === null;
 
   return (
     <Box component="section" sx={{ p: 3 }}>
@@ -69,7 +61,7 @@ export const ChannelView = ({
         )}
       </Stack>
 
-      {messages.length === 0 ? (
+      {isEmpty ? (
         <Typography variant="body2" color="text.secondary">
           このチャンネルにはまだメッセージがありません。
         </Typography>
@@ -92,9 +84,16 @@ export const ChannelView = ({
               </Stack>
             </ListItem>
           ))}
-          {typingMessage && (
-            <ListItem key="typing-indicator" alignItems="flex-start" disableGutters>
-              <TypingIndicator name={resolveDisplayName(typingMessage.createdEmployeeId)} />
+          {typingEmployeeId !== null && (
+            <ListItem aria-label="入力中" alignItems="flex-start" disableGutters>
+              <Stack spacing={0.5}>
+                <Typography variant="subtitle2" component="span">
+                  {resolveDisplayName(typingEmployeeId)}
+                </Typography>
+                <Typography variant="body2" component="span" sx={{ letterSpacing: 2 }}>
+                  ●●●
+                </Typography>
+              </Stack>
             </ListItem>
           )}
         </List>

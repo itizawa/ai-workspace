@@ -1,38 +1,10 @@
 import { DEFAULT_EMPLOYEES, type Channel, type Employee, type MessageRecord } from "@hatchery/common";
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { DRIP_INTERVAL_MS, TYPING_DURATION_MS } from "../utils/messageDrip";
 import { ChannelView } from "./ChannelView";
-
-/** prefers-reduced-motion の matchMedia をモックする（reduce=true で reduced-motion 有効）。 */
-const mockReducedMotion = (reduce: boolean): void => {
-  Object.defineProperty(window, "matchMedia", {
-    writable: true,
-    value: vi.fn().mockImplementation((query: string) => ({
-      matches: query.includes("prefers-reduced-motion") ? reduce : false,
-      media: query,
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })),
-  });
-};
-
-/** テスト用に id 付き MessageRecord を生成する。 */
-const rec = (id: string, employeeId: string, text: string, order: number): MessageRecord => ({
-  id,
-  createdEmployeeId: employeeId,
-  channel: "zatsudan",
-  text,
-  postedAt: new Date("2026-06-05T09:00:00Z"),
-  createdAt: new Date("2026-06-05T09:00:00Z"),
-  order,
-});
+import { DRIP_INTERVAL_MS, DRIP_TYPING_MS } from "../hooks/useDripMessages";
 
 // 受け入れ条件（#30）: channel に属する message[] を発言者名 + 本文の
 // フラット一覧として表示する presentational コンポーネント。
@@ -128,107 +100,6 @@ describe("ChannelView", () => {
   });
 });
 
-describe("ChannelView 新着ドリップ表示（#282）", () => {
-  beforeEach(() => {
-    mockReducedMotion(false);
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.unstubAllGlobals();
-  });
-
-  it("初回ロードの過去ログは即時に全件表示する（ドリップしない・AC-3）", () => {
-    const initial = [rec("m1", "haru", "おはよう", 0), rec("m2", "ken", "よろしく", 1)];
-    render(<ChannelView channel={channel} messages={initial} employees={employees} />);
-
-    // タイマーを進めずとも初回ログは全件本文が出ている。
-    expect(screen.getByText("おはよう")).toBeInTheDocument();
-    expect(screen.getByText("よろしく")).toBeInTheDocument();
-    // タイピングインジケータは出ていない。
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
-  });
-
-  it("初回ロード後に増えた新着のみ、タイピング → 本文の順で 1 件ずつ表示する（AC-1 / AC-2）", () => {
-    const initial = [rec("m1", "haru", "おはよう", 0)];
-    const { rerender } = render(
-      <ChannelView channel={channel} messages={initial} employees={employees} />,
-    );
-    expect(screen.getByText("おはよう")).toBeInTheDocument();
-
-    // 新着 m2（ケン）, m3（ハル）が増える。
-    const grown = [
-      rec("m1", "haru", "おはよう", 0),
-      rec("m2", "ken", "やあ", 1),
-      rec("m3", "haru", "またね", 2),
-    ];
-    rerender(<ChannelView channel={channel} messages={grown} employees={employees} />);
-
-    // 本文が出る前にケンのタイピングインジケータが出ており、本文 m2/m3 はまだ。
-    expect(screen.getByRole("status", { name: /ケン.*入力中/ })).toBeInTheDocument();
-    expect(screen.queryByText("やあ")).not.toBeInTheDocument();
-    expect(screen.queryByText("またね")).not.toBeInTheDocument();
-
-    // タイピング時間経過で m2 本文が出る。
-    act(() => {
-      vi.advanceTimersByTime(TYPING_DURATION_MS);
-    });
-    expect(screen.getByText("やあ")).toBeInTheDocument();
-    // 次の m3 本文はまだ出ていない。
-    expect(screen.queryByText("またね")).not.toBeInTheDocument();
-
-    // ドリップ間隔 + タイピング時間経過で m3 本文が出る。
-    act(() => {
-      vi.advanceTimersByTime(DRIP_INTERVAL_MS + TYPING_DURATION_MS);
-    });
-    expect(screen.getByText("またね")).toBeInTheDocument();
-    // 全部出し切ったらタイピングは消える。
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
-  });
-
-  it("時系列順（メッセージ配列順）を維持して表示する（AC-1）", () => {
-    const initial = [rec("m1", "haru", "1番目", 0)];
-    const { rerender } = render(
-      <ChannelView channel={channel} messages={initial} employees={employees} />,
-    );
-    const grown = [
-      rec("m1", "haru", "1番目", 0),
-      rec("m2", "ken", "2番目", 1),
-      rec("m3", "haru", "3番目", 2),
-    ];
-    rerender(<ChannelView channel={channel} messages={grown} employees={employees} />);
-    // 全部出し切る。
-    act(() => {
-      vi.advanceTimersByTime((TYPING_DURATION_MS + DRIP_INTERVAL_MS) * 3);
-    });
-    const list = screen.getByRole("list", { name: "メッセージ一覧" });
-    const texts = within(list)
-      .getAllByText(/番目$/)
-      .map((el) => el.textContent);
-    expect(texts).toEqual(["1番目", "2番目", "3番目"]);
-  });
-
-  it("reduced-motion 時は新着も即時表示しタイピングを出さない（AC-4）", () => {
-    mockReducedMotion(true);
-    const initial = [rec("m1", "haru", "おはよう", 0)];
-    const { rerender } = render(
-      <ChannelView channel={channel} messages={initial} employees={employees} />,
-    );
-    const grown = [
-      rec("m1", "haru", "おはよう", 0),
-      rec("m2", "ken", "やあ", 1),
-      rec("m3", "haru", "またね", 2),
-    ];
-    rerender(<ChannelView channel={channel} messages={grown} employees={employees} />);
-
-    // タイマーを進めずとも新着が即時表示され、タイピングは出ない。
-    expect(screen.getByText("やあ")).toBeInTheDocument();
-    expect(screen.getByText("またね")).toBeInTheDocument();
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
-  });
-});
-
 describe("ChannelView 編集ボタン（#206）", () => {
   it("onEditName が渡されると編集ボタンが表示される", () => {
     render(<ChannelView channel={channel} messages={[]} onEditName={vi.fn()} />);
@@ -245,5 +116,139 @@ describe("ChannelView 編集ボタン（#206）", () => {
     render(<ChannelView channel={channel} messages={[]} onEditName={onEditName} />);
     await userEvent.click(screen.getByRole("button", { name: "チャンネル名を編集" }));
     expect(onEditName).toHaveBeenCalled();
+  });
+});
+
+describe("ChannelView ドリップ表示（#282）", () => {
+  const newMsg1: MessageRecord = {
+    id: "msg-new-1",
+    createdEmployeeId: "haru",
+    channel: "zatsudan",
+    text: "新しいメッセージ1",
+    postedAt: new Date("2026-06-05T11:00:00Z"),
+    createdAt: new Date("2026-06-05T11:00:00Z"),
+    order: 2,
+  };
+  const newMsg2: MessageRecord = {
+    id: "msg-new-2",
+    createdEmployeeId: "ken",
+    channel: "zatsudan",
+    text: "新しいメッセージ2",
+    postedAt: new Date("2026-06-05T11:01:00Z"),
+    createdAt: new Date("2026-06-05T11:01:00Z"),
+    order: 3,
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("初回ロード時の全メッセージが即時表示される（ドリップしない）", () => {
+    render(<ChannelView channel={channel} messages={messages} employees={employees} />);
+    expect(screen.getByText("おはようございます！")).toBeInTheDocument();
+    expect(screen.getByText("今日もよろしく。")).toBeInTheDocument();
+    expect(screen.queryByLabelText("入力中")).not.toBeInTheDocument();
+  });
+
+  it("新着追加直後はタイピングインジケータが表示され、新着メッセージはまだ非表示", () => {
+    const { rerender } = render(<ChannelView channel={channel} messages={messages} employees={employees} />);
+
+    rerender(<ChannelView channel={channel} messages={[...messages, newMsg1]} employees={employees} />);
+
+    expect(screen.getByText("おはようございます！")).toBeInTheDocument();
+    expect(screen.queryByText("新しいメッセージ1")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("入力中")).toBeInTheDocument();
+  });
+
+  it("DRIP_TYPING_MS 経過後に新着メッセージが表示され、タイピングインジケータが消える", () => {
+    const { rerender } = render(<ChannelView channel={channel} messages={messages} employees={employees} />);
+    rerender(<ChannelView channel={channel} messages={[...messages, newMsg1]} employees={employees} />);
+
+    act(() => {
+      vi.advanceTimersByTime(DRIP_TYPING_MS);
+    });
+
+    expect(screen.getByText("新しいメッセージ1")).toBeInTheDocument();
+    expect(screen.queryByLabelText("入力中")).not.toBeInTheDocument();
+  });
+
+  it("複数の新着が順番に（1件ずつ）表示される", () => {
+    const { rerender } = render(<ChannelView channel={channel} messages={messages} employees={employees} />);
+    rerender(<ChannelView channel={channel} messages={[...messages, newMsg1, newMsg2]} employees={employees} />);
+
+    // 1件目: typing 中
+    expect(screen.queryByText("新しいメッセージ1")).not.toBeInTheDocument();
+    expect(screen.queryByText("新しいメッセージ2")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("入力中")).toBeInTheDocument();
+
+    // 1件目表示
+    act(() => {
+      vi.advanceTimersByTime(DRIP_TYPING_MS);
+    });
+    expect(screen.getByText("新しいメッセージ1")).toBeInTheDocument();
+    expect(screen.queryByText("新しいメッセージ2")).not.toBeInTheDocument();
+
+    // DRIP_INTERVAL_MS 後に2件目の typing 開始
+    act(() => {
+      vi.advanceTimersByTime(DRIP_INTERVAL_MS);
+    });
+    expect(screen.getByLabelText("入力中")).toBeInTheDocument();
+
+    // 2件目表示
+    act(() => {
+      vi.advanceTimersByTime(DRIP_TYPING_MS);
+    });
+    expect(screen.getByText("新しいメッセージ2")).toBeInTheDocument();
+    expect(screen.queryByLabelText("入力中")).not.toBeInTheDocument();
+  });
+
+  it("初回ロード済みメッセージは再レンダリング後も即時表示のまま（ドリップ再生しない）", () => {
+    const { rerender } = render(<ChannelView channel={channel} messages={messages} employees={employees} />);
+
+    // 同じメッセージで再レンダリング
+    rerender(<ChannelView channel={channel} messages={messages.slice()} employees={employees} />);
+
+    expect(screen.getByText("おはようございます！")).toBeInTheDocument();
+    expect(screen.getByText("今日もよろしく。")).toBeInTheDocument();
+    expect(screen.queryByLabelText("入力中")).not.toBeInTheDocument();
+  });
+});
+
+describe("ChannelView ドリップ表示 - reduced-motion（#282）", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(prefers-reduced-motion: reduce)",
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const newMsg: MessageRecord = {
+    id: "msg-reduced",
+    createdEmployeeId: "haru",
+    channel: "zatsudan",
+    text: "reduced-motion テスト",
+    postedAt: new Date("2026-06-05T11:00:00Z"),
+    createdAt: new Date("2026-06-05T11:00:00Z"),
+    order: 2,
+  };
+
+  it("prefers-reduced-motion 時は新着が即時表示されタイピングインジケータを出さない", () => {
+    const { rerender } = render(<ChannelView channel={channel} messages={messages} employees={employees} />);
+    rerender(<ChannelView channel={channel} messages={[...messages, newMsg]} employees={employees} />);
+
+    expect(screen.getByText("reduced-motion テスト")).toBeInTheDocument();
+    expect(screen.queryByLabelText("入力中")).not.toBeInTheDocument();
   });
 });
