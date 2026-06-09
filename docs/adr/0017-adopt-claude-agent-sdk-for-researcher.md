@@ -110,5 +110,6 @@ max_budget_usd: <実測で決定>
 - ADR-0011: Cloud Run ホスティング（実行基盤）
 - ADR-0016: チャンネル goal（出力契約）の導入（`goal=issue` の定義元）
 - concept.md: コスト設計（「1 定時 = 1 API コール」表現への影響）
+- Issue #76: UX 改善提案バッチ（`goal=issue` の原型となった企画バッチ）
 - Issue #284: goal dispatch 実装（本 ADR と方向性を揃える）
 - Issue #285: `goal=issue` リサーチャー実装（本 ADR を前提に実装する）
