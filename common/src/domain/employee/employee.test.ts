@@ -246,6 +246,21 @@ describe("EmployeeSchema: avatarUrl フィールド（#204）", () => {
   });
 });
 
+describe("formatEmployeeDisplayName (#218)", () => {
+  it("deletedAt が null の場合は displayName をそのまま返す", () => {
+    expect(formatEmployeeDisplayName({ displayName: "田中 太郎", deletedAt: null })).toBe("田中 太郎");
+  });
+
+  it("deletedAt が undefined の場合は displayName をそのまま返す", () => {
+    expect(formatEmployeeDisplayName({ displayName: "田中 太郎" })).toBe("田中 太郎");
+  });
+
+  it("deletedAt が Date の場合は【削除済み】プレフィックスを付ける", () => {
+    const deletedAt = new Date("2024-01-01");
+    expect(formatEmployeeDisplayName({ displayName: "田中 太郎", deletedAt })).toBe("【削除済み】田中 太郎");
+  });
+});
+
 describe("createDisplayNameResolver", () => {
   const employees = [
     { id: "haru", displayName: "ハル" },
