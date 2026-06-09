@@ -7,6 +7,7 @@ import { useState, type MouseEvent, type ReactElement } from "react";
 import type { Channel, ChannelType } from "@hatchery/common";
 import { useAuth } from "../api/auth.js";
 import { useChannels } from "../api/channels.js";
+import { useIsMobile } from "../hooks/useIsMobile.js";
 import { SLACK_COLORS } from "../theme.js";
 import { EditChannelNameDialog } from "./EditChannelNameDialog.js";
 
@@ -39,6 +40,7 @@ function ChannelTypeIcon({ type }: { type: ChannelType }): ReactElement {
 export const ChannelList = (): ReactElement => {
   const { data: user } = useAuth();
   const { data: channels } = useChannels();
+  const isMobile = useIsMobile();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [menuChannel, setMenuChannel] = useState<Channel | null>(null);
   const [editChannel, setEditChannel] = useState<Channel | null>(null);
@@ -72,7 +74,7 @@ export const ChannelList = (): ReactElement => {
             key={channel.id}
             disablePadding
             secondaryAction={
-              user ? (
+              user && !isMobile ? (
                 <IconButton
                   aria-label={`${channel.label}のメニューを開く`}
                   size="small"

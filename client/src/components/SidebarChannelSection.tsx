@@ -4,6 +4,7 @@ import { Box, IconButton, Tooltip, Typography } from "./uiParts";
 import { Suspense, useState, type ReactElement } from "react";
 
 import { useAuth } from "../api/auth.js";
+import { useIsMobile } from "../hooks/useIsMobile.js";
 import { SLACK_COLORS } from "../theme.js";
 import { ChannelList } from "./ChannelList";
 import { ChannelListSkeleton } from "./ChannelListSkeleton";
@@ -11,6 +12,7 @@ import { CreateChannelDialog } from "./CreateChannelDialog";
 
 export const SidebarChannelSection = (): ReactElement => {
   const { data: user } = useAuth();
+  const isMobile = useIsMobile();
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
@@ -36,7 +38,7 @@ export const SidebarChannelSection = (): ReactElement => {
           チャンネル
         </Typography>
         {user && (
-          <Tooltip title="チャンネルを追加">
+          isMobile ? (
             <IconButton
               aria-label="チャンネルを追加"
               size="small"
@@ -45,7 +47,18 @@ export const SidebarChannelSection = (): ReactElement => {
             >
               <AddIcon fontSize="small" />
             </IconButton>
-          </Tooltip>
+          ) : (
+            <Tooltip title="チャンネルを追加">
+              <IconButton
+                aria-label="チャンネルを追加"
+                size="small"
+                onClick={() => setDialogOpen(true)}
+                sx={{ color: SLACK_COLORS.sidebarText, p: 0.25 }}
+              >
+                <AddIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )
         )}
       </Box>
       <Suspense fallback={<ChannelListSkeleton />}>

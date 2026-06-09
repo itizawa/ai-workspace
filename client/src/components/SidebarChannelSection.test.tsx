@@ -10,7 +10,7 @@ import {
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Suspense, type ReactElement } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SidebarChannelSection } from "./SidebarChannelSection";
 
@@ -111,5 +111,69 @@ describe("SidebarChannelSection（#233）", () => {
     ]);
     renderWithProviders(<SidebarChannelSection />);
     expect(await screen.findByText("雑談")).toBeInTheDocument();
+  });
+});
+
+// 受け入れ条件 #277: モバイル時 Tooltip 非表示、デスクトップ時 Tooltip 表示
+describe("SidebarChannelSection - Tooltip モバイル制御 (#277)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  describe("モバイル幅（md 未満）", () => {
+    beforeEach(() => {
+      Object.defineProperty(window, "matchMedia", {
+        writable: true,
+        value: vi.fn().mockImplementation((query: string) => ({
+          matches: query.includes("max-width"),
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      });
+    });
+
+    it("ログイン時でもツールチップが DOM に存在しない", async () => {
+      stubFetch(200, { id: "u1", displayName: "Alice" });
+      renderWithProviders(<SidebarChannelSection />);
+      await screen.findByRole("button", { name: "チャンネルを追加" });
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    });
+
+    it("IconButton 自体は引き続き表示・機能する", async () => {
+      stubFetch(200, { id: "u1", displayName: "Alice" });
+      renderWithProviders(<SidebarChannelSection />);
+      expect(await screen.findByRole("button", { name: "チャンネルを追加" })).toBeInTheDocument();
+    });
+  });
+
+  describe("デスクトップ幅（md 以上）", () => {
+    beforeEach(() => {
+      Object.defineProperty(window, "matchMedia", {
+        writable: true,
+        value: vi.fn().mockImplementation((query: string) => ({
+          matches: false,
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      });
+    });
+
+    it("ログイン時はボタンにホバーするとツールチップが表示される", async () => {
+      stubFetch(200, { id: "u1", displayName: "Alice" });
+      renderWithProviders(<SidebarChannelSection />);
+      const addButton = await screen.findByRole("button", { name: "チャンネルを追加" });
+      await userEvent.hover(addButton);
+      expect(await screen.findByRole("tooltip", { name: "チャンネルを追加" })).toBeInTheDocument();
+    });
   });
 });

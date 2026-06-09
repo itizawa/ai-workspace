@@ -1,4 +1,4 @@
-import { Box, Divider, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useMediaQuery, useTheme } from "../components/uiParts";
+import { Box, Divider, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from "../components/uiParts";
 
 import { isAdmin } from "@hatchery/common";
 import BusinessIcon from "@mui/icons-material/Business";
@@ -7,6 +7,7 @@ import { Link as RouterLink, Outlet, useLocation } from "@tanstack/react-router"
 import { Suspense, useEffect, useState, type ReactElement } from "react";
 
 import { MainContentSkeleton } from "../components/MainContentSkeleton";
+import { useIsMobile } from "../hooks/useIsMobile.js";
 
 import { useAuth } from "../api/auth.js";
 import { AppHeader } from "../components/AppHeader";
@@ -56,8 +57,7 @@ const SidebarContent = (): ReactElement => {
  * デスクトップ幅（md 以上）では従来どおり恒久サイドバーを横並び表示する。
  */
 export const RootLayout = (): ReactElement => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
 
