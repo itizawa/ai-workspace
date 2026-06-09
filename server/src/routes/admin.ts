@@ -14,7 +14,7 @@ import { requireAdmin } from "../middleware/requireAdmin.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { validateBody } from "../middleware/validateBody.js";
 import type { AppSettingRepository } from "../persistence/appSettingRepository.js";
-import type { CommunityRepository } from "../persistence/communityRepository.js";
+import type { CommunityRecord, CommunityRepository } from "../persistence/communityRepository.js";
 import type { EmployeeRepository } from "../persistence/employeeRepository.js";
 import {
   toInvitationLinkResponse,
@@ -24,6 +24,19 @@ import { decrypt, encrypt, maskApiKey } from "../utils/crypto.js";
 import { getApiKey } from "../utils/apiKey.js";
 
 const MASKED_KEYS = new Set(["CLAUDE_API_KEY"]);
+
+/** CommunityRecord（camelCase）をクライアント向け Community（snake_case）に変換する（#310）。 */
+function toCommunityResponse(r: CommunityRecord) {
+  return {
+    id: r.id,
+    slug: r.slug,
+    name: r.name,
+    description: r.description,
+    synopsis: r.synopsis ?? undefined,
+    last_slot_key: r.lastSlotKey ?? undefined,
+    created_at: r.createdAt,
+  };
+}
 
 function toResponse(key: string, encryptedValue: string) {
   let rawValue = "";
@@ -161,7 +174,7 @@ export function createAdminRouter(
   router.get("/communities", async (_req, res, next) => {
     try {
       const communities = await communityRepository.list();
-      res.json(communities);
+      res.json(communities.map(toCommunityResponse));
     } catch (err) {
       next(err);
     }
@@ -184,7 +197,7 @@ export function createAdminRouter(
           return;
         }
         const community = await communityRepository.create({ slug, name, description });
-        res.status(201).json(community);
+        res.status(201).json(toCommunityResponse(community));
       } catch (err) {
         next(err);
       }
@@ -203,7 +216,7 @@ export function createAdminRouter(
           next(new NotFoundError("CommunityNotFound"));
           return;
         }
-        res.json(community);
+        res.json(toCommunityResponse(community));
       } catch (err) {
         next(err);
       }

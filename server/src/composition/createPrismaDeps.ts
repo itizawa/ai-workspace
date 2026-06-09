@@ -5,7 +5,7 @@ import { PrismaAppSettingRepository } from "../persistence/prismaAppSettingRepos
 import { PrismaBatchRunLogRepository } from "../persistence/prismaBatchRunLogRepository.js";
 import { PrismaChannelMembershipRepository } from "../persistence/prismaChannelMembershipRepository.js";
 import { PrismaChannelRepository } from "../persistence/prismaChannelRepository.js";
-import { InMemoryCommunityRepository } from "../persistence/communityRepository.js";
+import { PrismaCommunityRepository } from "../persistence/prismaCommunityRepository.js";
 import { PrismaEmployeeRepository } from "../persistence/prismaEmployeeRepository.js";
 import { PrismaInvitationLinkRepository } from "../persistence/prismaInvitationLinkRepository.js";
 import { PrismaMessageRepository } from "../persistence/prismaMessageRepository.js";
@@ -41,8 +41,7 @@ export function createPrismaDeps(
     batchRunLogRepository: new PrismaBatchRunLogRepository(prisma),
     invitationLinkRepository: new PrismaInvitationLinkRepository(prisma),
     tokenUsageLogRepository: new PrismaTokenUsageLogRepository(prisma),
-    // PrismaCommunityRepository は #305 完了後に実装する（現時点は InMemory）。
-    communityRepository: new InMemoryCommunityRepository(),
+    communityRepository: new PrismaCommunityRepository(prisma),
     storageService,
   };
 }
