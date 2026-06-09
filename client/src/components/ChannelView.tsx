@@ -1,5 +1,5 @@
 import EditIcon from "@mui/icons-material/Edit";
-import { Box, IconButton, List, ListItem, Stack, Typography } from "./uiParts";
+import { Box, IconButton, List, ListItem, Stack, Typography, useMediaQuery } from "./uiParts";
 import {
   createDisplayNameResolver,
   DEFAULT_EMPLOYEES,
@@ -9,6 +9,9 @@ import {
 } from "@hatchery/common";
 
 import type { ReactElement } from "react";
+
+import { useMessageDrip } from "../hooks/useMessageDrip.js";
+import { TypingIndicator } from "./TypingIndicator.js";
 
 const postedAtFormatter = new Intl.DateTimeFormat("ja-JP", { hour: "2-digit", minute: "2-digit", hour12: false });
 
@@ -42,6 +45,17 @@ export const ChannelView = ({
 }: ChannelViewProps): ReactElement => {
   const resolveDisplayName = createDisplayNameResolver(employees);
 
+  // 新着メッセージを 1 件ずつ「めくって見せる」ドリップ表示制御（#282）。
+  // 過去ログ（初回ロード）は即時全件表示、以降の新着のみ時間差で 1 件ずつ現す。
+  // prefers-reduced-motion 時は即時表示する（AC-4・OfficeView と整合）。
+  const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const { isVisible, typingKey } = useMessageDrip(messages, prefersReducedMotion);
+
+  // 本文を表示してよいメッセージ（可視のもの）のみを時系列順で描画する。
+  const visibleMessages = messages.filter((message) => isVisible(message.id));
+  // タイピングインジケータ表示対象の発言者（次に現れる新着メッセージ）。
+  const typingMessage = typingKey ? messages.find((message) => message.id === typingKey) : undefined;
+
   return (
     <Box component="section" sx={{ p: 3 }}>
       <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 1 }}>
@@ -61,7 +75,7 @@ export const ChannelView = ({
         </Typography>
       ) : (
         <List aria-label="メッセージ一覧" disablePadding>
-          {messages.map((message) => (
+          {visibleMessages.map((message) => (
             <ListItem key={message.id} alignItems="flex-start" disableGutters>
               <Stack spacing={0.5}>
                 <Stack direction="row" spacing={1} alignItems="baseline">
@@ -78,6 +92,11 @@ export const ChannelView = ({
               </Stack>
             </ListItem>
           ))}
+          {typingMessage && (
+            <ListItem key="typing-indicator" alignItems="flex-start" disableGutters>
+              <TypingIndicator name={resolveDisplayName(typingMessage.createdEmployeeId)} />
+            </ListItem>
+          )}
         </List>
       )}
     </Box>
