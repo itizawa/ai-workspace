@@ -99,4 +99,33 @@ describe("InMemoryEmployeeRepository (#38)", () => {
       expect(list.map((e) => e.id)).toEqual(["haru", "ken"]);
     });
   });
+
+  describe("softDelete (#218)", () => {
+    it("存在する Employee を論理削除すると deletedAt が設定される", async () => {
+      const repo = new InMemoryEmployeeRepository(seed);
+      const result = await repo.softDelete("haru");
+      expect(result).not.toBeNull();
+      expect(result?.deletedAt).toBeInstanceOf(Date);
+    });
+
+    it("存在しない id なら null を返す", async () => {
+      const repo = new InMemoryEmployeeRepository(seed);
+      const result = await repo.softDelete("unknown");
+      expect(result).toBeNull();
+    });
+
+    it("論理削除済み Employee は listBotEmployees に含まれない", async () => {
+      const repo = new InMemoryEmployeeRepository(seed);
+      await repo.softDelete("haru");
+      const list = await repo.listBotEmployees();
+      expect(list.map((e) => e.id)).toEqual(["ken"]);
+    });
+
+    it("論理削除済み Employee は findById で null を返す", async () => {
+      const repo = new InMemoryEmployeeRepository(seed);
+      await repo.softDelete("haru");
+      const found = await repo.findById("haru");
+      expect(found).toBeNull();
+    });
+  });
 });

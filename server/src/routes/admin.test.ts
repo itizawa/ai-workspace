@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createApp } from "../app.js";
 import { InMemoryAppSettingRepository } from "../persistence/appSettingRepository.js";
+import { InMemoryEmployeeRepository } from "../persistence/employeeRepository.js";
 import { InMemoryUserRepository } from "../persistence/userRepository.js";
 import { createTestDeps } from "../testing/createTestDeps.js";
 import { getApiKey } from "./admin.js";
@@ -137,5 +138,58 @@ describe("getApiKey", () => {
     process.env.ANTHROPIC_API_KEY = "sk-ant-env-key";
     const repo = new InMemoryAppSettingRepository();
     expect(await getApiKey(repo)).toBe("sk-ant-env-key");
+  });
+});
+
+describe("DELETE /api/admin/employees/:id (#218)", () => {
+  async function makeAppWithEmployee(role: "admin" | "member" = "admin") {
+    const userRepo = await InMemoryUserRepository.createWithTestUser(null, role);
+    const employeeRepo = new InMemoryEmployeeRepository([
+      { id: "emp-1", displayName: "田中 太郎", role: "エンジニア", isBot: true, personality: null },
+    ]);
+    return {
+      app: createApp(
+        await createTestDeps({
+          userRepository: userRepo,
+          employeeRepository: employeeRepo,
+        }),
+      ),
+      employeeRepo,
+    };
+  }
+
+  it("未認証の場合は 401 を返す", async () => {
+    const { app } = await makeAppWithEmployee();
+    const res = await request(app).delete("/api/admin/employees/emp-1");
+    expect(res.status).toBe(401);
+  });
+
+  it("member ユーザーは 403 を返す", async () => {
+    const { app } = await makeAppWithEmployee("member");
+    const agent = await loginAgent(app);
+    const res = await agent.delete("/api/admin/employees/emp-1");
+    expect(res.status).toBe(403);
+  });
+
+  it("存在する Employee を論理削除すると 200 を返す", async () => {
+    const { app } = await makeAppWithEmployee();
+    const agent = await loginAgent(app);
+    const res = await agent.delete("/api/admin/employees/emp-1");
+    expect(res.status).toBe(200);
+  });
+
+  it("存在しない Employee の削除を試みると 404 を返す", async () => {
+    const { app } = await makeAppWithEmployee();
+    const agent = await loginAgent(app);
+    const res = await agent.delete("/api/admin/employees/nonexistent");
+    expect(res.status).toBe(404);
+  });
+
+  it("論理削除後に Employee の deletedAt が設定される", async () => {
+    const { app, employeeRepo } = await makeAppWithEmployee();
+    const agent = await loginAgent(app);
+    await agent.delete("/api/admin/employees/emp-1");
+    const employee = await employeeRepo.findDeletedById("emp-1");
+    expect(employee?.deletedAt).toBeInstanceOf(Date);
   });
 });
