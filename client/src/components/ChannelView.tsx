@@ -10,8 +10,11 @@ import {
 
 import type { ReactElement } from "react";
 
-const formatPostedAt = (date: Date): string =>
-  new Intl.DateTimeFormat("ja-JP", { hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
+const postedAtFormatter = new Intl.DateTimeFormat("ja-JP", { hour: "2-digit", minute: "2-digit", hour12: false });
+
+// API レスポンスは JSON.stringify 経由で Date → ISO 文字列になるため、string も受け付ける
+const formatPostedAt = (date: Date | string): string =>
+  postedAtFormatter.format(typeof date === "string" ? new Date(date) : date);
 
 export interface ChannelViewProps {
   /** 表示対象のチャンネル（ヘッダのラベルに用いる）。 */
@@ -58,8 +61,8 @@ export const ChannelView = ({
         </Typography>
       ) : (
         <List aria-label="メッセージ一覧" disablePadding>
-          {messages.map((message, index) => (
-            <ListItem key={`${message.createdEmployeeId}-${index}`} alignItems="flex-start" disableGutters>
+          {messages.map((message) => (
+            <ListItem key={message.id} alignItems="flex-start" disableGutters>
               <Stack spacing={0.5}>
                 <Stack direction="row" spacing={1} alignItems="baseline">
                   <Typography variant="subtitle2" component="span">
