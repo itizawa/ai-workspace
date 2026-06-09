@@ -1,4 +1,12 @@
-import { CreateEmployeeSchema, CreateInvitationSchema, NotFoundError, UpdateAppSettingSchema } from "@hatchery/common";
+import {
+  ConflictError,
+  CreateCommunitySchema,
+  CreateEmployeeSchema,
+  CreateInvitationSchema,
+  NotFoundError,
+  UpdateAppSettingSchema,
+  UpdateCommunitySchema,
+} from "@hatchery/common";
 import { randomBytes, randomUUID } from "crypto";
 import { Router } from "express";
 
@@ -6,6 +14,7 @@ import { requireAdmin } from "../middleware/requireAdmin.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { validateBody } from "../middleware/validateBody.js";
 import type { AppSettingRepository } from "../persistence/appSettingRepository.js";
+import type { CommunityRepository } from "../persistence/communityRepository.js";
 import type { EmployeeRepository } from "../persistence/employeeRepository.js";
 import {
   toInvitationLinkResponse,
@@ -33,6 +42,7 @@ export function createAdminRouter(
   appSettingRepository: AppSettingRepository,
   invitationLinkRepository: InvitationLinkRepository,
   employeeRepository: EmployeeRepository,
+  communityRepository: CommunityRepository,
 ): Router {
   const router = Router();
 
@@ -141,6 +151,59 @@ export function createAdminRouter(
           isBot: true,
         });
         res.status(201).json(employee);
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  // コミュニティ CRUD（#310 / ADR-0020）。admin のみ。
+  router.get("/communities", async (_req, res, next) => {
+    try {
+      const communities = await communityRepository.list();
+      res.json(communities);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post(
+    "/communities",
+    validateBody(CreateCommunitySchema),
+    async (req, res, next) => {
+      try {
+        const { slug, name, description } = req.body as {
+          slug: string;
+          name: string;
+          description: string;
+        };
+        // slug 一意チェック（#310）
+        const existing = await communityRepository.findBySlug(slug);
+        if (existing) {
+          next(new ConflictError("CommunitySlugAlreadyExists"));
+          return;
+        }
+        const community = await communityRepository.create({ slug, name, description });
+        res.status(201).json(community);
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  router.patch(
+    "/communities/:id",
+    validateBody(UpdateCommunitySchema),
+    async (req, res, next) => {
+      try {
+        const { id } = req.params as { id: string };
+        const input = req.body as { name?: string; description?: string };
+        const community = await communityRepository.update(id, input);
+        if (!community) {
+          next(new NotFoundError("CommunityNotFound"));
+          return;
+        }
+        res.json(community);
       } catch (err) {
         next(err);
       }

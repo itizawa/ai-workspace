@@ -155,11 +155,13 @@ describe("CreateCommunitySchema（#310）", () => {
   });
 
   it("name が必須", () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { name: _name, ...rest } = valid;
     expect(CreateCommunitySchema.safeParse(rest).success).toBe(false);
   });
 
   it("description が必須", () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { description: _desc, ...rest } = valid;
     expect(CreateCommunitySchema.safeParse(rest).success).toBe(false);
   });
