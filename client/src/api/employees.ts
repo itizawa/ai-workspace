@@ -1,6 +1,7 @@
 import type { Employee } from "@hatchery/common";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { clientEnv } from "../config/env.js";
 import { openApiClient } from "./client.js";
 
 export const BOT_EMPLOYEES_QUERY_KEY = ["employees", "bots"] as const;
@@ -84,12 +85,11 @@ export async function uploadWorkerImage(
 
   // openApiClient の baseUrl を使って URL を構築する（クロスオリジン配信に対応するため）。
   // openapi-fetch が multipart/form-data のボディ送信に非対応なため、直接 fetch を使う。
-  const baseUrl =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : "";
-  const apiBaseUrl = (import.meta as Record<string, unknown>).env?.VITE_API_BASE_URL as string | undefined;
-  const base = apiBaseUrl ?? baseUrl;
+  // clientEnv.apiBaseUrl が設定されていれば使い（#78: クロスオリジン配信）、
+  // 未設定なら window.location.origin にフォールバックする（同一オリジン）。
+  const base =
+    clientEnv.apiBaseUrl ??
+    (typeof window !== "undefined" ? window.location.origin : "");
 
   const res = await fetch(`${base}/api/admin/employees/${employeeId}/image`, {
     method: "POST",
