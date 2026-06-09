@@ -8,6 +8,7 @@ import { InMemoryInvitationLinkRepository } from "../persistence/invitationLinkR
 import { InMemoryMessageRepository } from "../persistence/messageRepository.js";
 import { InMemoryTokenUsageLogRepository } from "../persistence/tokenUsageLogRepository.js";
 import { InMemoryUserRepository } from "../persistence/userRepository.js";
+import { InMemoryStorageService } from "../services/storageService.js";
 
 /**
  * テスト用の依存注入オーバーライド。
@@ -37,6 +38,7 @@ export async function createTestDeps(overrides?: TestDepsOverrides): Promise<App
     batchRunLogRepository: new InMemoryBatchRunLogRepository(),
     invitationLinkRepository: new InMemoryInvitationLinkRepository(),
     tokenUsageLogRepository: new InMemoryTokenUsageLogRepository(),
+    storageService: new InMemoryStorageService(),
     ...overrides,
   };
 }

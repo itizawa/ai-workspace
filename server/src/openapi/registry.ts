@@ -525,6 +525,47 @@ registry.registerPath({
   },
 });
 
+// ワーカー画像アップロード（#204 / ADR-0022）。admin ロール必須。
+const employeeImageIdParam = z.string().openapi({ param: { name: "id", in: "path" } });
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/employees/{id}/image",
+  summary: "ワーカーのアバター画像をアップロード（admin のみ・#204）",
+  request: {
+    params: z.object({ id: employeeImageIdParam }),
+    body: {
+      content: {
+        "multipart/form-data": {
+          schema: z.object({
+            image: z.instanceof(Uint8Array).openapi({
+              format: "binary",
+              description: "アップロード画像（PNG/JPEG/WebP/GIF・5MB 以下）",
+            }),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "アップロード成功。更新後の id と imageUrl を返す",
+      content: {
+        "application/json": {
+          schema: z.object({
+            id: z.string(),
+            imageUrl: z.string().url(),
+          }),
+        },
+      },
+    },
+    400: { description: "ファイル未添付・MIME 不正・サイズ超過（5MB）", ...errorJson },
+    401: { description: "未認証", ...errorJson },
+    403: { description: "admin 権限なし", ...errorJson },
+    404: { description: "Employee が存在しない", ...errorJson },
+  },
+});
+
 // ヘルスチェック（routes/health.ts。/health でマウント）。
 registry.registerPath({
   method: "get",

@@ -11,6 +11,7 @@ function toRecord(row: {
   isBot: boolean;
   personality: string | null;
   deletedAt: Date | null;
+  imageUrl: string | null;
 }): EmployeeRecord {
   return {
     id: row.id,
@@ -18,8 +19,7 @@ function toRecord(row: {
     role: row.role,
     isBot: row.isBot,
     personality: row.personality,
-    // #220: imageUrl は #204 のアップロード基盤実装後に DB カラム追加予定。現時点は null。
-    imageUrl: null,
+    imageUrl: row.imageUrl,
     deletedAt: row.deletedAt,
   };
 }
@@ -98,5 +98,23 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
     const row = await this.prisma.employee.findUnique({ where: { id } });
     if (!row) return null;
     return toRecord(row);
+  }
+
+  async updateImageUrl(id: string, imageUrl: string): Promise<EmployeeRecord | null> {
+    try {
+      const row = await this.prisma.employee.update({
+        where: { id },
+        data: { imageUrl },
+      });
+      return toRecord(row);
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2025"
+      ) {
+        return null;
+      }
+      throw err;
+    }
   }
 }

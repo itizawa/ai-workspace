@@ -10,6 +10,7 @@ import { PrismaInvitationLinkRepository } from "../persistence/prismaInvitationL
 import { PrismaMessageRepository } from "../persistence/prismaMessageRepository.js";
 import { PrismaTokenUsageLogRepository } from "../persistence/prismaTokenUsageLogRepository.js";
 import { PrismaUserRepository } from "../persistence/prismaUserRepository.js";
+import { GcsStorageService, InMemoryStorageService } from "../services/storageService.js";
 
 /**
  * Prisma 実装一式を生成する共有 composition ヘルパ（Issue #137）。
@@ -23,6 +24,12 @@ import { PrismaUserRepository } from "../persistence/prismaUserRepository.js";
 export function createPrismaDeps(
   prisma: PrismaClient,
 ): Omit<AppDeps, "security" | "sessionStore"> {
+  // GCS_BUCKET_NAME が設定されていれば GCS、未設定（ローカル開発）は InMemory を使う（ADR-0022）。
+  const gcsBucketName = process.env.GCS_BUCKET_NAME;
+  const storageService = gcsBucketName
+    ? new GcsStorageService(gcsBucketName)
+    : new InMemoryStorageService();
+
   return {
     messageRepository: new PrismaMessageRepository(prisma),
     userRepository: new PrismaUserRepository(prisma),
@@ -33,5 +40,6 @@ export function createPrismaDeps(
     batchRunLogRepository: new PrismaBatchRunLogRepository(prisma),
     invitationLinkRepository: new PrismaInvitationLinkRepository(prisma),
     tokenUsageLogRepository: new PrismaTokenUsageLogRepository(prisma),
+    storageService,
   };
 }
