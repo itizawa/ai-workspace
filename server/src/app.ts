@@ -20,6 +20,7 @@ import { InMemoryCommentRepository } from "./persistence/commentRepository.js";
 import type { EmployeeRepository } from "./persistence/employeeRepository.js";
 import type { InvitationLinkRepository } from "./persistence/invitationLinkRepository.js";
 import type { MessageRepository } from "./persistence/messageRepository.js";
+import type { StorageService } from "./services/storageService.js";
 import type { PostRepository } from "./persistence/postRepository.js";
 import { InMemoryPostRepository } from "./persistence/postRepository.js";
 import type { SubscriptionRepository } from "./persistence/subscriptionRepository.js";
@@ -31,6 +32,7 @@ import { InMemoryVoteRepository } from "./persistence/voteRepository.js";
 import type { WorldStateRepository } from "./persistence/worldStateRepository.js";
 import { InMemoryWorldStateRepository } from "./persistence/worldStateRepository.js";
 import { createAdminRouter } from "./routes/admin.js";
+import { createAdminEmployeeImageRouter } from "./routes/adminEmployeeImage.js";
 import { createBatchLogsRouter } from "./routes/batch-logs.js";
 import { createTokenUsageRouter } from "./routes/token-usage.js";
 import { createAuthRouter } from "./routes/auth.js";
@@ -124,6 +126,8 @@ export interface AppDeps {
   voteRepository?: VoteRepository;
   /** ワールド状態の永続化（#305 / ADR-0019）。省略時は空の InMemory 実装。 */
   worldStateRepository?: WorldStateRepository;
+  /** GCS ストレージサービス（#204 / ADR-0022）。本番は GcsStorageService、テスト・ローカルは InMemoryStorageService。 */
+  storageService: StorageService;
   /** DDoS/過負荷対策の設定（#34）。省略時は既定値。 */
   security?: SecurityOptions;
   /**
@@ -216,7 +220,11 @@ export function createApp(deps: AppDeps): Express {
   app.use("/api/employees", createEmployeesRouter(deps.employeeRepository));
   app.use("/api/admin/batch-logs", createBatchLogsRouter(deps.batchRunLogRepository));
   app.use("/api/admin/token-usage", createTokenUsageRouter(deps.tokenUsageLogRepository));
-  app.use("/api/admin", createAdminRouter(deps.appSettingRepository, deps.invitationLinkRepository));
+  app.use("/api/admin", createAdminRouter(deps.appSettingRepository, deps.invitationLinkRepository, deps.employeeRepository, communityRepo));
+  app.use(
+    "/api/admin",
+    createAdminEmployeeImageRouter(deps.employeeRepository, deps.storageService),
+  );
   app.use(
     "/api/invitations",
     createInvitationsRouter(deps.invitationLinkRepository, deps.userRepository),
