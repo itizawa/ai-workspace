@@ -19,19 +19,21 @@ async function main(): Promise<void> {
   const appSettingRepo = new PrismaAppSettingRepository(prisma);
   const batchRunLogRepository = new PrismaBatchRunLogRepository(prisma);
 
-  const result = await runCommunityBatch({
-    communityRepo,
-    postRepo,
-    commentRepo,
-    appSettingRepo,
-    batchRunLogRepository,
-  });
+  try {
+    const result = await runCommunityBatch({
+      communityRepo,
+      postRepo,
+      commentRepo,
+      appSettingRepo,
+      batchRunLogRepository,
+    });
 
-  console.log(
-    `[communityBatch] 完了: ${result.posts.length} posts, ${result.comments.length} comments created`,
-  );
-
-  await prisma.$disconnect();
+    console.log(
+      `[communityBatch] 完了: ${result.posts.length} posts, ${result.comments.length} comments created`,
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
 main().catch((err: unknown) => {

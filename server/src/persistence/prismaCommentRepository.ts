@@ -67,6 +67,15 @@ export class PrismaCommentRepository implements CommentRepository {
     return rows.map(toRecord);
   }
 
+  async listByCommunity(communityId: string, limit = 50): Promise<CommentRecord[]> {
+    const rows = await this.prisma.comment.findMany({
+      where: { communityId },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
+    return rows.map(toRecord);
+  }
+
   async findById(id: string): Promise<CommentRecord | null> {
     const row = await this.prisma.comment.findUnique({ where: { id } });
     return row ? toRecord(row) : null;

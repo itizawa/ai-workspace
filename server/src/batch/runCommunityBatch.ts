@@ -101,13 +101,24 @@ export async function runCommunityBatch(
     try {
       // 直近 post/comment をログ形式に変換
       const recentPosts = await deps.postRepo.listByCommunity(community.id, recentLimit);
-      const recentEntries: RecentEntry[] = recentPosts.map((p) => ({
-        community_id: community.slug,
-        author: p.author,
-        text: p.text,
-        title: p.title,
-      }));
-      const recentLog = formatRecentLog(recentEntries, recentLimit);
+      const recentComments = await deps.commentRepo.listByCommunity(community.id, recentLimit);
+      // post と comment を createdAt で時系列マージし直近 recentLimit 件をプロンプトに載せる
+      const allEntries: (RecentEntry & { createdAt: Date })[] = [
+        ...recentPosts.map((p) => ({
+          community_id: community.slug,
+          author: p.author,
+          text: p.text,
+          title: p.title,
+          createdAt: p.createdAt,
+        })),
+        ...recentComments.map((c) => ({
+          community_id: community.slug,
+          author: c.author,
+          text: c.text,
+          createdAt: c.createdAt,
+        })),
+      ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      const recentLog = formatRecentLog(allEntries, recentLimit);
 
       // プロンプト構築（お題は含めない・ADR-0020）
       const prompt = buildCommunityPrompt({
