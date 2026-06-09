@@ -45,3 +45,27 @@ export function useSaveAdminSetting() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ADMIN_SETTINGS_QUERY_KEY }),
   });
 }
+
+/** DELETE /api/admin/employees/:id で Employee を論理削除する（#218）。 */
+export async function deleteEmployee(id: string): Promise<{ id: string; deletedAt: string }> {
+  const { data, response } = await openApiClient.DELETE("/api/admin/employees/{id}", {
+    params: { path: { id } },
+    credentials: "include",
+  });
+  if (!response.ok || !data) throw new Error(`DELETE /api/admin/employees/${id} failed: ${response.status}`);
+  return data;
+}
+
+export const BOT_EMPLOYEES_ADMIN_QUERY_KEY = ["admin", "employees"] as const;
+
+/** Employee 論理削除の useMutation フック（#218）。成功時は社員一覧のキャッシュを無効化する。 */
+export function useDeleteEmployee() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteEmployee(id),
+    onSuccess: () => {
+      // 社員一覧を再取得するためキャッシュを無効化
+      void queryClient.invalidateQueries({ queryKey: ["employees"] });
+    },
+  });
+}
