@@ -5,16 +5,22 @@ import {
   DEFAULT_EMPLOYEES,
   type Channel,
   type Employee,
-  type Message,
+  type MessageRecord,
 } from "@hatchery/common";
 
 import type { ReactElement } from "react";
+
+const postedAtFormatter = new Intl.DateTimeFormat("ja-JP", { hour: "2-digit", minute: "2-digit", hour12: false });
+
+// API レスポンスは JSON.stringify 経由で Date → ISO 文字列になるため、string も受け付ける
+const formatPostedAt = (date: Date | string): string =>
+  postedAtFormatter.format(typeof date === "string" ? new Date(date) : date);
 
 export interface ChannelViewProps {
   /** 表示対象のチャンネル（ヘッダのラベルに用いる）。 */
   channel: Channel;
   /** 当該チャンネルに属するメッセージ（Slack 風フラット一覧として表示）。 */
-  messages: readonly Message[];
+  messages: readonly MessageRecord[];
   /** createdEmployeeId → displayName 解決に用いる社員一覧。未指定なら common の DEFAULT_EMPLOYEES。 */
   employees?: readonly Employee[];
   /** 渡すとヘッダに編集ボタンを表示する。ログイン済みのときのみ渡すこと（#206）。 */
@@ -55,12 +61,17 @@ export const ChannelView = ({
         </Typography>
       ) : (
         <List aria-label="メッセージ一覧" disablePadding>
-          {messages.map((message, index) => (
-            <ListItem key={`${message.createdEmployeeId}-${index}`} alignItems="flex-start" disableGutters>
+          {messages.map((message) => (
+            <ListItem key={message.id} alignItems="flex-start" disableGutters>
               <Stack spacing={0.5}>
-                <Typography variant="subtitle2" component="span">
-                  {resolveDisplayName(message.createdEmployeeId)}
-                </Typography>
+                <Stack direction="row" spacing={1} alignItems="baseline">
+                  <Typography variant="subtitle2" component="span">
+                    {resolveDisplayName(message.createdEmployeeId)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" component="span">
+                    {formatPostedAt(message.postedAt)}
+                  </Typography>
+                </Stack>
                 <Typography variant="body2" component="span">
                   {message.text}
                 </Typography>
