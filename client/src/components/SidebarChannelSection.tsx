@@ -38,7 +38,12 @@ export const SidebarChannelSection = (): ReactElement => {
           チャンネル
         </Typography>
         {user && (
-          isMobile ? (
+          <Tooltip
+            title="チャンネルを追加"
+            disableHoverListener={isMobile}
+            disableFocusListener={isMobile}
+            disableTouchListener={isMobile}
+          >
             <IconButton
               aria-label="チャンネルを追加"
               size="small"
@@ -47,18 +52,7 @@ export const SidebarChannelSection = (): ReactElement => {
             >
               <AddIcon fontSize="small" />
             </IconButton>
-          ) : (
-            <Tooltip title="チャンネルを追加">
-              <IconButton
-                aria-label="チャンネルを追加"
-                size="small"
-                onClick={() => setDialogOpen(true)}
-                sx={{ color: SLACK_COLORS.sidebarText, p: 0.25 }}
-              >
-                <AddIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )
+          </Tooltip>
         )}
       </Box>
       <Suspense fallback={<ChannelListSkeleton />}>

@@ -2,7 +2,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { Box, IconButton, List, ListItem, ListItemButton, ListItemText, Menu, MenuItem } from "./uiParts";
 
 import { Link as RouterLink } from "@tanstack/react-router";
-import { useState, type MouseEvent, type ReactElement } from "react";
+import { useEffect, useState, type MouseEvent, type ReactElement } from "react";
 
 import type { Channel, ChannelType } from "@hatchery/common";
 import { useAuth } from "../api/auth.js";
@@ -44,6 +44,11 @@ export const ChannelList = (): ReactElement => {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [menuChannel, setMenuChannel] = useState<Channel | null>(null);
   const [editChannel, setEditChannel] = useState<Channel | null>(null);
+
+  useEffect(() => {
+    setMenuAnchor(null);
+    setMenuChannel(null);
+  }, [isMobile]);
 
   const handleMenuOpen = (event: MouseEvent<HTMLElement>, channel: Channel): void => {
     event.preventDefault();

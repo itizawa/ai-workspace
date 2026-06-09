@@ -61,10 +61,14 @@ export const RootLayout = (): ReactElement => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
 
-  // ナビゲーション（パス変化）でドロワーを自動クローズする
+  // ナビゲーション（パス変化）またはモバイル→デスクトップ切り替わりでドロワーを自動クローズする
   useEffect(() => {
     setDrawerOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [isMobile]);
 
   const sidebarStyles = {
     width: SIDEBAR_WIDTH,
