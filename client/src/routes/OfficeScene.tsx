@@ -15,7 +15,7 @@ function OfficeContent(): ReactElement {
       </Typography>
     );
   return (
-    <Box data-testid="office-scroll-container" sx={{ mt: 2, overflowX: "auto", width: "100%" }}>
+    <Box data-testid="office-scroll-container" sx={{ mt: 2, width: "100%" }}>
       <OfficeView employees={employees ?? []} />
     </Box>
   );
