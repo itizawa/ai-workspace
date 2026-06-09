@@ -188,6 +188,34 @@ registry.registerPath({
   },
 });
 
+// Employee 論理削除（#218）。admin ロール必須。
+const adminEmployeePathIdParam = z.string().openapi({ param: { name: "id", in: "path" } });
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/admin/employees/{id}",
+  summary: "Employee を論理削除（認証必須・admin ロール・#218）",
+  request: {
+    params: z.object({ id: adminEmployeePathIdParam }),
+  },
+  responses: {
+    200: {
+      description: "論理削除成功。id と deletedAt を返す",
+      content: {
+        "application/json": {
+          schema: z.object({
+            id: z.string(),
+            deletedAt: z.string().datetime(),
+          }),
+        },
+      },
+    },
+    401: { description: "未認証", ...errorJson },
+    403: { description: "admin 権限なし", ...errorJson },
+    404: { description: "Employee が存在しない", ...errorJson },
+  },
+});
+
 // チャンネル CRUD（#37 / #47）。
 const channelIdParam = z.string().openapi({ param: { name: "channelId", in: "path" } });
 const employeeIdParam = z.string().openapi({ param: { name: "employeeId", in: "path" } });

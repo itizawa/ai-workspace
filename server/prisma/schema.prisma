@@ -49,6 +49,8 @@ model Employee {
   /// AI バッチのプロンプト指針となる性格設定（任意・500 文字以内）（#38）。
   personality String?
   messages    Message[]
+  /// 論理削除日時（#218）。null=有効、値=削除済み。物理削除は行わない。
+  deletedAt   DateTime?
 }
 
 /// チャンネルのタイプ（#54 / #76）。zatsudan=雑談 / task=仕事 / planning=企画。

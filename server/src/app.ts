@@ -181,7 +181,7 @@ export function createApp(deps: AppDeps): Express {
   app.use("/api/employees", createEmployeesRouter(deps.employeeRepository));
   app.use("/api/admin/batch-logs", createBatchLogsRouter(deps.batchRunLogRepository));
   app.use("/api/admin/token-usage", createTokenUsageRouter(deps.tokenUsageLogRepository));
-  app.use("/api/admin", createAdminRouter(deps.appSettingRepository, deps.invitationLinkRepository));
+  app.use("/api/admin", createAdminRouter(deps.appSettingRepository, deps.invitationLinkRepository, deps.employeeRepository));
   app.use(
     "/api/invitations",
     createInvitationsRouter(deps.invitationLinkRepository, deps.userRepository),

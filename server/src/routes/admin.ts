@@ -1,4 +1,4 @@
-import { CreateInvitationSchema, UpdateAppSettingSchema } from "@hatchery/common";
+import { CreateInvitationSchema, NotFoundError, UpdateAppSettingSchema } from "@hatchery/common";
 import { randomBytes } from "crypto";
 import { Router } from "express";
 
@@ -6,6 +6,7 @@ import { requireAdmin } from "../middleware/requireAdmin.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { validateBody } from "../middleware/validateBody.js";
 import type { AppSettingRepository } from "../persistence/appSettingRepository.js";
+import type { EmployeeRepository } from "../persistence/employeeRepository.js";
 import {
   toInvitationLinkResponse,
   type InvitationLinkRepository,
@@ -31,6 +32,7 @@ function toResponse(key: string, encryptedValue: string) {
 export function createAdminRouter(
   appSettingRepository: AppSettingRepository,
   invitationLinkRepository: InvitationLinkRepository,
+  employeeRepository: EmployeeRepository,
 ): Router {
   const router = Router();
 
@@ -104,6 +106,21 @@ export function createAdminRouter(
         return;
       }
       res.json(toInvitationLinkResponse(record));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Employee 論理削除（#218）。
+  router.delete("/employees/:id", async (req, res, next) => {
+    try {
+      const { id } = req.params as { id: string };
+      const result = await employeeRepository.softDelete(id);
+      if (!result) {
+        next(new NotFoundError("EmployeeNotFound"));
+        return;
+      }
+      res.status(200).json({ id: result.id, deletedAt: result.deletedAt });
     } catch (err) {
       next(err);
     }
