@@ -51,6 +51,8 @@ model Employee {
   messages    Message[]
   /// 論理削除日時（#218）。null=有効、値=削除済み。物理削除は行わない。
   deletedAt   DateTime?
+  /// GCS 上のアバター画像 URL（#204）。admin がアップロード後に設定される。最大 500 文字（#91）。
+  imageUrl    String?
 }
 
 /// チャンネルのタイプ（#54 / #76）。zatsudan=雑談 / task=仕事 / planning=企画。

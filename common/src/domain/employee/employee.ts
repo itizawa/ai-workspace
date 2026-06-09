@@ -92,3 +92,4 @@ export const createAvatarUrlResolver = (
   const imageUrlById = new Map(employees.map((e) => [e.id, e.imageUrl]));
   return (employeeId: string): string | undefined => imageUrlById.get(employeeId);
 };
+

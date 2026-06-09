@@ -18,6 +18,7 @@ import type { InvitationLinkRepository } from "./persistence/invitationLinkRepos
 import type { MessageRepository } from "./persistence/messageRepository.js";
 import type { TokenUsageLogRepository } from "./persistence/tokenUsageLogRepository.js";
 import type { UserRepository } from "./persistence/userRepository.js";
+import type { StorageService } from "./services/storageService.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createBatchLogsRouter } from "./routes/batch-logs.js";
 import { createTokenUsageRouter } from "./routes/token-usage.js";
@@ -28,6 +29,7 @@ import { healthRouter } from "./routes/health.js";
 import { createInvitationsRouter } from "./routes/invitations.js";
 import { createMessagesRouter } from "./routes/messages.js";
 import { createPlanningIssuesRouter } from "./routes/planning-issues.js";
+import { createAdminEmployeeImageRouter } from "./routes/adminEmployeeImage.js";
 
 /** DDoS/過負荷対策（#34）の設定。未指定の項目は安全な既定値を使う。 */
 export interface SecurityOptions {
@@ -97,6 +99,8 @@ export interface AppDeps {
   invitationLinkRepository: InvitationLinkRepository;
   /** トークン使用量ログの永続化（#153）。 */
   tokenUsageLogRepository: TokenUsageLogRepository;
+  /** GCS ストレージサービス（#204 / ADR-0022）。本番は GcsStorageService、テスト・ローカルは InMemoryStorageService。 */
+  storageService: StorageService;
   /** DDoS/過負荷対策の設定（#34）。省略時は既定値。 */
   security?: SecurityOptions;
   /**
@@ -182,6 +186,10 @@ export function createApp(deps: AppDeps): Express {
   app.use("/api/admin/batch-logs", createBatchLogsRouter(deps.batchRunLogRepository));
   app.use("/api/admin/token-usage", createTokenUsageRouter(deps.tokenUsageLogRepository));
   app.use("/api/admin", createAdminRouter(deps.appSettingRepository, deps.invitationLinkRepository, deps.employeeRepository));
+  app.use(
+    "/api/admin",
+    createAdminEmployeeImageRouter(deps.employeeRepository, deps.storageService),
+  );
   app.use(
     "/api/invitations",
     createInvitationsRouter(deps.invitationLinkRepository, deps.userRepository),

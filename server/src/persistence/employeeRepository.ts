@@ -25,6 +25,8 @@ export interface EmployeeRepository {
   softDelete(id: string): Promise<EmployeeRecord | null>;
   /** 論理削除済み含む Employee を id で取得する（#218・削除後の確認用）。 */
   findDeletedById(id: string): Promise<EmployeeRecord | null>;
+  /** ワーカーの画像 URL を更新する（#204）。存在しない id は null を返す。 */
+  updateImageUrl(id: string, imageUrl: string): Promise<EmployeeRecord | null>;
 }
 
 export class InMemoryEmployeeRepository implements EmployeeRepository {
@@ -73,5 +75,12 @@ export class InMemoryEmployeeRepository implements EmployeeRepository {
   async findDeletedById(id: string): Promise<EmployeeRecord | null> {
     const found = this.employees.find((e) => e.id === id);
     return found ? { ...found } : null;
+  }
+
+  async updateImageUrl(id: string, imageUrl: string): Promise<EmployeeRecord | null> {
+    const employee = this.employees.find((e) => e.id === id);
+    if (!employee) return null;
+    employee.imageUrl = imageUrl;
+    return { ...employee };
   }
 }
