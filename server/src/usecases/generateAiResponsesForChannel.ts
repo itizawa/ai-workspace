@@ -52,7 +52,15 @@ export async function generateAiResponsesForChannel(
 
     const recentDesc = await deps.messageRepo.listRecentByChannel(channelId, RECENT_LIMIT);
     const recentAsc = [...recentDesc].reverse();
-    const recentLog = formatRecentLog(recentAsc, RECENT_LIMIT);
+    // MessageRecord → RecentEntry に変換（ADR-0019 移行期: #305/#306 で server 側を刷新後に整理）
+    const recentLog = formatRecentLog(
+      recentAsc.map((m) => ({
+        community_id: m.channel,
+        author: m.createdEmployeeId,
+        text: m.text,
+      })),
+      RECENT_LIMIT,
+    );
 
     const prompt = buildChannelConversationPrompt({
       channelLabel,
