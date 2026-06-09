@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const EMPLOYEE_DISPLAY_NAME_MAX_LENGTH = 50;
 export const EMPLOYEE_ROLE_MAX_LENGTH = 50;
+/** 画像 URL の最大文字数（#220・#91）。 */
+export const EMPLOYEE_IMAGE_URL_MAX_LENGTH = 500;
 
 /**
  * AI 社員。MVP に必要な最小限（id・displayName・role）。
@@ -15,6 +17,8 @@ export const EmployeeSchema = z.object({
   isBot: z.boolean().default(false),
   // #38: AI バッチのプロンプト指針となる性格設定（任意・500 文字以内）。
   personality: z.string().max(500).optional(),
+  // #220: 社員の画像 URL（任意）。#204 でアップロード基盤実装後に設定値が入る。
+  imageUrl: z.string().url().max(EMPLOYEE_IMAGE_URL_MAX_LENGTH).optional(),
 });
 
 // 出力型（parse 後）を採用し、`isBot` は常に boolean とする（#49）。

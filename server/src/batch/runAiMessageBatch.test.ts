@@ -12,9 +12,9 @@ import { InMemoryMessageRepository } from "../persistence/messageRepository.js";
 import { runAiMessageBatch } from "./runAiMessageBatch.js";
 
 const bots: EmployeeRecord[] = [
-  { id: "haru", displayName: "ハル", role: "ムードメーカー", isBot: true, personality: null },
-  { id: "ken", displayName: "ケン", role: "ベテラン", isBot: true, personality: null },
-  { id: "user1", displayName: "ユーザー", role: null, isBot: false, personality: null },
+  { id: "haru", displayName: "ハル", role: "ムードメーカー", isBot: true, personality: null, imageUrl: null },
+  { id: "ken", displayName: "ケン", role: "ベテラン", isBot: true, personality: null, imageUrl: null },
+  { id: "user1", displayName: "ユーザー", role: null, isBot: false, personality: null, imageUrl: null },
 ];
 
 const conversationJson = JSON.stringify([

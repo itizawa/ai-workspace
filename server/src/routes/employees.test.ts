@@ -40,7 +40,7 @@ describe("PATCH /api/employees/:id（Employee 更新 / #38）", () => {
     it("他ユーザーの Employee を更新しようとすると 403 を返す", async () => {
       const { app } = await buildApp(
         new InMemoryEmployeeRepository([
-          { id: "other-emp", displayName: "Other", isBot: false, role: null, personality: null },
+          { id: "other-emp", displayName: "Other", isBot: false, role: null, personality: null, imageUrl: null },
         ]),
       );
       const agent = await login(app);
@@ -59,6 +59,7 @@ describe("PATCH /api/employees/:id（Employee 更新 / #38）", () => {
             isBot: false,
             role: null,
             personality: null,
+            imageUrl: null,
           },
         ]),
       );
@@ -80,6 +81,7 @@ describe("PATCH /api/employees/:id（Employee 更新 / #38）", () => {
             isBot: false,
             role: null,
             personality: null,
+            imageUrl: null,
           },
         ]),
       );
@@ -98,6 +100,7 @@ describe("PATCH /api/employees/:id（Employee 更新 / #38）", () => {
             isBot: false,
             role: "旧役職",
             personality: null,
+            imageUrl: null,
           },
         ]),
       );
@@ -118,6 +121,7 @@ describe("PATCH /api/employees/:id（Employee 更新 / #38）", () => {
             isBot: false,
             role: null,
             personality: null,
+            imageUrl: null,
           },
         ]),
       );
@@ -137,6 +141,7 @@ describe("PATCH /api/employees/:id（Employee 更新 / #38）", () => {
             isBot: false,
             role: null,
             personality: null,
+            imageUrl: null,
           },
         ]),
       );
@@ -151,7 +156,7 @@ describe("GET /api/employees（Bot Employee 一覧 / #240）", () => {
   it("認証不要で 200 を返す", async () => {
     const { app } = await buildApp(
       new InMemoryEmployeeRepository([
-        { id: "bot1", displayName: "Bot", role: "役職", isBot: true, personality: null },
+        { id: "bot1", displayName: "Bot", role: "役職", isBot: true, personality: null, imageUrl: null },
       ]),
     );
     const res = await request(app).get("/api/employees");
@@ -161,8 +166,8 @@ describe("GET /api/employees（Bot Employee 一覧 / #240）", () => {
   it("isBot=true の Employee のみを配列で返す", async () => {
     const { app } = await buildApp(
       new InMemoryEmployeeRepository([
-        { id: "bot1", displayName: "BotA", role: null, isBot: true, personality: null },
-        { id: "user1", displayName: "UserB", role: null, isBot: false, personality: null },
+        { id: "bot1", displayName: "BotA", role: null, isBot: true, personality: null, imageUrl: null },
+        { id: "user1", displayName: "UserB", role: null, isBot: false, personality: null, imageUrl: null },
       ]),
     );
     const res = await request(app).get("/api/employees");
