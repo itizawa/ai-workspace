@@ -158,10 +158,17 @@ const employeePathIdParam = z.string().openapi({ param: { name: "id", in: "path"
 registry.registerPath({
   method: "get",
   path: "/api/employees",
-  summary: "Bot Employee 一覧を取得（認証不要・#240）",
+  summary: "Bot Employee 一覧を取得（認証不要・#240・#218）",
+  request: {
+    query: z.object({
+      includeDeleted: z.enum(["true", "false"]).optional().openapi({
+        description: "true にすると論理削除済み社員も含めて返す（#218）。省略時は除外。",
+      }),
+    }),
+  },
   responses: {
     200: {
-      description: "isBot=true の Employee 一覧",
+      description: "isBot=true の Employee 一覧（includeDeleted=true の場合は削除済みも含む）",
       content: { "application/json": { schema: z.array(EmployeeComponent) } },
     },
   },
@@ -184,6 +191,34 @@ registry.registerPath({
     400: { description: "バリデーションエラー（displayName 51 文字超・personality 501 文字超など）", ...errorJson },
     401: { description: "未認証", ...errorJson },
     403: { description: "admin ロール以外の操作禁止", ...errorJson },
+    404: { description: "Employee が存在しない", ...errorJson },
+  },
+});
+
+// Employee 論理削除（#218）。admin ロール必須。
+const adminEmployeePathIdParam = z.string().openapi({ param: { name: "id", in: "path" } });
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/admin/employees/{id}",
+  summary: "Employee を論理削除（認証必須・admin ロール・#218）",
+  request: {
+    params: z.object({ id: adminEmployeePathIdParam }),
+  },
+  responses: {
+    200: {
+      description: "論理削除成功。id と deletedAt を返す",
+      content: {
+        "application/json": {
+          schema: z.object({
+            id: z.string(),
+            deletedAt: z.string().datetime(),
+          }),
+        },
+      },
+    },
+    401: { description: "未認証", ...errorJson },
+    403: { description: "admin 権限なし", ...errorJson },
     404: { description: "Employee が存在しない", ...errorJson },
   },
 });

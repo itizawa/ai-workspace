@@ -4,8 +4,9 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { type SyntheticEvent, useState, type ReactElement, type ReactNode } from "react";
 
 import { APP_SETTING_VALUE_MAX_LENGTH } from "@hatchery/common";
-import { useAdminSettings, useSaveAdminSetting } from "../api/admin.js";
+import { useAdminSettings, useDeleteEmployee, useSaveAdminSetting } from "../api/admin.js";
 import { useBatchLogs, useRefreshBatchLogs } from "../api/batchLogs.js";
+import { useBotEmployees } from "../api/employees.js";
 import { useTokenUsage, useRefreshTokenUsage } from "../api/tokenUsage.js";
 import { EmployeeTable } from "../components/EmployeeTable";
 import { InvitationsTab } from "../components/InvitationsTab.js";
@@ -226,6 +227,25 @@ const TokenUsageTab = (): ReactElement => {
   );
 };
 
+/** ユーザー一覧タブのコンテンツ。削除ボタン付き EmployeeTable を表示する（#218）。 */
+const UsersTab = (): ReactElement => {
+  const { data: employees, isLoading } = useBotEmployees();
+  const deleteMutation = useDeleteEmployee();
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
+  };
+
+  return (
+    <EmployeeTable
+      employees={employees}
+      isLoading={isLoading}
+      onDelete={handleDelete}
+      isDeleting={deleteMutation.isPending}
+    />
+  );
+};
+
 /** 管理画面のタブ定義。配列駆動にして将来のタブ追加（会社設定・定時設定など）を妨げない。 */
 interface SettingsTab {
   label: string;
@@ -234,8 +254,7 @@ interface SettingsTab {
 }
 
 const SETTINGS_TABS: readonly [SettingsTab, ...SettingsTab[]] = [
-  // #181: admin 管理画面なので isEditable=true を渡してワーカー編集ボタンを有効化する。
-  { label: "ワーカー管理", value: "users", content: <EmployeeTable isEditable /> },
+  { label: "ワーカー管理", value: "users", content: <UsersTab /> },
   { label: "API トークン設定", value: "api-token", content: <ApiTokenSettings /> },
   { label: "バッチログ", value: "batch-logs", content: <BatchLogs /> },
   { label: "招待", value: "invitations", content: <InvitationsTab /> },

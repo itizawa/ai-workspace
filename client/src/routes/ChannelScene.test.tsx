@@ -32,6 +32,7 @@ const mockEmployees: Employee[] = [
 
 vi.mock("../api/employees.js", () => ({
   useBotEmployees: () => ({ data: mockEmployees }),
+  useAllBotEmployees: () => ({ data: mockEmployees }),
 }));
 
 describe("ChannelScene レイアウト (#203)", () => {
