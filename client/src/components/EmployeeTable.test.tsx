@@ -46,4 +46,40 @@ describe("EmployeeTable", () => {
       expect(screen.queryByText(employee.displayName)).not.toBeInTheDocument();
     }
   });
+
+  // #220: Employee の画像表示
+  it("画像の列ヘッダ（画像）を持つ（#220）", () => {
+    render(<EmployeeTable />);
+    expect(screen.getByRole("columnheader", { name: /画像/ })).toBeInTheDocument();
+  });
+
+  it("imageUrl が設定された Employee は Avatar として画像を表示する（#220）", () => {
+    const employees = [
+      {
+        id: "e1",
+        displayName: "テスト社員",
+        isBot: true as const,
+        imageUrl: "https://example.com/avatar.png",
+      },
+    ];
+    render(<EmployeeTable employees={employees} />);
+    const img = screen.getByRole("img", { name: /テスト社員/ });
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute("src", "https://example.com/avatar.png");
+  });
+
+  it("imageUrl 未設定の Employee はイニシャル Avatar でフォールバック表示される（#220）", () => {
+    const employees = [
+      { id: "e2", displayName: "フォールバック社員", isBot: true as const },
+    ];
+    render(<EmployeeTable employees={employees} />);
+    // displayName の先頭文字が表示される
+    expect(screen.getByText("フ")).toBeInTheDocument();
+  });
+
+  it("isLoading=true のとき画像列もスケルトン表示される（#220）", () => {
+    render(<EmployeeTable isLoading />);
+    const skeletons = screen.getAllByTestId("employee-table-avatar-skeleton");
+    expect(skeletons.length).toBeGreaterThanOrEqual(1);
+  });
 });

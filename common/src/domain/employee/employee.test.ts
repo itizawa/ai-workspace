@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   EMPLOYEE_DISPLAY_NAME_MAX_LENGTH,
+  EMPLOYEE_IMAGE_URL_MAX_LENGTH,
   EMPLOYEE_ROLE_MAX_LENGTH,
   createDisplayNameResolver,
   DEFAULT_EMPLOYEES,
@@ -100,6 +101,53 @@ describe("EmployeeSchema: personality フィールド (#38)", () => {
 
   it("role が EMPLOYEE_ROLE_MAX_LENGTH + 1 文字なら parse 失敗する（#91）", () => {
     const result = EmployeeSchema.safeParse({ id: "haru", displayName: "haru", role: "a".repeat(EMPLOYEE_ROLE_MAX_LENGTH + 1) });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("EmployeeSchema: imageUrl フィールド (#220)", () => {
+  it("imageUrl が有効な URL なら parse 成功する", () => {
+    const result = EmployeeSchema.safeParse({
+      id: "haru",
+      displayName: "haru",
+      imageUrl: "https://example.com/avatar.png",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("imageUrl を省略しても parse 成功する（任意フィールド）", () => {
+    const result = EmployeeSchema.safeParse({ id: "haru", displayName: "haru" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.imageUrl).toBeUndefined();
+    }
+  });
+
+  it("imageUrl が不正な URL 形式なら parse 失敗する", () => {
+    const result = EmployeeSchema.safeParse({
+      id: "haru",
+      displayName: "haru",
+      imageUrl: "not-a-url",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it(`imageUrl が EMPLOYEE_IMAGE_URL_MAX_LENGTH 文字ちょうどなら parse 成功する（#91）`, () => {
+    // EMPLOYEE_IMAGE_URL_MAX_LENGTH 文字の有効な URL を生成
+    const base = "https://example.com/";
+    const padding = "a".repeat(EMPLOYEE_IMAGE_URL_MAX_LENGTH - base.length);
+    const url = base + padding;
+    expect(url.length).toBe(EMPLOYEE_IMAGE_URL_MAX_LENGTH);
+    const result = EmployeeSchema.safeParse({ id: "haru", displayName: "haru", imageUrl: url });
+    expect(result.success).toBe(true);
+  });
+
+  it(`imageUrl が EMPLOYEE_IMAGE_URL_MAX_LENGTH + 1 文字なら parse 失敗する（#91）`, () => {
+    const base = "https://example.com/";
+    const padding = "a".repeat(EMPLOYEE_IMAGE_URL_MAX_LENGTH - base.length + 1);
+    const url = base + padding;
+    expect(url.length).toBe(EMPLOYEE_IMAGE_URL_MAX_LENGTH + 1);
+    const result = EmployeeSchema.safeParse({ id: "haru", displayName: "haru", imageUrl: url });
     expect(result.success).toBe(false);
   });
 });
