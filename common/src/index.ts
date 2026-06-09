@@ -15,6 +15,7 @@ export * from "./domain/invitation/index.js";
 export * from "./domain/task/index.js";
 export * from "./constants/employeeMessages.js";
 export * from "./errors/index.js";
+export * from "./result/index.js";
 export * from "./logic/buildRosterMessages.js";
 export * from "./logic/formatRecentLog.js";
 export * from "./logic/selectAppearingMembers.js";

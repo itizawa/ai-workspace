@@ -1,9 +1,10 @@
-import { ForbiddenError, NotFoundError, UpdateEmployeeSchema, type UpdateEmployeeInput } from "@hatchery/common";
+import { UpdateEmployeeSchema, err, forbidden, isErr, notFound, ok, type UpdateEmployeeInput } from "@hatchery/common";
 import { Router } from "express";
 
 import { requireAuth } from "../middleware/requireAuth.js";
 import { validateBody } from "../middleware/validateBody.js";
 import type { EmployeeRepository } from "../persistence/employeeRepository.js";
+import { resultToResponse } from "../utils/resultToResponse.js";
 
 export function createEmployeesRouter(employeeRepository: EmployeeRepository): Router {
   const router = Router();
@@ -24,7 +25,7 @@ export function createEmployeesRouter(employeeRepository: EmployeeRepository): R
       const user = req.user!;
 
       if (user.employeeId !== id) {
-        next(new ForbiddenError("Forbidden"));
+        resultToResponse(res, err(forbidden("Forbidden")));
         return;
       }
 
@@ -32,10 +33,9 @@ export function createEmployeesRouter(employeeRepository: EmployeeRepository): R
       employeeRepository
         .update(id, input)
         .then((employee) => {
-          if (!employee) {
-            throw new NotFoundError("EmployeeNotFound");
-          }
-          res.status(200).json(employee);
+          const result = employee ? ok(employee) : err(notFound("EmployeeNotFound"));
+          if (isErr(result)) { resultToResponse(res, result); return; }
+          res.status(200).json(result.value);
         })
         .catch(next);
     },
