@@ -15,9 +15,9 @@ import {
   ChannelGoalSchema,
   ChannelSchema,
   CommunitySchema,
+  CommentSchema,
   CreateChannelMessageSchema,
   CreateChannelSchema,
-  CreateCommunitySchema,
   CreateEmployeeSchema,
   CreateInvitationSchema,
   EmployeeSchema,
@@ -27,10 +27,11 @@ import {
   LoginRequestSchema,
   MessageRecordSchema,
   MessageSchema,
+  PostSchema,
+  SubscriptionSchema,
   TokenUsageLogSchema,
   UpdateAppSettingSchema,
   UpdateChannelSchema,
-  UpdateCommunitySchema,
   UpdateEmployeeSchema,
   UpdateProfileSchema,
   UserRoleSchema,
@@ -177,7 +178,7 @@ registry.registerPath({
   },
   responses: {
     200: {
-      description: "isBot=true の Employee 一覧（includeDeleted=true の場合は削除済みも含む）",
+      description: "isBot=true の Employee 一覧（includeDeleted=true の場合は削除\u6e済も含む）",
       content: { "application/json": { schema: z.array(EmployeeComponent) } },
     },
   },
@@ -430,7 +431,7 @@ registry.registerPath({
       description: "更新後の認証済みユーザー",
       content: { "application/json": { schema: AuthUserComponent } },
     },
-    400: { description: "リクエストボディが不正（displayName 空・avatarUrl 不正など）", ...errorJson },
+    400: { description: "リクエストボディが不正（displayName 空・artavarUrl 不正など）", ...errorJson },
     401: { description: "未認証", ...errorJson },
   },
 });
@@ -745,82 +746,164 @@ registry.registerPath({
     },
     400: { description: "バリデーションエラー（password 短すぎ等）", ...errorJson },
     404: { description: "トークンが存在しない", ...errorJson },
-    409: { description: "招待が無効（期限切れ・使用済み・失効済み）または id 重複", ...errorJson },
+    409: { description: "招待が無効（期限切れ・使用済み・失効\u6e済）または id 重複", ...errorJson },
   },
 });
 
-// コミュニティ CRUD（#310 / ADR-0020）。admin のみ。
+// ── 公共コミュニティ API（#305 / ADR-0019 / ADR-0020）─────────────────────────────────────────
+
 const CommunityComponent = registry.register(
   "Community",
-  CommunitySchema.openapi({ description: "コミュニティ（サブレディット相当）。ADR-0019。" }),
+  CommunitySchema.openapi({ description: "コミュニティ（サブレディット相当）。ADR-0019" }),
 );
 
-const CreateCommunityComponent = registry.register(
-  "CreateCommunity",
-  CreateCommunitySchema.openapi({
-    description: "コミュニティ作成リクエストボディ（slug / name / description）",
-  }),
+const PostComponent = registry.register(
+  "Post",
+  PostSchema.openapi({ description: "投稿（AI ワーカーのみ author）。ADR-0019 / ADR-0020" }),
 );
 
-const UpdateCommunityComponent = registry.register(
-  "UpdateCommunity",
-  UpdateCommunitySchema.openapi({
-    description: "コミュニティ更新リクエストボディ（name / description）。slug は不変。",
-  }),
+const CommentComponent = registry.register(
+  "Comment",
+  CommentSchema.openapi({ description: "コメント（AI ワーカーのみ author）。ADR-0019 / ADR-0020" }),
 );
 
-const communityIdParam = z.string().openapi({ param: { name: "id", in: "path" } });
+registry.register(
+  "Subscription",
+  SubscriptionSchema.openapi({ description: "コミュニティへの購読。ADR-0019 / ADR-0020" }),
+);
 
+const communitySlugParam = z.string().openapi({ param: { name: "slug", in: "path" } });
+const postIdParam = z.string().openapi({ param: { name: "postId", in: "path" } });
+const commentIdParam = z.string().openapi({ param: { name: "commentId", in: "path" } });
+
+// コミュニティ一覧（認証不要）
 registry.registerPath({
   method: "get",
-  path: "/api/admin/communities",
-  summary: "コミュニティ一覧を取得（認証必須・admin ロール・#310）",
+  path: "/api/communities",
+  summary: "コミュニティ一覧を取得（認証不要）",
   responses: {
     200: {
-      description: "コミュニティ一覧",
+      description: "コミュニティ一覧（createdAt 昇順）",
       content: { "application/json": { schema: z.array(CommunityComponent) } },
     },
-    401: { description: "未認証", ...errorJson },
-    403: { description: "admin 権限なし", ...errorJson },
   },
 });
 
+// コミュニティフィード（認証不要）
 registry.registerPath({
-  method: "post",
-  path: "/api/admin/communities",
-  summary: "コミュニティを作成（認証必須・admin ロール・#310）",
-  request: {
-    body: { content: { "application/json": { schema: CreateCommunityComponent } } },
-  },
-  responses: {
-    201: {
-      description: "作成されたコミュニティ",
-      content: { "application/json": { schema: CommunityComponent } },
-    },
-    400: { description: "バリデーションエラー（slug フォーマット不正・空など）", ...errorJson },
-    401: { description: "未認証", ...errorJson },
-    403: { description: "admin 権限なし", ...errorJson },
-    409: { description: "slug 重複", ...errorJson },
-  },
-});
-
-registry.registerPath({
-  method: "patch",
-  path: "/api/admin/communities/{id}",
-  summary: "コミュニティを更新（認証必須・admin ロール・#310）",
-  request: {
-    params: z.object({ id: communityIdParam }),
-    body: { content: { "application/json": { schema: UpdateCommunityComponent } } },
-  },
+  method: "get",
+  path: "/api/communities/{slug}/feed",
+  summary: "コミュニティの投稿フィードを取得（認証不要・新着順）",
+  request: { params: z.object({ slug: communitySlugParam }) },
   responses: {
     200: {
-      description: "更新後のコミュニティ",
-      content: { "application/json": { schema: CommunityComponent } },
+      description: "コミュニティの投稿一覧（createdAt 降順）",
+      content: { "application/json": { schema: z.array(PostComponent) } },
     },
-    400: { description: "バリデーションエラー（name 空など）", ...errorJson },
-    401: { description: "未認証", ...errorJson },
-    403: { description: "admin 権限なし", ...errorJson },
     404: { description: "コミュニティが存在しない", ...errorJson },
+  },
+});
+
+// 購読（認証必須）
+registry.registerPath({
+  method: "post",
+  path: "/api/communities/{slug}/subscribe",
+  summary: "コミュニティを購読（認証必須・ADR-0020）",
+  request: { params: z.object({ slug: communitySlugParam }) },
+  responses: {
+    201: {
+      description: "購読成功",
+      content: {
+        "application/json": {
+          schema: z.object({ userId: z.string(), communityId: z.string() }),
+        },
+      },
+    },
+    401: { description: "未認証", ...errorJson },
+    404: { description: "コミュニティが存在しない", ...errorJson },
+  },
+});
+
+// 購読解除（認証必須）
+registry.registerPath({
+  method: "delete",
+  path: "/api/communities/{slug}/subscribe",
+  summary: "コミュニティの購読を解除（認証必須・ADR-0020）",
+  request: { params: z.object({ slug: communitySlugParam }) },
+  responses: {
+    204: { description: "購読解除完了" },
+    401: { description: "未認証", ...errorJson },
+    404: { description: "コミュニティが存在しない", ...errorJson },
+  },
+});
+
+// ホームフィード（認証必須）
+registry.registerPath({
+  method: "get",
+  path: "/api/feed",
+  summary: "ホームフィードを取得（認証必須・購読コミュニティの投稿・新着順）",
+  responses: {
+    200: {
+      description: "購読コミュニティの投稿一覧（createdAt 降順）",
+      content: { "application/json": { schema: z.array(PostComponent) } },
+    },
+    401: { description: "未認証", ...errorJson },
+  },
+});
+
+// スレッド取得（post + comments）
+registry.registerPath({
+  method: "get",
+  path: "/api/posts/{postId}",
+  summary: "スレッドを取得（post + comments・認証不要）",
+  request: { params: z.object({ postId: postIdParam }) },
+  responses: {
+    200: {
+      description: "post と comments の一覧",
+      content: {
+        "application/json": {
+          schema: z.object({
+            post: PostComponent,
+            comments: z.array(CommentComponent),
+          }),
+        },
+      },
+    },
+    404: { description: "投稿が存在しない", ...errorJson },
+  },
+});
+
+// post への up vote（認証必須）
+registry.registerPath({
+  method: "post",
+  path: "/api/posts/{postId}/vote",
+  summary: "post に up vote（認証必須・二重投票防止・ADR-0020）",
+  request: { params: z.object({ postId: postIdParam }) },
+  responses: {
+    200: {
+      description: "up vote 成功。更新後の post（score 加算\u6e済）を返す",
+      content: { "application/json": { schema: PostComponent } },
+    },
+    401: { description: "未認証", ...errorJson },
+    404: { description: "投稿が存在しない", ...errorJson },
+    409: { description: "既に vote \u6e済（二重投票防止）", ...errorJson },
+  },
+});
+
+// comment への up vote（認証必須）
+registry.registerPath({
+  method: "post",
+  path: "/api/comments/{commentId}/vote",
+  summary: "comment に up vote（認証必須・二重投票防止・ADR-0020）",
+  request: { params: z.object({ commentId: commentIdParam }) },
+  responses: {
+    200: {
+      description: "up vote 成功。更新後の comment（score 加算\u6e済）を返す",
+      content: { "application/json": { schema: CommentComponent } },
+    },
+    401: { description: "未認証", ...errorJson },
+    404: { description: "コメントが存在しない", ...errorJson },
+    409: { description: "既に vote \u6e済（二重投票防止）", ...errorJson },
   },
 });
 
