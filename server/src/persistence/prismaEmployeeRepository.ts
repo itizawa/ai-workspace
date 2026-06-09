@@ -15,6 +15,8 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
       role: row.role,
       isBot: row.isBot,
       personality: row.personality,
+      // #220: imageUrl は #204 のアップロード基盤実装後に DB カラム追加予定。現時点は null。
+      imageUrl: null,
     };
   }
 
@@ -34,6 +36,8 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
         role: row.role,
         isBot: row.isBot,
         personality: row.personality,
+        // #220: imageUrl は #204 のアップロード基盤実装後に DB カラム追加予定。現時点は null。
+        imageUrl: null,
       };
     } catch (err) {
       if (
@@ -60,6 +64,8 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
         role: row.role,
         isBot: row.isBot,
         personality: row.personality,
+        // #220: imageUrl は #204 のアップロード基盤実装後に DB カラム追加予定。現時点は null。
+        imageUrl: null,
       }));
   }
 
@@ -71,6 +77,8 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
       role: row.role,
       isBot: row.isBot,
       personality: row.personality,
+      // #220: imageUrl は #204 のアップロード基盤実装後に DB カラム追加予定。現時点は null。
+      imageUrl: null,
     }));
   }
 }

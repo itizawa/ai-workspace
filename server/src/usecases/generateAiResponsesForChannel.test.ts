@@ -8,8 +8,8 @@ import { generateAiResponsesForChannel } from "./generateAiResponsesForChannel.j
 
 const BASE_TIME = new Date("2026-01-01T12:00:00.000Z");
 
-const BOT_EMPLOYEE = { id: "bot1", displayName: "Bot", isBot: true, role: null, personality: null };
-const HUMAN_EMPLOYEE = { id: "human1", displayName: "人間", isBot: false, role: null, personality: null };
+const BOT_EMPLOYEE = { id: "bot1", displayName: "Bot", isBot: true, role: null, personality: null, imageUrl: null };
+const HUMAN_EMPLOYEE = { id: "human1", displayName: "人間", isBot: false, role: null, personality: null, imageUrl: null };
 
 describe("generateAiResponsesForChannel", () => {
   it("AI キー未設定のとき何も保存せず void を返す", async () => {

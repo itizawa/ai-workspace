@@ -145,7 +145,7 @@ registry.registerPath({
 // Employee CRUD（#38）。
 const EmployeeComponent = registry.register(
   "Employee",
-  EmployeeSchema.openapi({ description: "AI 社員（id / displayName / role / isBot / personality）" }),
+  EmployeeSchema.openapi({ description: "AI 社員（id / displayName / role / isBot / personality / imageUrl）" }),
 );
 
 const UpdateEmployeeComponent = registry.register(

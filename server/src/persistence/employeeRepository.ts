@@ -6,6 +6,8 @@ export interface EmployeeRecord {
   role: string | null;
   isBot: boolean;
   personality: string | null;
+  /** 社員の画像 URL（#220）。#204 でアップロード基盤実装後に値が入る。現時点は null。 */
+  imageUrl: string | null;
 }
 
 export interface EmployeeRepository {

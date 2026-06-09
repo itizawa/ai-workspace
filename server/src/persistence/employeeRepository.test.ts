@@ -4,8 +4,8 @@ import { InMemoryEmployeeRepository } from "./employeeRepository.js";
 
 describe("InMemoryEmployeeRepository (#38)", () => {
   const seed = [
-    { id: "haru", displayName: "haru", role: "ムードメーカー", isBot: true, personality: null },
-    { id: "ken", displayName: "ken", role: "ベテラン", isBot: true, personality: null },
+    { id: "haru", displayName: "haru", role: "ムードメーカー", isBot: true, personality: null, imageUrl: null },
+    { id: "ken", displayName: "ken", role: "ベテラン", isBot: true, personality: null, imageUrl: null },
   ];
 
   describe("findById", () => {
@@ -73,8 +73,8 @@ describe("InMemoryEmployeeRepository (#38)", () => {
   describe("listBotEmployees (#240)", () => {
     it("isBot=true の Employee のみを返す", async () => {
       const repo = new InMemoryEmployeeRepository([
-        { id: "bot1", displayName: "Bot", role: null, isBot: true, personality: null },
-        { id: "user1", displayName: "User", role: null, isBot: false, personality: null },
+        { id: "bot1", displayName: "Bot", role: null, isBot: true, personality: null, imageUrl: null },
+        { id: "user1", displayName: "User", role: null, isBot: false, personality: null, imageUrl: null },
       ]);
       const list = await repo.listBotEmployees();
       expect(list.map((e) => e.id)).toEqual(["bot1"]);
@@ -82,7 +82,7 @@ describe("InMemoryEmployeeRepository (#38)", () => {
 
     it("Bot でない Employee は含まれない", async () => {
       const repo = new InMemoryEmployeeRepository([
-        { id: "user1", displayName: "User", role: null, isBot: false, personality: null },
+        { id: "user1", displayName: "User", role: null, isBot: false, personality: null, imageUrl: null },
       ]);
       const list = await repo.listBotEmployees();
       expect(list).toHaveLength(0);
