@@ -1,10 +1,10 @@
 import { DEFAULT_EMPLOYEES, type Channel, type Employee, type MessageRecord } from "@hatchery/common";
-import { act, render, screen, within } from "@testing-library/react";
+import { act, render, renderHook, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { ChannelView } from "./ChannelView";
-import { DRIP_INTERVAL_MS, DRIP_TYPING_MS } from "../hooks/useDripMessages";
+import { DRIP_INTERVAL_MS, DRIP_TYPING_MS, useDripMessages } from "../hooks/useDripMessages";
 
 // 受け入れ条件（#30）: channel に属する message[] を発言者名 + 本文の
 // フラット一覧として表示する presentational コンポーネント。
@@ -250,5 +250,57 @@ describe("ChannelView ドリップ表示 - reduced-motion（#282）", () => {
 
     expect(screen.getByText("reduced-motion テスト")).toBeInTheDocument();
     expect(screen.queryByLabelText("入力中")).not.toBeInTheDocument();
+  });
+});
+
+describe("useDripMessages - prefersReducedMotion 途中切り替え（#282）", () => {
+  const base: readonly MessageRecord[] = [
+    {
+      id: "base-1",
+      createdEmployeeId: "haru",
+      channel: "zatsudan",
+      text: "既存メッセージ",
+      postedAt: new Date("2026-06-05T09:00:00Z"),
+      createdAt: new Date("2026-06-05T09:00:00Z"),
+      order: 0,
+    },
+  ];
+  const incoming: MessageRecord = {
+    id: "incoming-1",
+    createdEmployeeId: "ken",
+    channel: "zatsudan",
+    text: "途中切り替えメッセージ",
+    postedAt: new Date("2026-06-05T09:01:00Z"),
+    createdAt: new Date("2026-06-05T09:01:00Z"),
+    order: 1,
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("ドリップ進行中に prefersReducedMotion が true になるとタイマーがキャンセルされキューが即時フラッシュされる", () => {
+    const { result, rerender } = renderHook(
+      ({ msgs, reduced }: { msgs: readonly MessageRecord[]; reduced: boolean }) =>
+        useDripMessages(msgs, reduced),
+      { initialProps: { msgs: base, reduced: false } },
+    );
+
+    // 新着追加 → ドリップ開始（タイピングインジケータ表示中）
+    act(() => {
+      rerender({ msgs: [...base, incoming], reduced: false });
+    });
+    expect(result.current.typingEmployeeId).toBe("ken");
+    expect(result.current.visibleMessages).not.toContainEqual(incoming);
+
+    // prefersReducedMotion を true に切り替え → タイマーキャンセル＋即時フラッシュ
+    act(() => {
+      rerender({ msgs: [...base, incoming], reduced: true });
+    });
+    expect(result.current.typingEmployeeId).toBeNull();
+    expect(result.current.visibleMessages).toContainEqual(incoming);
   });
 });

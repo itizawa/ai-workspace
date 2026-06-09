@@ -36,11 +36,6 @@ export function useDripMessages(
     }
     isProcessing.current = true;
     const next = queue.current[0];
-    // 直前で length > 0 を確認済みだが、noUncheckedIndexedAccess に合わせて明示的にガードする。
-    if (next === undefined) {
-      isProcessing.current = false;
-      return;
-    }
 
     setTypingEmployeeId(next.createdEmployeeId);
 
@@ -57,6 +52,22 @@ export function useDripMessages(
       if (timerId.current !== null) clearTimeout(timerId.current);
     };
   }, []);
+
+  // prefersReducedMotion が途中で true になった場合、進行中のタイマーをキャンセルしてキューを即時フラッシュ
+  useEffect(() => {
+    if (!prefersReducedMotion) return;
+    if (timerId.current !== null) {
+      clearTimeout(timerId.current);
+      timerId.current = null;
+    }
+    isProcessing.current = false;
+    setTypingEmployeeId(null);
+    if (queue.current.length > 0) {
+      const flushed = queue.current.slice(); // 関数型 updater が実行されるまでに queue が空になるのを防ぐためスナップショット
+      queue.current = [];
+      setVisibleMessages((prev) => [...prev, ...flushed]);
+    }
+  }, [prefersReducedMotion]);
 
   useEffect(() => {
     const newMsgs = allMessages.filter((m) => !seenIds.current.has(m.id));
