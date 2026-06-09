@@ -16,6 +16,7 @@ import {
   ChannelSchema,
   CreateChannelMessageSchema,
   CreateChannelSchema,
+  CreateEmployeeSchema,
   CreateInvitationSchema,
   EmployeeSchema,
   InvitationPublicSchema,
@@ -151,6 +152,11 @@ const EmployeeComponent = registry.register(
 const UpdateEmployeeComponent = registry.register(
   "UpdateEmployee",
   UpdateEmployeeSchema.openapi({ description: "Employee 更新リクエストボディ（#38）" }),
+);
+
+const CreateEmployeeComponent = registry.register(
+  "CreateEmployee",
+  CreateEmployeeSchema.openapi({ description: "Employee 作成リクエストボディ（#217・displayName 必須）" }),
 );
 
 const employeePathIdParam = z.string().openapi({ param: { name: "id", in: "path" } });
@@ -466,6 +472,25 @@ registry.registerPath({
     },
     400: { description: "リクエストボディが不正（key 空など）", ...errorJson },
     401: { description: "未認証", ...errorJson },
+  },
+});
+
+// 管理画面 Employee 作成 API（#217）。admin ロール必須。
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/employees",
+  summary: "新規 AI 社員（isBot=true）を作成（認証必須・admin ロール・#217）",
+  request: {
+    body: { content: { "application/json": { schema: CreateEmployeeComponent } } },
+  },
+  responses: {
+    201: {
+      description: "作成された Employee",
+      content: { "application/json": { schema: EmployeeComponent } },
+    },
+    400: { description: "バリデーションエラー（displayName 空・文字数超過など）", ...errorJson },
+    401: { description: "未認証", ...errorJson },
+    403: { description: "admin 権限なし", ...errorJson },
   },
 });
 

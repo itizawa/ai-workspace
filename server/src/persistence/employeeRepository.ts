@@ -12,6 +12,15 @@ export interface EmployeeRecord {
   deletedAt: Date | null;
 }
 
+/** Employee 作成の入力型（#217）。id は呼び出し元（server route）で付与する。 */
+export interface CreateEmployeeInput {
+  id: string;
+  displayName: string;
+  role?: string;
+  personality?: string;
+  isBot: boolean;
+}
+
 export interface EmployeeRepository {
   findById(id: string): Promise<EmployeeRecord | null>;
   update(id: string, input: UpdateEmployeeInput): Promise<EmployeeRecord | null>;
@@ -27,6 +36,8 @@ export interface EmployeeRepository {
   findDeletedById(id: string): Promise<EmployeeRecord | null>;
   /** ワーカーの画像 URL を更新する（#204）。存在しない id は null を返す。 */
   updateImageUrl(id: string, imageUrl: string): Promise<EmployeeRecord | null>;
+  /** 新しい Employee を作成して返す（#217）。 */
+  create(input: CreateEmployeeInput): Promise<EmployeeRecord>;
 }
 
 export class InMemoryEmployeeRepository implements EmployeeRepository {
@@ -82,5 +93,19 @@ export class InMemoryEmployeeRepository implements EmployeeRepository {
     if (!employee) return null;
     employee.imageUrl = imageUrl;
     return { ...employee };
+  }
+
+  async create(input: CreateEmployeeInput): Promise<EmployeeRecord> {
+    const record: EmployeeRecord = {
+      id: input.id,
+      displayName: input.displayName,
+      role: input.role ?? null,
+      isBot: input.isBot,
+      personality: input.personality ?? null,
+      imageUrl: null,
+      deletedAt: null,
+    };
+    this.employees.push(record);
+    return { ...record };
   }
 }

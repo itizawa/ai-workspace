@@ -1,7 +1,7 @@
 import type { UpdateEmployeeInput } from "@hatchery/common";
 import { Prisma, type PrismaClient } from "@prisma/client";
 
-import type { EmployeeRecord, EmployeeRepository } from "./employeeRepository.js";
+import type { CreateEmployeeInput, EmployeeRecord, EmployeeRepository } from "./employeeRepository.js";
 
 /** Prisma の Employee 行を EmployeeRecord に変換する（共通ヘルパ）。 */
 function toRecord(row: {
@@ -116,5 +116,18 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
       }
       throw err;
     }
+  }
+
+  async create(input: CreateEmployeeInput): Promise<EmployeeRecord> {
+    const row = await this.prisma.employee.create({
+      data: {
+        id: input.id,
+        displayName: input.displayName,
+        role: input.role ?? null,
+        isBot: input.isBot,
+        personality: input.personality ?? null,
+      },
+    });
+    return toRecord(row);
   }
 }
