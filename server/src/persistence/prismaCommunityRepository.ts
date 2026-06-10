@@ -1,5 +1,5 @@
 import { ArtifactConfigSchema } from "@hatchery/common";
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 
 import type {
   CommunityRecord,
@@ -70,7 +70,7 @@ export class PrismaCommunityRepository implements CommunityRepository {
           ...(input.name !== undefined && { name: input.name }),
           ...(input.description !== undefined && { description: input.description }),
           ...("artifactConfig" in input && {
-            artifactConfig: input.artifactConfig ?? null,
+            artifactConfig: input.artifactConfig ?? Prisma.DbNull,
           }),
         },
       });
