@@ -179,13 +179,13 @@ function EditCommunityForm({ community, onCancel }: EditCommunityFormProps): Rea
   const updateMutation = useUpdateCommunity();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const form = useForm<EditFormValues>({
+  const form = useForm({
     defaultValues: {
       name: community.name,
       description: community.description,
       artifactEnabled: community.artifact_config != null,
       artifactInstructions: community.artifact_config?.instructions ?? "",
-    },
+    } as EditFormValues,
     onSubmit: async ({ value }) => {
       setErrorMsg(null);
       const artifactConfig: ArtifactConfig | null = value.artifactEnabled
