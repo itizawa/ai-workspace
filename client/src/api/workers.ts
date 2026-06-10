@@ -1,34 +1,34 @@
-import type { Employee } from "@hatchery/common";
+import type { Worker } from "@hatchery/common";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { clientEnv } from "../config/env.js";
 import { openApiClient } from "./client.js";
 
-export const BOT_EMPLOYEES_QUERY_KEY = ["employees", "bots"] as const;
-export const BOT_EMPLOYEES_ALL_QUERY_KEY = ["employees", "bots", "all"] as const;
+export const BOT_WORKERS_QUERY_KEY = ["workers", "bots"] as const;
+export const BOT_WORKERS_ALL_QUERY_KEY = ["workers", "bots", "all"] as const;
 
 /**
- * GET /api/employees を openapi-fetch 経由で取得するフック（ADR-0006）。
- * isBot=true の Employee 一覧を返す（#240・仮想オフィス用）。
+ * GET /api/workers を openapi-fetch 経由で取得するフック（ADR-0006）。
+ * isBot=true の Worker 一覧を返す（#240・仮想オフィス用）。
  * useQuery（非 Suspense）を使い、呼び出し元でローディング・エラー状態を処理する。
  */
-export function useBotEmployees() {
+export function useBotWorkers() {
   return useQuery({
-    queryKey: BOT_EMPLOYEES_QUERY_KEY,
-    queryFn: async (): Promise<Employee[]> => {
-      const { data, error } = await openApiClient.GET("/api/employees");
+    queryKey: BOT_WORKERS_QUERY_KEY,
+    queryFn: async (): Promise<Worker[]> => {
+      const { data, error } = await openApiClient.GET("/api/workers");
       if (error) throw new Error(JSON.stringify(error));
-      return (data ?? []) as unknown as Employee[];
+      return (data ?? []) as unknown as Worker[];
     },
   });
 }
 
 /**
- * PATCH /api/employees/:id を openApiClient 経由で呼ぶ mutation（#181）。
+ * PATCH /api/workers/:id を openApiClient 経由で呼ぶ mutation（#181）。
  * admin ロールのみ更新可（ADR-0018/0020）。
- * 成功後に Bot Employee 一覧を invalidate して最新データを反映する。
+ * 成功後に Bot Worker 一覧を invalidate して最新データを反映する。
  */
-export function useUpdateEmployee() {
+export function useUpdateWorker() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -38,48 +38,48 @@ export function useUpdateEmployee() {
       id: string;
       body: { displayName?: string; role?: string; personality?: string };
     }) => {
-      const { data, response } = await openApiClient.PATCH("/api/employees/{id}", {
+      const { data, response } = await openApiClient.PATCH("/api/workers/{id}", {
         params: { path: { id } },
         body,
         credentials: "include",
       });
       if (!response.ok || !data) {
-        throw new Error(`PATCH /api/employees/${id} failed: ${response.status}`);
+        throw new Error(`PATCH /api/workers/${id} failed: ${response.status}`);
       }
-      return data as unknown as Employee;
+      return data as unknown as Worker;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: BOT_EMPLOYEES_QUERY_KEY }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: BOT_WORKERS_QUERY_KEY }),
   });
 }
 
 /**
- * GET /api/employees?includeDeleted=true を openapi-fetch 経由で取得するフック（#218）。
- * 論理削除済み社員も含む isBot=true の Employee 一覧を返す（メッセージ発言者名解決用）。
+ * GET /api/workers?includeDeleted=true を openapi-fetch 経由で取得するフック（#218）。
+ * 論理削除済みワーカーも含む isBot=true の Worker 一覧を返す（メッセージ発言者名解決用）。
  *
  * NOTE: #307 移行後、旧 ChannelScene が参照していたが現在は未使用。
  * openapi.json が includeDeleted クエリパラメータを定義していないため、fetch 直呼びに変更。
  */
-export function useAllBotEmployees() {
+export function useAllBotWorkers() {
   return useQuery({
-    queryKey: BOT_EMPLOYEES_ALL_QUERY_KEY,
-    queryFn: async (): Promise<Employee[]> => {
+    queryKey: BOT_WORKERS_ALL_QUERY_KEY,
+    queryFn: async (): Promise<Worker[]> => {
       // openapi-fetch が includeDeleted クエリを型として認識しないため直接 fetch する
-      const { data, error } = await openApiClient.GET("/api/employees");
+      const { data, error } = await openApiClient.GET("/api/workers");
       if (error) throw new Error(JSON.stringify(error));
-      return (data ?? []) as unknown as Employee[];
+      return (data ?? []) as unknown as Worker[];
     },
   });
 }
 
 /**
- * POST /api/admin/employees/:id/image でワーカーのアバター画像をアップロードする（#204）。
+ * POST /api/admin/workers/:id/image でワーカーのアバター画像をアップロードする（#204）。
  * admin ロール必須。multipart/form-data で `image` フィールドを送信する。
  * openapi-fetch は multipart/form-data をサポートしていないため、
  * フォームデータは手動で構成し fetch を直接呼ぶが、baseUrl は openApiClient から取得する。
  * ADR-0006 の型安全原則を維持するため、戻り値の型は OpenAPI 生成型から引用する。
  */
 export async function uploadWorkerImage(
-  employeeId: string,
+  workerId: string,
   file: File,
 ): Promise<{ id: string; imageUrl: string }> {
   const formData = new FormData();
@@ -93,7 +93,7 @@ export async function uploadWorkerImage(
     clientEnv.apiBaseUrl ??
     (typeof window !== "undefined" ? window.location.origin : "");
 
-  const res = await fetch(`${base}/api/admin/employees/${employeeId}/image`, {
+  const res = await fetch(`${base}/api/admin/workers/${workerId}/image`, {
     method: "POST",
     body: formData,
     credentials: "include",
@@ -109,15 +109,15 @@ export async function uploadWorkerImage(
 
 /**
  * ワーカー画像アップロードの useMutation フック（#204）。
- * 成功時に employees クエリを無効化して最新状態を反映する。
+ * 成功時に workers クエリを無効化して最新状態を反映する。
  */
 export function useUploadWorkerImage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ employeeId, file }: { employeeId: string; file: File }) =>
-      uploadWorkerImage(employeeId, file),
+    mutationFn: ({ workerId, file }: { workerId: string; file: File }) =>
+      uploadWorkerImage(workerId, file),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: BOT_EMPLOYEES_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: BOT_WORKERS_QUERY_KEY });
     },
   });
 }

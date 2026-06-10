@@ -12,20 +12,20 @@ import {
 import { useForm } from "@tanstack/react-form";
 import type { ReactElement } from "react";
 
-import { EMPLOYEE_DISPLAY_NAME_MAX_LENGTH, EMPLOYEE_ROLE_MAX_LENGTH } from "@hatchery/common";
-import { useCreateAdminEmployee } from "../api/admin.js";
+import { WORKER_DISPLAY_NAME_MAX_LENGTH, WORKER_ROLE_MAX_LENGTH } from "@hatchery/common";
+import { useCreateAdminWorker } from "../api/admin.js";
 
-interface AddEmployeeDialogProps {
+interface AddWorkerDialogProps {
   open: boolean;
   onClose: () => void;
 }
 
 /**
- * 管理画面のユーザー一覧タブで AI 社員（isBot=true）を追加するモーダル（#217）。
+ * 管理画面のワーカー一覧タブで AI ワーカー（isBot=true）を追加するモーダル（#217 / #329）。
  * フォームは @tanstack/react-form の useForm を使用（useState によるフォーム管理禁止）。
  */
-export const AddEmployeeDialog = ({ open, onClose }: AddEmployeeDialogProps): ReactElement => {
-  const createEmployee = useCreateAdminEmployee();
+export const AddWorkerDialog = ({ open, onClose }: AddWorkerDialogProps): ReactElement => {
+  const createWorker = useCreateAdminWorker();
 
   const form = useForm({
     defaultValues: {
@@ -33,7 +33,7 @@ export const AddEmployeeDialog = ({ open, onClose }: AddEmployeeDialogProps): Re
       role: "",
     },
     onSubmit: ({ value }) => {
-      createEmployee.mutate(
+      createWorker.mutate(
         {
           displayName: value.displayName.trim(),
           role: value.role.trim() || undefined,
@@ -76,7 +76,7 @@ export const AddEmployeeDialog = ({ open, onClose }: AddEmployeeDialogProps): Re
                 label="表示名"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
-                inputProps={{ "aria-label": "表示名", maxLength: EMPLOYEE_DISPLAY_NAME_MAX_LENGTH }}
+                inputProps={{ "aria-label": "表示名", maxLength: WORKER_DISPLAY_NAME_MAX_LENGTH }}
                 error={field.state.meta.errors.length > 0}
                 helperText={field.state.meta.errors[0] ?? ""}
                 autoFocus
@@ -92,12 +92,12 @@ export const AddEmployeeDialog = ({ open, onClose }: AddEmployeeDialogProps): Re
                 label="役割（任意）"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
-                inputProps={{ "aria-label": "役割（任意）", maxLength: EMPLOYEE_ROLE_MAX_LENGTH }}
+                inputProps={{ "aria-label": "役割（任意）", maxLength: WORKER_ROLE_MAX_LENGTH }}
                 fullWidth
               />
             )}
           </form.Field>
-          {createEmployee.isError && (
+          {createWorker.isError && (
             <Typography variant="caption" color="error">
               作成に失敗しました。もう一度お試しください。
             </Typography>
@@ -110,7 +110,7 @@ export const AddEmployeeDialog = ({ open, onClose }: AddEmployeeDialogProps): Re
               <Button
                 type="submit"
                 variant="contained"
-                disabled={!displayName.trim() || createEmployee.isPending}
+                disabled={!displayName.trim() || createWorker.isPending}
               >
                 追加
               </Button>

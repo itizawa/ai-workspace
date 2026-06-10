@@ -17,7 +17,7 @@ import type { CommunityRepository } from "./persistence/communityRepository.js";
 import { InMemoryCommunityRepository } from "./persistence/communityRepository.js";
 import type { CommentRepository } from "./persistence/commentRepository.js";
 import { InMemoryCommentRepository } from "./persistence/commentRepository.js";
-import type { EmployeeRepository } from "./persistence/employeeRepository.js";
+import type { WorkerRepository } from "./persistence/workerRepository.js";
 import type { InvitationLinkRepository } from "./persistence/invitationLinkRepository.js";
 import type { MessageRepository } from "./persistence/messageRepository.js";
 import type { StorageService } from "./services/storageService.js";
@@ -32,13 +32,13 @@ import { InMemoryVoteRepository } from "./persistence/voteRepository.js";
 import type { WorldStateRepository } from "./persistence/worldStateRepository.js";
 import { InMemoryWorldStateRepository } from "./persistence/worldStateRepository.js";
 import { createAdminRouter } from "./routes/admin.js";
-import { createAdminEmployeeImageRouter } from "./routes/adminEmployeeImage.js";
+import { createAdminWorkerImageRouter } from "./routes/adminWorkerImage.js";
 import { createBatchLogsRouter } from "./routes/batch-logs.js";
 import { createTokenUsageRouter } from "./routes/token-usage.js";
 import { createAuthRouter } from "./routes/auth.js";
 import { createChannelsRouter } from "./routes/channels.js";
 import { createCommunitiesRouter } from "./routes/communities.js";
-import { createEmployeesRouter } from "./routes/employees.js";
+import { createWorkersRouter } from "./routes/workers.js";
 import { createFeedRouter } from "./routes/feed.js";
 import { healthRouter } from "./routes/health.js";
 import { createInvitationsRouter } from "./routes/invitations.js";
@@ -104,8 +104,8 @@ export interface AppDeps {
   channelMembershipRepository: ChannelMembershipRepository;
   /** チャンネル CRUD の永続化（#37）。 */
   channelRepository: ChannelRepository;
-  /** Employee CRUD の永続化（#38）。 */
-  employeeRepository: EmployeeRepository;
+  /** Worker CRUD の永続化（#38）。 */
+  workerRepository: WorkerRepository;
   /** アプリ設定（API キー等）の永続化（#52）。 */
   appSettingRepository: AppSettingRepository;
   /** バッチ実行ログの永続化（#75）。 */
@@ -159,23 +159,14 @@ export function createApp(deps: AppDeps): Express {
     );
   }
 
-  // セキュアヘッダ／CORS（#35）は最前段に置き、エラー応答も含む全レスポンスに効かせる。
-  // CORS のプリフライト（OPTIONS）は createCors が 204 で打ち切るため、レート制限等より前に置く。
   app.use(createSecureHeaders({ enableHsts: security.enableHsts }));
   app.use(createCors({ allowedOrigins: security.corsAllowedOrigins }));
   app.use(createRequestLogger());
 
-  // DDoS/過負荷対策（#34）はボディ解釈より前に置き、過大・過多なリクエストを早期に弾く。
-  // 注: レート制限は req.ip ごとに数える。リバースプロキシ/LB の背後で運用する場合は、
-  //     正しいクライアント IP を得るためデプロイ側で app.set("trust proxy", ...) の設定が必要
-  //     （未設定だと全クライアントがプロキシ IP に集約される）。本 MVP は単一プロセス前提。
   app.use(createRateLimiter({ windowMs: security.rateLimitWindowMs, max: security.rateLimitMax }));
   app.use(createRequestTimeout(security.requestTimeoutMs));
   app.use(createJsonBodyParser(security.bodyLimit));
 
-  // クロスサイト cookie（別ドメイン配信）では Secure cookie をプロキシ（Cloud Run）背後で
-  // 発行するため trust proxy が必須。これが無いと express-session が接続を非 HTTPS と判断し、
-  // Secure cookie をセットしない（#78）。
   if (security.crossSiteCookie) {
     app.set("trust proxy", 1);
   }
@@ -194,7 +185,6 @@ export function createApp(deps: AppDeps): Express {
   app.use(passportInstance.initialize());
   app.use(passportInstance.session());
 
-  // 公共コミュニティ用リポジトリ（省略時は空の InMemory 実装を使う）
   const communityRepo = deps.communityRepository ?? new InMemoryCommunityRepository();
   const postRepo = deps.postRepository ?? new InMemoryPostRepository();
   const commentRepo = deps.commentRepository ?? new InMemoryCommentRepository();
@@ -212,18 +202,18 @@ export function createApp(deps: AppDeps): Express {
       deps.channelRepository,
       deps.messageRepository,
       {
-        employeeRepo: deps.employeeRepository,
+        workerRepo: deps.workerRepository,
         appSettingRepo: deps.appSettingRepository,
       },
     ),
   );
-  app.use("/api/employees", createEmployeesRouter(deps.employeeRepository));
+  app.use("/api/workers", createWorkersRouter(deps.workerRepository));
   app.use("/api/admin/batch-logs", createBatchLogsRouter(deps.batchRunLogRepository));
   app.use("/api/admin/token-usage", createTokenUsageRouter(deps.tokenUsageLogRepository));
-  app.use("/api/admin", createAdminRouter(deps.appSettingRepository, deps.invitationLinkRepository, deps.employeeRepository, communityRepo));
+  app.use("/api/admin", createAdminRouter(deps.appSettingRepository, deps.invitationLinkRepository, deps.workerRepository, communityRepo));
   app.use(
     "/api/admin",
-    createAdminEmployeeImageRouter(deps.employeeRepository, deps.storageService),
+    createAdminWorkerImageRouter(deps.workerRepository, deps.storageService),
   );
   app.use(
     "/api/invitations",
@@ -231,7 +221,6 @@ export function createApp(deps: AppDeps): Express {
   );
   app.use("/api/channels", createPlanningIssuesRouter(deps.messageRepository));
 
-  // 公共コミュニティ API（#305 / ADR-0019）
   app.use(
     "/api/communities",
     createCommunitiesRouter(communityRepo, postRepo, subscriptionRepo),
@@ -239,7 +228,7 @@ export function createApp(deps: AppDeps): Express {
   app.use("/api/feed", createFeedRouter(subscriptionRepo, postRepo));
   app.use("/api", createPostsRouter(postRepo, commentRepo, voteRepo));
 
-  void worldStateRepo; // 将来の定時バッチで使用（#306）
+  void worldStateRepo;
 
   app.use(errorHandler);
   return app;

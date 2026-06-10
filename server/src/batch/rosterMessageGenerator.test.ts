@@ -1,4 +1,4 @@
-import { CHANNEL_IDS, DEFAULT_EMPLOYEES, MessageSchema } from "@hatchery/common";
+import { CHANNEL_IDS, DEFAULT_WORKERS, MessageSchema } from "@hatchery/common";
 import { describe, expect, it } from "vitest";
 
 import { InMemoryMessageRepository } from "../persistence/messageRepository.js";
@@ -13,15 +13,15 @@ const seq = (values: number[]): (() => number) => {
 };
 
 describe("createRosterMessageGenerator — 既定の社員・チャンネル・テンプレートで発言生成（#32）", () => {
-  it("既定では DEFAULT_CHANNELS の channel と DEFAULT_EMPLOYEES の speaker のみを含む", () => {
+  it("既定では DEFAULT_CHANNELS の channel と DEFAULT_WORKERS の speaker のみを含む", () => {
     const generate = createRosterMessageGenerator({ rng: seq([0.1, 0.4, 0.6, 0.2]) });
     const messages = generate();
     expect(messages.length).toBeGreaterThan(0);
-    const employeeIds = DEFAULT_EMPLOYEES.map((e) => e.id);
+    const workerIds = DEFAULT_WORKERS.map((w) => w.id);
     for (const m of messages) {
       expect(MessageSchema.safeParse(m).success).toBe(true);
       expect(CHANNEL_IDS as readonly string[]).toContain(m.channel);
-      expect(employeeIds).toContain(m.createdEmployeeId);
+      expect(workerIds).toContain(m.createdEmployeeId);
     }
   });
 

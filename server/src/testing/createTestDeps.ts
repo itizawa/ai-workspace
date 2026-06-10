@@ -4,7 +4,7 @@ import { InMemoryBatchRunLogRepository } from "../persistence/batchRunLogReposit
 import { InMemoryChannelMembershipRepository } from "../persistence/channelMembershipRepository.js";
 import { InMemoryChannelRepository } from "../persistence/channelRepository.js";
 import { InMemoryCommunityRepository } from "../persistence/communityRepository.js";
-import { InMemoryEmployeeRepository } from "../persistence/employeeRepository.js";
+import { InMemoryWorkerRepository } from "../persistence/workerRepository.js";
 import { InMemoryInvitationLinkRepository } from "../persistence/invitationLinkRepository.js";
 import { InMemoryMessageRepository } from "../persistence/messageRepository.js";
 import { InMemoryTokenUsageLogRepository } from "../persistence/tokenUsageLogRepository.js";
@@ -20,13 +20,9 @@ export type TestDepsOverrides = Partial<AppDeps>;
 /**
  * テスト用合成ヘルパ（Issue #137）。
  * createApp に渡す全依存を InMemory 実装で束ねて返す。
- * overrides で任意のリポジトリを上書きできる（個別 spy・カスタムデータ注入に使う）。
- *
- * デフォルトの userRepository は InMemoryUserRepository.createWithTestUser() で
- * testuser / testpass のテストユーザーを含む。
+ * overrides で任意のリポジトリを上書きできる。
  */
 export async function createTestDeps(overrides?: TestDepsOverrides): Promise<AppDeps> {
-  // overrides に userRepository が指定されている場合は bcrypt 計算をスキップする（効率化）。
   const defaultUserRepo =
     overrides?.userRepository ?? (await InMemoryUserRepository.createWithTestUser());
   return {
@@ -34,7 +30,7 @@ export async function createTestDeps(overrides?: TestDepsOverrides): Promise<App
     userRepository: defaultUserRepo,
     channelMembershipRepository: new InMemoryChannelMembershipRepository(),
     channelRepository: new InMemoryChannelRepository(),
-    employeeRepository: new InMemoryEmployeeRepository(),
+    workerRepository: new InMemoryWorkerRepository(),
     appSettingRepository: new InMemoryAppSettingRepository(),
     batchRunLogRepository: new InMemoryBatchRunLogRepository(),
     invitationLinkRepository: new InMemoryInvitationLinkRepository(),

@@ -14,7 +14,7 @@ async function main(): Promise<void> {
     messageRepository: messageRepo,
     channelRepository: channelRepo,
     channelMembershipRepository: membershipRepo,
-    employeeRepository: employeeRepo,
+    workerRepository: workerRepo,
     appSettingRepository: appSettingRepo,
     batchRunLogRepository,
   } = createPrismaDeps(prisma);
@@ -23,7 +23,7 @@ async function main(): Promise<void> {
     channelRepo,
     messageRepo,
     membershipRepo,
-    employeeRepo,
+    workerRepo,
     appSettingRepo,
     batchRunLogRepository,
   });

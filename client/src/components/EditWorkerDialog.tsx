@@ -1,10 +1,10 @@
-import type { Employee } from "@hatchery/common";
-import { EMPLOYEE_DISPLAY_NAME_MAX_LENGTH, EMPLOYEE_ROLE_MAX_LENGTH } from "@hatchery/common";
+import type { Worker } from "@hatchery/common";
+import { WORKER_DISPLAY_NAME_MAX_LENGTH, WORKER_ROLE_MAX_LENGTH } from "@hatchery/common";
 import { useForm } from "@tanstack/react-form";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
-import { useUpdateEmployee } from "../api/employees.js";
+import { useUpdateWorker } from "../api/workers.js";
 import {
   Alert,
   Box,
@@ -19,9 +19,9 @@ import {
 
 const PERSONALITY_MAX_LENGTH = 500;
 
-interface EditEmployeeDialogProps {
+interface EditWorkerDialogProps {
   /** 編集対象のワーカー */
-  employee: Employee;
+  worker: Worker;
   /** ダイアログの開閉状態 */
   open: boolean;
   /** ダイアログを閉じるコールバック */
@@ -29,24 +29,24 @@ interface EditEmployeeDialogProps {
 }
 
 /**
- * ワーカーの表示名・役割・性格を編集するダイアログ（#181）。
+ * ワーカーの表示名・役割・性格を編集するダイアログ（#181 / #329）。
  * admin 管理画面から呼び出す。@tanstack/react-form を使いフォーム状態を管理する（CLAUDE.md フォーム規約）。
  * 各入力フィールドに inputProps.maxLength を設定し、サーバー側 Zod と二重防御する（CLAUDE.md バリデーションルール）。
  */
-export function EditEmployeeDialog({ employee, open, onClose }: EditEmployeeDialogProps): ReactElement {
-  const updateMutation = useUpdateEmployee();
+export function EditWorkerDialog({ worker, open, onClose }: EditWorkerDialogProps): ReactElement {
+  const updateMutation = useUpdateWorker();
   const [errorOpen, setErrorOpen] = useState(false);
 
   const form = useForm({
     defaultValues: {
-      displayName: employee.displayName,
-      role: employee.role ?? "",
-      personality: employee.personality ?? "",
+      displayName: worker.displayName,
+      role: worker.role ?? "",
+      personality: worker.personality ?? "",
     },
     onSubmit: async ({ value }) => {
       try {
         await updateMutation.mutateAsync({
-          id: employee.id,
+          id: worker.id,
           body: {
             displayName: value.displayName || undefined,
             role: value.role || undefined,
@@ -77,8 +77,8 @@ export function EditEmployeeDialog({ employee, open, onClose }: EditEmployeeDial
                 {(field) => (
                   <TextField
                     label="表示名"
-                    id="edit-employee-display-name"
-                    inputProps={{ "aria-label": "表示名", maxLength: EMPLOYEE_DISPLAY_NAME_MAX_LENGTH }}
+                    id="edit-worker-display-name"
+                    inputProps={{ "aria-label": "表示名", maxLength: WORKER_DISPLAY_NAME_MAX_LENGTH }}
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
@@ -92,8 +92,8 @@ export function EditEmployeeDialog({ employee, open, onClose }: EditEmployeeDial
                 {(field) => (
                   <TextField
                     label="役割"
-                    id="edit-employee-role"
-                    inputProps={{ "aria-label": "役割", maxLength: EMPLOYEE_ROLE_MAX_LENGTH }}
+                    id="edit-worker-role"
+                    inputProps={{ "aria-label": "役割", maxLength: WORKER_ROLE_MAX_LENGTH }}
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
@@ -106,7 +106,7 @@ export function EditEmployeeDialog({ employee, open, onClose }: EditEmployeeDial
                 {(field) => (
                   <TextField
                     label="性格"
-                    id="edit-employee-personality"
+                    id="edit-worker-personality"
                     inputProps={{ "aria-label": "性格", maxLength: PERSONALITY_MAX_LENGTH }}
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}

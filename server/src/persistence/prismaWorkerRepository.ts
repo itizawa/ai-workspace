@@ -1,9 +1,9 @@
-import type { UpdateEmployeeInput } from "@hatchery/common";
+import type { UpdateWorkerInput } from "@hatchery/common";
 import { Prisma, type PrismaClient } from "@prisma/client";
 
-import type { CreateEmployeeInput, EmployeeRecord, EmployeeRepository } from "./employeeRepository.js";
+import type { CreateWorkerInput, WorkerRecord, WorkerRepository } from "./workerRepository.js";
 
-/** Prisma の Employee 行を EmployeeRecord に変換する（共通ヘルパ）。 */
+/** Prisma の Worker 行を WorkerRecord に変換する（共通ヘルパ）。 */
 function toRecord(row: {
   id: string;
   displayName: string;
@@ -12,7 +12,7 @@ function toRecord(row: {
   personality: string | null;
   deletedAt: Date | null;
   imageUrl: string | null;
-}): EmployeeRecord {
+}): WorkerRecord {
   return {
     id: row.id,
     displayName: row.displayName,
@@ -24,18 +24,18 @@ function toRecord(row: {
   };
 }
 
-export class PrismaEmployeeRepository implements EmployeeRepository {
+export class PrismaWorkerRepository implements WorkerRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async findById(id: string): Promise<EmployeeRecord | null> {
-    const row = await this.prisma.employee.findUnique({ where: { id, deletedAt: null } });
+  async findById(id: string): Promise<WorkerRecord | null> {
+    const row = await this.prisma.worker.findUnique({ where: { id, deletedAt: null } });
     if (!row) return null;
     return toRecord(row);
   }
 
-  async update(id: string, input: UpdateEmployeeInput): Promise<EmployeeRecord | null> {
+  async update(id: string, input: UpdateWorkerInput): Promise<WorkerRecord | null> {
     try {
-      const row = await this.prisma.employee.update({
+      const row = await this.prisma.worker.update({
         where: { id, deletedAt: null },
         data: {
           ...(input.displayName !== undefined && { displayName: input.displayName }),
@@ -55,30 +55,29 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
     }
   }
 
-  async listByIds(ids: string[]): Promise<EmployeeRecord[]> {
+  async listByIds(ids: string[]): Promise<WorkerRecord[]> {
     if (ids.length === 0) return [];
-    const rows = await this.prisma.employee.findMany({ where: { id: { in: ids }, deletedAt: null } });
+    const rows = await this.prisma.worker.findMany({ where: { id: { in: ids }, deletedAt: null } });
     const byId = new Map(rows.map((row) => [row.id, row]));
-    // 入力 id の順序を保って返す（存在しない id は除外）。
     return ids
       .map((id) => byId.get(id))
       .filter((row): row is NonNullable<typeof row> => row != null)
       .map((row) => toRecord(row));
   }
 
-  async listBotEmployees(): Promise<EmployeeRecord[]> {
-    const rows = await this.prisma.employee.findMany({ where: { isBot: true, deletedAt: null } });
+  async listBotWorkers(): Promise<WorkerRecord[]> {
+    const rows = await this.prisma.worker.findMany({ where: { isBot: true, deletedAt: null } });
     return rows.map((row) => toRecord(row));
   }
 
-  async listAllBotEmployees(): Promise<EmployeeRecord[]> {
-    const rows = await this.prisma.employee.findMany({ where: { isBot: true } });
+  async listAllBotWorkers(): Promise<WorkerRecord[]> {
+    const rows = await this.prisma.worker.findMany({ where: { isBot: true } });
     return rows.map((row) => toRecord(row));
   }
 
-  async softDelete(id: string): Promise<EmployeeRecord | null> {
+  async softDelete(id: string): Promise<WorkerRecord | null> {
     try {
-      const row = await this.prisma.employee.update({
+      const row = await this.prisma.worker.update({
         where: { id, deletedAt: null },
         data: { deletedAt: new Date() },
       });
@@ -94,15 +93,15 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
     }
   }
 
-  async findDeletedById(id: string): Promise<EmployeeRecord | null> {
-    const row = await this.prisma.employee.findUnique({ where: { id } });
+  async findDeletedById(id: string): Promise<WorkerRecord | null> {
+    const row = await this.prisma.worker.findUnique({ where: { id } });
     if (!row) return null;
     return toRecord(row);
   }
 
-  async updateImageUrl(id: string, imageUrl: string): Promise<EmployeeRecord | null> {
+  async updateImageUrl(id: string, imageUrl: string): Promise<WorkerRecord | null> {
     try {
-      const row = await this.prisma.employee.update({
+      const row = await this.prisma.worker.update({
         where: { id },
         data: { imageUrl },
       });
@@ -118,8 +117,8 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
     }
   }
 
-  async create(input: CreateEmployeeInput): Promise<EmployeeRecord> {
-    const row = await this.prisma.employee.create({
+  async create(input: CreateWorkerInput): Promise<WorkerRecord> {
+    const row = await this.prisma.worker.create({
       data: {
         id: input.id,
         displayName: input.displayName,

@@ -6,12 +6,12 @@ import { InMemoryAppSettingRepository } from "../persistence/appSettingRepositor
 import { InMemoryBatchRunLogRepository } from "../persistence/batchRunLogRepository.js";
 import { InMemoryChannelMembershipRepository } from "../persistence/channelMembershipRepository.js";
 import { InMemoryChannelRepository } from "../persistence/channelRepository.js";
-import { InMemoryEmployeeRepository, type EmployeeRecord } from "../persistence/employeeRepository.js";
+import { InMemoryWorkerRepository, type WorkerRecord } from "../persistence/workerRepository.js";
 import { InMemoryMessageRepository } from "../persistence/messageRepository.js";
 
 import { runAiMessageBatch } from "./runAiMessageBatch.js";
 
-const bots: EmployeeRecord[] = [
+const bots: WorkerRecord[] = [
   { id: "haru", displayName: "ハル", role: "ムードメーカー", isBot: true, personality: null, imageUrl: null },
 ];
 
@@ -34,10 +34,10 @@ describe("runAiMessageBatch: goal 駆動 dispatch (#284)", () => {
     const channelRepo = new InMemoryChannelRepository(channels);
     const messageRepo = new InMemoryMessageRepository();
     const membershipRepo = new InMemoryChannelMembershipRepository();
-    const employeeRepo = new InMemoryEmployeeRepository(bots);
+    const workerRepo = new InMemoryWorkerRepository(bots);
     const appSettingRepo = new InMemoryAppSettingRepository();
     const batchRunLogRepository = new InMemoryBatchRunLogRepository();
-    return { channelRepo, messageRepo, membershipRepo, employeeRepo, appSettingRepo, batchRunLogRepository };
+    return { channelRepo, messageRepo, membershipRepo, workerRepo, appSettingRepo, batchRunLogRepository };
   };
 
   it("goal.type='chat' のチャンネルは処理対象になる", async () => {

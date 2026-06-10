@@ -1,7 +1,7 @@
 import {
   ConflictError,
   CreateCommunitySchema,
-  CreateEmployeeSchema,
+  CreateWorkerSchema,
   CreateInvitationSchema,
   NotFoundError,
   UpdateAppSettingSchema,
@@ -15,7 +15,7 @@ import { requireAuth } from "../middleware/requireAuth.js";
 import { validateBody } from "../middleware/validateBody.js";
 import type { AppSettingRepository } from "../persistence/appSettingRepository.js";
 import type { CommunityRecord, CommunityRepository } from "../persistence/communityRepository.js";
-import type { EmployeeRepository } from "../persistence/employeeRepository.js";
+import type { WorkerRepository } from "../persistence/workerRepository.js";
 import {
   toInvitationLinkResponse,
   type InvitationLinkRepository,
@@ -54,12 +54,11 @@ function toResponse(key: string, encryptedValue: string) {
 export function createAdminRouter(
   appSettingRepository: AppSettingRepository,
   invitationLinkRepository: InvitationLinkRepository,
-  employeeRepository: EmployeeRepository,
+  workerRepository: WorkerRepository,
   communityRepository: CommunityRepository,
 ): Router {
   const router = Router();
 
-  // #136: /admin/* は requireAuth → requireAdmin で一括保護する（admin ロール必須）。
   router.use(requireAuth, requireAdmin);
 
   router.get("/settings", async (_req, res, next) => {
@@ -86,7 +85,6 @@ export function createAdminRouter(
     },
   );
 
-  // 招待リンク API（#131）。
   router.post(
     "/invitations",
     validateBody(CreateInvitationSchema),
@@ -134,13 +132,12 @@ export function createAdminRouter(
     }
   });
 
-  // Employee 論理削除（#218）。
-  router.delete("/employees/:id", async (req, res, next) => {
+  router.delete("/workers/:id", async (req, res, next) => {
     try {
       const { id } = req.params as { id: string };
-      const result = await employeeRepository.softDelete(id);
+      const result = await workerRepository.softDelete(id);
       if (!result) {
-        next(new NotFoundError("EmployeeNotFound"));
+        next(new NotFoundError("WorkerNotFound"));
         return;
       }
       res.status(200).json({ id: result.id, deletedAt: result.deletedAt });
@@ -149,28 +146,26 @@ export function createAdminRouter(
     }
   });
 
-  // Employee 作成（#217）。admin ロール専用。isBot は常に true。
   router.post(
-    "/employees",
-    validateBody(CreateEmployeeSchema),
+    "/workers",
+    validateBody(CreateWorkerSchema),
     async (req, res, next) => {
       try {
         const input = req.body as { displayName: string; role?: string; personality?: string };
-        const employee = await employeeRepository.create({
+        const worker = await workerRepository.create({
           id: randomUUID(),
           displayName: input.displayName,
           role: input.role,
           personality: input.personality,
           isBot: true,
         });
-        res.status(201).json(employee);
+        res.status(201).json(worker);
       } catch (err) {
         next(err);
       }
     },
   );
 
-  // コミュニティ CRUD（#310 / ADR-0020）。admin のみ。
   router.get("/communities", async (_req, res, next) => {
     try {
       const communities = await communityRepository.list();
@@ -190,7 +185,6 @@ export function createAdminRouter(
           name: string;
           description: string;
         };
-        // slug 一意チェック（#310）
         const existing = await communityRepository.findBySlug(slug);
         if (existing) {
           next(new ConflictError("CommunitySlugAlreadyExists"));

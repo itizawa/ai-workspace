@@ -5,15 +5,15 @@ import { MAX_MESSAGE_LENGTH } from "../domain/message/index.js";
 import { buildChannelConversationPrompt } from "./buildChannelConversationPrompt.js";
 
 describe("buildChannelConversationPrompt (#53)", () => {
-  const employees = [
+  const workers = [
     { id: "haru", displayName: "ハル", role: "ムードメーカー", personality: "明るく場を和ませる" },
     { id: "ken", displayName: "ケン", role: null, personality: null },
   ];
 
-  it("社員ロスター（id / displayName / role / personality）を含む", () => {
+  it("ワーカーロスター（id / displayName / role / personality）を含む", () => {
     const prompt = buildChannelConversationPrompt({
       channelLabel: "雑談",
-      employees,
+      workers,
       recentLog: [],
       summary: null,
     });
@@ -28,7 +28,7 @@ describe("buildChannelConversationPrompt (#53)", () => {
   it("チャンネル名を含む", () => {
     const prompt = buildChannelConversationPrompt({
       channelLabel: "雑談",
-      employees,
+      workers,
       recentLog: [],
       summary: null,
     });
@@ -38,7 +38,7 @@ describe("buildChannelConversationPrompt (#53)", () => {
   it("JSON 配列形式と createdEmployeeId / text の出力指示を含む（#222）", () => {
     const prompt = buildChannelConversationPrompt({
       channelLabel: "雑談",
-      employees,
+      workers,
       recentLog: [],
       summary: null,
     });
@@ -50,7 +50,7 @@ describe("buildChannelConversationPrompt (#53)", () => {
   it("text の最大文字数（既定 MAX_MESSAGE_LENGTH）を指示に含む", () => {
     const prompt = buildChannelConversationPrompt({
       channelLabel: "雑談",
-      employees,
+      workers,
       recentLog: [],
       summary: null,
     });
@@ -60,7 +60,7 @@ describe("buildChannelConversationPrompt (#53)", () => {
   it("直近ログがあれば本文に含める", () => {
     const prompt = buildChannelConversationPrompt({
       channelLabel: "雑談",
-      employees,
+      workers,
       recentLog: ["[zatsudan] haru: やあみんな"],
       summary: null,
     });
@@ -70,7 +70,7 @@ describe("buildChannelConversationPrompt (#53)", () => {
   it("あらすじ（summary）があれば本文に含める", () => {
     const prompt = buildChannelConversationPrompt({
       channelLabel: "雑談",
-      employees,
+      workers,
       recentLog: [],
       summary: "これまでの経緯のあらすじ",
     });

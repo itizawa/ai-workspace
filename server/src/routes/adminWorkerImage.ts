@@ -4,7 +4,7 @@ import { Router } from "express";
 
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import type { EmployeeRepository } from "../persistence/employeeRepository.js";
+import type { WorkerRepository } from "../persistence/workerRepository.js";
 import {
   ALLOWED_IMAGE_MIME_TYPES,
   MAX_IMAGE_SIZE_BYTES,
@@ -13,22 +13,14 @@ import {
 
 /**
  * admin 管理者向けワーカー画像アップロードルーター（#204 / ADR-0022）。
- * POST /api/admin/employees/:id/image
- *
- * - admin ロール必須（requireAuth + requireAdmin）
- * - multipart/form-data で `image` フィールドを受け取る
- * - MIME: image/png, image/jpeg, image/webp, image/gif のみ
- * - サイズ: 5MB 以下
- * - 成功時: { id, imageUrl } を返す
+ * POST /api/admin/workers/:id/image
  */
-export function createAdminEmployeeImageRouter(
-  employeeRepository: EmployeeRepository,
+export function createAdminWorkerImageRouter(
+  workerRepository: WorkerRepository,
   storageService: StorageService,
 ): Router {
   const router = Router();
 
-  // multer を memoryStorage で設定（ファイルをメモリに保持し、GCS に転送する）。
-  // fileFilter で MIME タイプを事前検証し、limits でサイズ上限を設定する。
   const upload = multer({
     storage: multer.memoryStorage(),
     fileFilter(_req, file, callback) {
@@ -36,8 +28,6 @@ export function createAdminEmployeeImageRouter(
       if (allowedMimes.includes(file.mimetype)) {
         callback(null, true);
       } else {
-        // false を渡すと req.file が undefined になるが、エラーは throw しない。
-        // ハンドラー側で req.file を検証して 400 を返す。
         callback(null, false);
       }
     },
@@ -45,10 +35,9 @@ export function createAdminEmployeeImageRouter(
   });
 
   router.post(
-    "/employees/:id/image",
+    "/workers/:id/image",
     requireAuth,
     requireAdmin,
-    // multer ミドルウェア: サイズ超過は multer.MulterError を投げる
     (req, res, next) => {
       upload.single("image")(req, res, (err) => {
         if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
@@ -66,7 +55,6 @@ export function createAdminEmployeeImageRouter(
       try {
         const { id } = req.params as { id: string };
 
-        // ファイルが未添付または MIME が無効（fileFilter で弾かれた）場合は 400
         if (!req.file) {
           res.status(400).json({
             error: `InvalidFile: image field is required. Allowed MIME types: ${ALLOWED_IMAGE_MIME_TYPES.join(", ")}`,
@@ -74,23 +62,20 @@ export function createAdminEmployeeImageRouter(
           return;
         }
 
-        // employee 存在確認
-        const employee = await employeeRepository.findById(id);
-        if (!employee) {
-          throw new NotFoundError("EmployeeNotFound");
+        const worker = await workerRepository.findById(id);
+        if (!worker) {
+          throw new NotFoundError("WorkerNotFound");
         }
 
-        // GCS（または InMemory）にアップロード
         const imageUrl = await storageService.uploadWorkerImage({
-          employeeId: id,
+          workerId: id,
           mimeType: req.file.mimetype,
           buffer: req.file.buffer,
         });
 
-        // DB の imageUrl を更新
-        const updated = await employeeRepository.updateImageUrl(id, imageUrl);
+        const updated = await workerRepository.updateImageUrl(id, imageUrl);
         if (!updated) {
-          throw new NotFoundError("EmployeeNotFound");
+          throw new NotFoundError("WorkerNotFound");
         }
 
         res.status(200).json({ id: updated.id, imageUrl: updated.imageUrl });

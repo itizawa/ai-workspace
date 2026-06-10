@@ -6,7 +6,7 @@ import { seedDevData, type SeedPrisma } from "./seedDevData.js";
 function createFakePrisma() {
   const calls = {
     user: [] as Array<{ id: string; loginId: string; displayName: string }>,
-    employee: [] as Array<{ id: string; isBot: boolean; userId: string | null }>,
+    worker: [] as Array<{ id: string; isBot: boolean; userId: string | null }>,
     community: [] as Array<{ slug: string; name: string }>,
   };
   const prisma: SeedPrisma = {
@@ -15,9 +15,9 @@ function createFakePrisma() {
         calls.user.push({ id: args.create.id, loginId: args.create.loginId, displayName: args.create.displayName });
       },
     },
-    employee: {
+    worker: {
       async upsert(args) {
-        calls.employee.push({
+        calls.worker.push({
           id: args.create.id,
           isBot: args.create.isBot,
           userId: args.create.userId ?? null,
@@ -38,7 +38,7 @@ const EXPECTED_COMMUNITY_SLUGS = ["technology", "daily"] as const;
 /** MVP AI ワーカーの ids（seedDevData.ts 内の DEFAULT_WORKERS に対応） */
 const EXPECTED_WORKER_IDS = ["worker-alice", "worker-bob", "worker-carol"] as const;
 
-describe("seedDevData (#305)", () => {
+describe("seedDevData (#305 / #329)", () => {
   const originalNodeEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
@@ -60,20 +60,20 @@ describe("seedDevData (#305)", () => {
   it("AI ワーカー 3 名を isBot=true / userId=null で投入する（ADR-0019）", async () => {
     const { prisma, calls } = createFakePrisma();
     await seedDevData(prisma);
-    const aiWorkers = calls.employee.filter((e) =>
-      EXPECTED_WORKER_IDS.includes(e.id as typeof EXPECTED_WORKER_IDS[number]),
+    const aiWorkers = calls.worker.filter((w) =>
+      EXPECTED_WORKER_IDS.includes(w.id as typeof EXPECTED_WORKER_IDS[number]),
     );
     expect(aiWorkers).toHaveLength(EXPECTED_WORKER_IDS.length);
-    expect(aiWorkers.every((e) => e.isBot === true)).toBe(true);
-    expect(aiWorkers.every((e) => e.userId === null)).toBe(true);
+    expect(aiWorkers.every((w) => w.isBot === true)).toBe(true);
+    expect(aiWorkers.every((w) => w.userId === null)).toBe(true);
   });
 
-  it("ログインユーザーに紐づく Employee を isBot=false / userId=testuser で投入する（#49）", async () => {
+  it("ログインユーザーに紐づく Worker を isBot=false / userId=testuser で投入する（#49）", async () => {
     const { prisma, calls } = createFakePrisma();
     await seedDevData(prisma);
-    // AI ワーカー 3 名 + ユーザー所有社員 1 名
-    expect(calls.employee).toHaveLength(EXPECTED_WORKER_IDS.length + 1);
-    const owned = calls.employee.find((e) => e.userId === "testuser");
+    // AI ワーカー 3 名 + ユーザー所有ワーカー 1 名
+    expect(calls.worker).toHaveLength(EXPECTED_WORKER_IDS.length + 1);
+    const owned = calls.worker.find((w) => w.userId === "testuser");
     expect(owned).toBeDefined();
     expect(owned?.id).toBe("emp-testuser");
     expect(owned?.isBot).toBe(false);
@@ -95,7 +95,7 @@ describe("seedDevData (#305)", () => {
     const result = await seedDevData(prisma);
     expect(result.skipped).toBe(true);
     expect(calls.user).toHaveLength(0);
-    expect(calls.employee).toHaveLength(0);
+    expect(calls.worker).toHaveLength(0);
     expect(calls.community).toHaveLength(0);
   });
 });

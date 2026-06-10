@@ -6,7 +6,8 @@ import bcrypt from "bcrypt";
  * ここで具象クライアントを値 import しないことで、生成物・実 DB が無くてもユニットテスト可能にする（設計書 §4）。
  *
  * #305: Message / Channel / ChannelEmployee / Task モデル削除に伴い、
- * seed を Community / Employee / User のみに変更。
+ * seed を Community / Worker / User のみに変更。
+ * #329: Employee → Worker へのリネーム。
  */
 export interface SeedPrisma {
   user: {
@@ -16,7 +17,7 @@ export interface SeedPrisma {
       create: { id: string; loginId: string; displayName: string; passwordHash: string; role?: "admin" | "member" };
     }): Promise<unknown>;
   };
-  employee: {
+  worker: {
     upsert(args: {
       where: { id: string };
       update: Record<string, never>;
@@ -46,10 +47,10 @@ export interface SeedResult {
 /** 開発用テストユーザーの資格情報（既存コードベースの標準: testuser / testpass）。 */
 const DEV_USER = { id: "testuser", loginId: "testuser", displayName: "Test User", password: "testpass" } as const;
 
-/** ログインユーザーに紐づく Employee の id（#49）。 */
-const DEV_USER_EMPLOYEE_ID = "emp-testuser";
+/** ログインユーザーに紐づく Worker の id（#49）。 */
+const DEV_USER_WORKER_ID = "emp-testuser";
 
-/** MVP の AI ワーカー定義（旧 DEFAULT_EMPLOYEES 相当）。ADR-0019: author = workerId。 */
+/** MVP の AI ワーカー定義（#329: Worker へリネーム）。ADR-0019: author = workerId。 */
 const DEFAULT_WORKERS = [
   { id: "worker-alice", displayName: "Alice", role: "エンジニア" },
   { id: "worker-bob", displayName: "Bob", role: "デザイナー" },
@@ -71,7 +72,7 @@ const DEFAULT_COMMUNITIES = [
 ] as const;
 
 /**
- * 開発環境向けのテストデータを冪等に投入する（設計書 §4 / #305）。
+ * 開発環境向けのテストデータを冪等に投入する（設計書 §4 / #305 / #329）。
  * - testuser（admin）/ AI ワーカー 3 名 / MVP コミュニティ 2 件を upsert する。
  * - 本番環境（NODE_ENV=production）では何も投入せずスキップする。
  * すべて upsert のため再実行しても安全。
@@ -90,7 +91,7 @@ export async function seedDevData(prisma: SeedPrisma): Promise<SeedResult> {
 
   // AI ワーカー（3 名）
   for (const worker of DEFAULT_WORKERS) {
-    await prisma.employee.upsert({
+    await prisma.worker.upsert({
       where: { id: worker.id },
       update: {},
       create: {
@@ -102,12 +103,12 @@ export async function seedDevData(prisma: SeedPrisma): Promise<SeedResult> {
     });
   }
 
-  // ログインユーザーに対応する Employee は isBot=false / userId で User と 1:1 紐付け（#49）。
-  await prisma.employee.upsert({
-    where: { id: DEV_USER_EMPLOYEE_ID },
+  // ログインユーザーに対応する Worker は isBot=false / userId で User と 1:1 紐付け（#49）。
+  await prisma.worker.upsert({
+    where: { id: DEV_USER_WORKER_ID },
     update: {},
     create: {
-      id: DEV_USER_EMPLOYEE_ID,
+      id: DEV_USER_WORKER_ID,
       displayName: DEV_USER.displayName,
       role: null,
       isBot: false,

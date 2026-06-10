@@ -30,20 +30,21 @@ model User {
   avatarUrl     String?
   /// 権限ロール（#136）。既定は member。新規登録（招待受諾）は member として登録される。
   role          UserRole       @default(member)
-  /// 1 ユーザー = 1 Employee の任意リレーション（#49）。
-  employee      Employee?
+  /// 1 ユーザー = 1 Worker の任意リレーション（#49 / #329）。
+  worker        Worker?
   subscriptions Subscription[]
   votes         Vote[]
 }
 
 /// AI ワーカー（社員）。ADR-0019: post / comment の author として使う。
-model Employee {
+/// #329: Employee → Worker リネーム（@@map("workers") で DB テーブル名は "workers"）。
+model Worker {
   id          String    @id @default(uuid(7))
   displayName String
   role        String?
-  /// AI 社員は true、ユーザー所有社員は false（#49）。
+  /// AI ワーカーは true、ユーザー所有ワーカーは false（#49）。
   isBot       Boolean   @default(false)
-  /// ユーザー所有社員のみ User と 1:1 で紐づく。AI 社員は null（#49）。
+  /// ユーザー所有ワーカーのみ User と 1:1 で紐づく。AI ワーカーは null（#49）。
   userId      String?   @unique
   user        User?     @relation(fields: [userId], references: [id])
   /// AI バッチのプロンプト指針となる性格設定（任意・500 文字以内）（#38）。
@@ -52,6 +53,8 @@ model Employee {
   deletedAt   DateTime?
   /// GCS 上のアバター画像 URL（#204）。admin がアップロード後に設定される。最大 500 文字（#91）。
   imageUrl    String?
+
+  @@map("workers")
 }
 
 /// アプリ設定のキーバリューストア（#52）。API キーや各種設定値を格納する。値は暗号化して保存。

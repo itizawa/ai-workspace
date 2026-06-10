@@ -1,6 +1,6 @@
 import * as invitationsApi from "../api/invitations.js";
 import * as adminApi from "../api/admin.js";
-import { DEFAULT_EMPLOYEES } from "@hatchery/common";
+import { DEFAULT_WORKERS } from "@hatchery/common";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -41,7 +41,7 @@ describe("管理画面（#50）", () => {
     vi.restoreAllMocks();
   });
 
-  it("ログイン済みでサイドバーの「管理画面」リンクをクリックすると管理画面が表示される", async () => {
+  it("ログイン済でサイドバーの「管理画面」リンクをクリックすると管理画面が表示される", async () => {
     const adminUser = { id: "user1", displayName: "Alice", role: "admin" as const };
     vi.spyOn(authApi, "fetchMe").mockResolvedValue(adminUser);
     renderApp("/", adminUser);
@@ -54,10 +54,10 @@ describe("管理画面（#50）", () => {
 
   it("管理画面（/admin）のワーカー管理タブに「社員を追加」ボタンが表示される（#217）", async () => {
     vi.spyOn(authApi, "fetchMe").mockResolvedValue({ id: "user1", displayName: "Alice", role: "admin" });
-    vi.spyOn(adminApi, "useAdminEmployees").mockReturnValue({
-      data: DEFAULT_EMPLOYEES.map((e) => ({ ...e })),
+    vi.spyOn(adminApi, "useAdminWorkers").mockReturnValue({
+      data: DEFAULT_WORKERS.map((w) => ({ ...w })),
       isLoading: false,
-    } as ReturnType<typeof adminApi.useAdminEmployees>);
+    } as ReturnType<typeof adminApi.useAdminWorkers>);
     renderApp("/admin");
 
     expect(await screen.findByRole("tab", { name: /ワーカー管理/ })).toBeInTheDocument();

@@ -11,7 +11,7 @@ describe("createTestDeps", () => {
     expect(deps.userRepository).toBeDefined();
     expect(deps.channelMembershipRepository).toBeDefined();
     expect(deps.channelRepository).toBeDefined();
-    expect(deps.employeeRepository).toBeDefined();
+    expect(deps.workerRepository).toBeDefined();
     expect(deps.appSettingRepository).toBeDefined();
     expect(deps.batchRunLogRepository).toBeDefined();
     expect(deps.invitationLinkRepository).toBeDefined();
