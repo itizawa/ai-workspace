@@ -15,7 +15,7 @@ import { createAppRouter } from "../router.js";
  * authUser を渡すと QueryClient に事前シードする。
  * vi.spyOn(authApi, "fetchMe") は router.tsx の直接呼び出し（requireAdminRoute）は
  * スパイできるが、useAuth() 内部の queryFn は同モジュール内ローカル参照のため届かない。
- * QueryClient への事前シードで useAuth() の戲り値も制御する。
+ * QueryClient への事前シードで useAuth() の戻り値も制御する。
  */
 function renderApp(
   initialPath: string,

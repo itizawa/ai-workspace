@@ -25,7 +25,7 @@ import { GcsStorageService, InMemoryStorageService } from "../services/storageSe
  *
  * sessionStore と security は呼び出し元（server.ts）が別途設定する。
  * DI コンテナは使わず手動 DI のまま（ADR-0012）。
- * common への DI 基盤の漏洪なし（ADR-0001 / ADR-0005）。
+ * common への DI 基盤の漏洩なし（ADR-0001 / ADR-0005）。
  *
  * #305: Message / Channel 系の Prisma 実装は旧スキーマ削除に伴い廃止。
  * 旧 API ルート（/api/channels, /api/messages）は app.ts から外しているため、

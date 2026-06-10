@@ -93,7 +93,7 @@ export function buildSessionCookieOptions(crossSiteCookie: boolean) {
 
 /**
  * createApp の依存（永続化は注入する＝Express/Prisma からドメインを独立させる）。
- * すべてのリポジトリが必須（Issue #137）。InMemory フォールバックは撃去済み。
+ * すべてのリポジトリが必須（Issue #137）。InMemory フォールバックは撤去済み。
  * テスト用合成は server/src/testing/createTestDeps.ts、
  * 本番用合成は server/src/composition/createPrismaDeps.ts を使う。
  */
