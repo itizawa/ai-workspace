@@ -3,7 +3,7 @@ import type { PrismaClient } from "@prisma/client";
 import type { AppDeps } from "../app.js";
 import { PrismaAppSettingRepository } from "../persistence/prismaAppSettingRepository.js";
 import { PrismaBatchRunLogRepository } from "../persistence/prismaBatchRunLogRepository.js";
-import { PrismaEmployeeRepository } from "../persistence/prismaEmployeeRepository.js";
+import { PrismaWorkerRepository } from "../persistence/prismaWorkerRepository.js";
 import { PrismaInvitationLinkRepository } from "../persistence/prismaInvitationLinkRepository.js";
 import { PrismaTokenUsageLogRepository } from "../persistence/prismaTokenUsageLogRepository.js";
 import { PrismaUserRepository } from "../persistence/prismaUserRepository.js";
@@ -25,7 +25,7 @@ import { GcsStorageService, InMemoryStorageService } from "../services/storageSe
  *
  * sessionStore と security は呼び出し元（server.ts）が別途設定する。
  * DI コンテナは使わず手動 DI のまま（ADR-0012）。
- * common への DI 基盤の漏洩なし（ADR-0001 / ADR-0005）。
+ * common への DI 基盤の漏洪なし（ADR-0001 / ADR-0005）。
  *
  * #305: Message / Channel 系の Prisma 実装は旧スキーマ削除に伴い廃止。
  * 旧 API ルート（/api/channels, /api/messages）は app.ts から外しているため、
@@ -40,19 +40,15 @@ export function createPrismaDeps(
     : new InMemoryStorageService();
 
   return {
-    // 旧モデル（Message / Channel / ChannelEmployee）は #305 でスキーマ削除済み。
-    // app.ts から旧 routes を外しているため InMemory ダミーを使う。
     messageRepository: new InMemoryMessageRepository(),
     channelMembershipRepository: new InMemoryChannelMembershipRepository(),
     channelRepository: new InMemoryChannelRepository(),
-    // 継続するリポジトリ
     userRepository: new PrismaUserRepository(prisma),
-    employeeRepository: new PrismaEmployeeRepository(prisma),
+    workerRepository: new PrismaWorkerRepository(prisma),
     appSettingRepository: new PrismaAppSettingRepository(prisma),
     batchRunLogRepository: new PrismaBatchRunLogRepository(prisma),
     invitationLinkRepository: new PrismaInvitationLinkRepository(prisma),
     tokenUsageLogRepository: new PrismaTokenUsageLogRepository(prisma),
-    // 公共コミュニティ（#305 / ADR-0019）
     communityRepository: new PrismaCommunityRepository(prisma),
     postRepository: new PrismaPostRepository(prisma),
     commentRepository: new PrismaCommentRepository(prisma),
