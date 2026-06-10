@@ -183,7 +183,7 @@ export function createInMemoryPostRepository(): PostRepository {
       const fetched = filtered.slice(0, limit + 1);
       const hasMore = fetched.length > limit;
       const posts = hasMore ? fetched.slice(0, limit) : fetched;
-      const nextCursor = hasMore ? encodeCursor(posts[posts.length - 1]) : null;
+      const nextCursor = hasMore ? encodeCursor(posts[posts.length - 1]!) : null;
 
       return Promise.resolve({ posts: posts.map(cloneRecord), nextCursor });
     },
