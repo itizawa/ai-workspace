@@ -39,8 +39,6 @@ export interface PostRepository {
    * 存在しない場合は null を返す。
    */
   addScore(id: string, delta: number): Promise<PostRecord | null>;
-  /** 複数の communityId の post を新着順（createdAt 降順）で取得する。ホームフィード用。 */
-  listByCommunityIds(communityIds: string[], limit?: number): Promise<PostRecord[]>;
   /** 全 community の post を新着順（createdAt 降順）で取得する。公開ホームフィード用。limit 省略時は 50 件。 */
   listLatest(limit?: number): Promise<PostRecord[]>;
 }
@@ -104,15 +102,6 @@ export function createInMemoryPostRepository(): PostRepository {
       if (!record) return Promise.resolve(null);
       record.score += delta;
       return Promise.resolve(cloneRecord(record));
-    },
-
-    listByCommunityIds(communityIds: string[], limit = 50): Promise<PostRecord[]> {
-      const idSet = new Set(communityIds);
-      const filtered = records
-        .filter((r) => idSet.has(r.communityId))
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-        .slice(0, limit);
-      return Promise.resolve(filtered.map(cloneRecord));
     },
 
     listLatest(limit = 50): Promise<PostRecord[]> {

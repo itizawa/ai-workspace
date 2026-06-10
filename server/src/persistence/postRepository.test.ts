@@ -25,7 +25,7 @@ describe("createInMemoryPostRepository", () => {
       ]);
       expect(second).toHaveLength(1);
       const all = await repo.listByCommunity("community-1");
-      expect(all).toHaveLength(1);
+      expect(all).toHaveLength(1); // 重複しないこと
     });
   });
 
@@ -35,12 +35,12 @@ describe("createInMemoryPostRepository", () => {
       await repo.createMany("community-1", [
         { slotKey: "2026-06-10T09:00", seq: 0, author: "worker-1", title: "Old", text: "Old" },
       ]);
-      await new Promise((r) => setTimeout(r, 5));
+      await new Promise((r) => setTimeout(r, 5)); // 時間差を作る
       await repo.createMany("community-1", [
         { slotKey: "2026-06-10T18:00", seq: 0, author: "worker-2", title: "New", text: "New" },
       ]);
       const result = await repo.listByCommunity("community-1");
-      expect(result[0].title).toBe("New");
+      expect(result[0].title).toBe("New"); // 新着順
     });
 
     it("別の community の post は含めない", async () => {
@@ -91,29 +91,6 @@ describe("createInMemoryPostRepository", () => {
     });
   });
 
-  describe("listByCommunityIds", () => {
-    it("複数 communityId の post を新着順で返す（ホームフィード）", async () => {
-      const repo = createInMemoryPostRepository();
-      await repo.createMany("community-1", [
-        { slotKey: "2026-06-10T09:00", seq: 0, author: "worker-1", title: "C1", text: "text" },
-      ]);
-      await repo.createMany("community-2", [
-        { slotKey: "2026-06-10T09:00", seq: 0, author: "worker-2", title: "C2", text: "text" },
-      ]);
-      const result = await repo.listByCommunityIds(["community-1", "community-2"]);
-      expect(result).toHaveLength(2);
-    });
-
-    it("空の communityIds は空配列を返す", async () => {
-      const repo = createInMemoryPostRepository();
-      await repo.createMany("community-1", [
-        { slotKey: "2026-06-10T09:00", seq: 0, author: "worker-1", title: "Title", text: "Text" },
-      ]);
-      const result = await repo.listByCommunityIds([]);
-      expect(result).toEqual([]);
-    });
-  });
-
   describe("listLatest", () => {
     it("全 community の post を新着順で返す", async () => {
       const repo = createInMemoryPostRepository();
@@ -126,7 +103,7 @@ describe("createInMemoryPostRepository", () => {
       ]);
       const result = await repo.listLatest();
       expect(result).toHaveLength(2);
-      expect(result[0].title).toBe("C2 Post");
+      expect(result[0].title).toBe("C2 Post"); // 新着順
     });
 
     it("limit を指定すると上限件数で返す", async () => {
