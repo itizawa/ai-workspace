@@ -16,7 +16,7 @@ export const handlers = [
 
   http.delete("/api/communities/:slug/subscribe", () => new HttpResponse(null, { status: 204 })),
 
-  http.get("/api/feed", () => HttpResponse.json(mockPosts)),
+  http.get("/api/feed", () => HttpResponse.json({ posts: mockPosts, nextCursor: null })),
 
   http.get("/api/posts/:postId", () =>
     HttpResponse.json({ post: mockPosts[0], comments: [] }),

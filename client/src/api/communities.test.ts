@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   fetchPublicCommunities,
   fetchCommunityFeed,
-  fetchHomeFeed,
+  fetchHomeFeedPage,
   fetchPostThread,
   subscribeCommunity,
   unsubscribeCommunity,
@@ -96,24 +96,25 @@ describe("fetchCommunityFeed (GET /api/communities/{slug}/feed)", () => {
   });
 });
 
-describe("fetchHomeFeed (GET /api/feed)", () => {
+describe("fetchHomeFeedPage (GET /api/feed)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("200 のときホームフィードを返す", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, [mockPost]));
+  it("200 のときホームフィードページを返す", async () => {
+    const mockResponse = { posts: [mockPost], nextCursor: null };
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, mockResponse));
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await fetchHomeFeed();
-    expect(result).toEqual([mockPost]);
+    const result = await fetchHomeFeedPage();
+    expect(result).toEqual(mockResponse);
     const request = fetchMock.mock.calls[0][0] as Request;
     expect(request.url).toContain("/api/feed");
   });
 
   it("401 のとき例外を投げる", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(401)));
-    await expect(fetchHomeFeed()).rejects.toThrow();
+    await expect(fetchHomeFeedPage()).rejects.toThrow();
   });
 });
 
