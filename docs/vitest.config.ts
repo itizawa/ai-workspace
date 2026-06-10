@@ -14,6 +14,9 @@ export default defineConfig({
     include: [/\.[cm]?[jt]sx?$/],
   },
   test: {
+    // MarkdownDoc など React コンポーネントのレンダリングを RTL で検証するため jsdom を使う。
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
   },
 });
