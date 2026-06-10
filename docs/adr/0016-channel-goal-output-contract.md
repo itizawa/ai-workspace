@@ -1,6 +1,6 @@
 # ADR-0016: チャンネル goal（出力契約）の導入
 
-- ステータス: Accepted
+- ステータス: Superseded by ADR-0023
 - 日付: 2026-06-09
 - 関連 Issue: #284
 
