@@ -12,6 +12,21 @@ export const COMMUNITY_DESCRIPTION_MAX_LENGTH = 500;
 /** Community の synopsis の最大文字数（記憶③ / あらすじ）。 */
 export const COMMUNITY_SYNOPSIS_MAX_LENGTH = 2000;
 
+/** Community の成果物設定 instructions の最大文字数（#91 / #332）。 */
+export const COMMUNITY_ARTIFACT_INSTRUCTIONS_MAX_LENGTH = 500;
+
+/**
+ * Community の成果物設定スキーマ（ADR-0023 / #332）。
+ * - skills: 許可するスキルの集合（初期は "github-issue" のみ）
+ * - instructions: Agent への追加指示文（任意・最大 500 文字）
+ */
+export const ArtifactConfigSchema = z.object({
+  skills: z.array(z.enum(["github-issue"])).min(1),
+  instructions: z.string().max(COMMUNITY_ARTIFACT_INSTRUCTIONS_MAX_LENGTH).optional(),
+});
+
+export type ArtifactConfig = z.infer<typeof ArtifactConfigSchema>;
+
 /**
  * slug の形式バリデーション（#310）。
  * - 小文字英数字で始まり終わる
@@ -38,6 +53,7 @@ const communitySlugSchema = z
  * - slug は小文字英数字・ハイフンのみ（#310）
  * - synopsis は世界観記憶③（このコミュニティのあらすじ）。省略可能。
  * - last_slot_key は最後に生成バッチが走った定時キー。省略可能（未生成の場合 null）。
+ * - artifact_config は成果物設定（ADR-0023）。null = 設定なし。省略可能。
  */
 export const CommunitySchema = z.object({
   id: z.string().min(1),
@@ -46,6 +62,7 @@ export const CommunitySchema = z.object({
   description: z.string().min(1).max(COMMUNITY_DESCRIPTION_MAX_LENGTH),
   synopsis: z.string().max(COMMUNITY_SYNOPSIS_MAX_LENGTH).optional(),
   last_slot_key: z.string().optional(),
+  artifact_config: ArtifactConfigSchema.nullable().optional(),
   created_at: z.date(),
 });
 
@@ -65,14 +82,15 @@ export const CreateCommunitySchema = z.object({
 export type CreateCommunityInput = z.infer<typeof CreateCommunitySchema>;
 
 /**
- * コミュニティ更新リクエストスキーマ（#310）。
- * admin が community の name / description を編集する際のバリデーション。
+ * コミュニティ更新リクエストスキーマ（#310 / #332）。
+ * admin が community の name / description / artifact_config を編集する際のバリデーション。
  * slug は URL の永続性のため作成後変更不可（フィールドなし）。
  * id / created_at は更新対象外。
  */
 export const UpdateCommunitySchema = z.object({
   name: z.string().min(1).max(COMMUNITY_NAME_MAX_LENGTH).optional(),
   description: z.string().min(1).max(COMMUNITY_DESCRIPTION_MAX_LENGTH).optional(),
+  artifact_config: ArtifactConfigSchema.nullable().optional(),
 });
 
 export type UpdateCommunityInput = z.infer<typeof UpdateCommunitySchema>;

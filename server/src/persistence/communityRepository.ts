@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { ArtifactConfig } from "@hatchery/common";
 
 /**
  * Community の永続化境界（ポート）。ADR-0004 の層分離に従い、
@@ -13,6 +14,7 @@ export interface CommunityRecord {
   description: string;
   synopsis: string | null;
   lastSlotKey: string | null;
+  artifactConfig: ArtifactConfig | null;
   createdAt: Date;
 }
 
@@ -23,10 +25,12 @@ export interface CreateCommunityRecordInput {
   description: string;
 }
 
-/** コミュニティ更新の入力型（#310）。slug は不変。 */
+/** コミュニティ更新の入力型（#310 / #332）。slug は不変。 */
 export interface UpdateCommunityRecordInput {
   name?: string;
   description?: string;
+  /** undefined = 変更なし、null = クリア、object = 設定（ADR-0023）。 */
+  artifactConfig?: ArtifactConfig | null;
 }
 
 export interface CommunityRepository {
@@ -38,12 +42,12 @@ export interface CommunityRepository {
   list(): Promise<CommunityRecord[]>;
   /** community を新規作成して返す（#310 / admin CRUD）。 */
   create(input: CreateCommunityRecordInput): Promise<CommunityRecord>;
-  /** name / description を部分更新して返す。存在しない場合は null（#310 / admin CRUD）。 */
+  /** name / description / artifactConfig を部分更新して返す。存在しない場合は null（#310 / #332）。 */
   update(id: string, input: UpdateCommunityRecordInput): Promise<CommunityRecord | null>;
 }
 
 function cloneRecord(r: CommunityRecord): CommunityRecord {
-  return { ...r };
+  return { ...r, artifactConfig: r.artifactConfig ? { ...r.artifactConfig } : null };
 }
 
 /** DB 非依存のインメモリ実装。ユースケース/ルートのテストで注入する。 */
@@ -77,6 +81,7 @@ export class InMemoryCommunityRepository implements CommunityRepository {
       description: input.description,
       synopsis: null,
       lastSlotKey: null,
+      artifactConfig: null,
       createdAt: new Date(),
     };
     this.records.push(record);
@@ -88,6 +93,7 @@ export class InMemoryCommunityRepository implements CommunityRepository {
     if (!record) return Promise.resolve(null);
     if (input.name !== undefined) record.name = input.name;
     if (input.description !== undefined) record.description = input.description;
+    if ("artifactConfig" in input) record.artifactConfig = input.artifactConfig ?? null;
     return Promise.resolve(cloneRecord(record));
   }
 }

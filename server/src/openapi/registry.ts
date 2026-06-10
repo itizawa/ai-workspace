@@ -18,6 +18,7 @@ import {
   CommentSchema,
   CreateChannelMessageSchema,
   CreateChannelSchema,
+  CreateCommunitySchema,
   CreateInvitationSchema,
   EmployeeSchema,
   InvitationPublicSchema,
@@ -31,6 +32,7 @@ import {
   TokenUsageLogSchema,
   UpdateAppSettingSchema,
   UpdateChannelSchema,
+  UpdateCommunitySchema,
   UpdateEmployeeSchema,
   UpdateProfileSchema,
   UserRoleSchema,
@@ -802,6 +804,73 @@ registry.registerPath({
     401: { description: "未認証", ...errorJson },
     404: { description: "コメントが存在しない", ...errorJson },
     409: { description: "既に vote 済み（二重投票防止）", ...errorJson },
+  },
+});
+
+// ── admin community CRUD API（#310 / #332 / ADR-0020）─────────────────────────
+
+const CreateCommunityComponent = registry.register(
+  "CreateCommunity",
+  CreateCommunitySchema.openapi({ description: "コミュニティ作成リクエストボディ（admin のみ）" }),
+);
+
+const UpdateCommunityComponent = registry.register(
+  "UpdateCommunity",
+  UpdateCommunitySchema.openapi({ description: "コミュニティ更新リクエストボディ（admin のみ。artifact_config で成果物設定を管理 / ADR-0023）" }),
+);
+
+const communityIdParam = z.string().openapi({ param: { name: "id", in: "path" } });
+
+registry.registerPath({
+  method: "get",
+  path: "/api/admin/communities",
+  summary: "コミュニティ一覧を取得（認証必須・admin ロール・#310）",
+  responses: {
+    200: {
+      description: "コミュニティ一覧（createdAt 昇順）",
+      content: { "application/json": { schema: z.array(CommunityComponent) } },
+    },
+    401: { description: "未認証", ...errorJson },
+    403: { description: "admin 権限なし", ...errorJson },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/communities",
+  summary: "コミュニティを作成（認証必須・admin ロール・#310）",
+  request: {
+    body: { content: { "application/json": { schema: CreateCommunityComponent } } },
+  },
+  responses: {
+    201: {
+      description: "作成されたコミュニティ",
+      content: { "application/json": { schema: CommunityComponent } },
+    },
+    400: { description: "バリデーションエラー", ...errorJson },
+    401: { description: "未認証", ...errorJson },
+    403: { description: "admin 権限なし", ...errorJson },
+    409: { description: "slug 重複", ...errorJson },
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/admin/communities/{id}",
+  summary: "コミュニティを更新（認証必須・admin ロール・#310 / #332）",
+  request: {
+    params: z.object({ id: communityIdParam }),
+    body: { content: { "application/json": { schema: UpdateCommunityComponent } } },
+  },
+  responses: {
+    200: {
+      description: "更新後のコミュニティ",
+      content: { "application/json": { schema: CommunityComponent } },
+    },
+    400: { description: "バリデーションエラー", ...errorJson },
+    401: { description: "未認証", ...errorJson },
+    403: { description: "admin 権限なし", ...errorJson },
+    404: { description: "コミュニティが存在しない", ...errorJson },
   },
 });
 

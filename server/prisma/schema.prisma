@@ -127,6 +127,8 @@ model Community {
   synopsis      String?
   /// 最後に生成バッチが走った定時キー。省略可（未生成の場合 null）。
   lastSlotKey   String?
+  /// 成果物設定（ADR-0023 / #332）。null = 設定なし（Agent SDK 未実行）。省略可。
+  artifactConfig Json?
   createdAt     DateTime       @default(now())
   posts         Post[]
   comments      Comment[]

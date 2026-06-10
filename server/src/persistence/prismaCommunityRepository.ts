@@ -1,3 +1,4 @@
+import type { ArtifactConfig } from "@hatchery/common";
 import type { PrismaClient } from "@prisma/client";
 
 import type {
@@ -14,6 +15,7 @@ function toRecord(row: {
   description: string;
   synopsis: string | null;
   lastSlotKey: string | null;
+  artifactConfig: unknown;
   createdAt: Date;
 }): CommunityRecord {
   return {
@@ -23,6 +25,7 @@ function toRecord(row: {
     description: row.description,
     synopsis: row.synopsis,
     lastSlotKey: row.lastSlotKey,
+    artifactConfig: row.artifactConfig as ArtifactConfig | null,
     createdAt: row.createdAt,
   };
 }
@@ -66,6 +69,9 @@ export class PrismaCommunityRepository implements CommunityRepository {
         data: {
           ...(input.name !== undefined && { name: input.name }),
           ...(input.description !== undefined && { description: input.description }),
+          ...("artifactConfig" in input && {
+            artifactConfig: input.artifactConfig ?? null,
+          }),
         },
       });
       return toRecord(row);

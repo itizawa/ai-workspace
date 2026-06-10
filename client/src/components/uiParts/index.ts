@@ -1,4 +1,5 @@
 export { default as Alert } from "@mui/material/Alert";
+export { default as Checkbox } from "@mui/material/Checkbox";
 export { default as Divider } from "@mui/material/Divider";
 export { default as ListItemIcon } from "@mui/material/ListItemIcon";
 export { default as Avatar } from "@mui/material/Avatar";

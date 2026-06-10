@@ -1,5 +1,5 @@
 /**
- * 管理画面コミュニティタブ（#310）。
+ * 管理画面コミュニティタブ（#310 / #332）。
  * admin が community の作成・編集・一覧表示を行う。
  * フォームは @tanstack/react-form を使用（CLAUDE.md フォーム規約）。
  */
@@ -7,6 +7,8 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
+  FormControlLabel,
   Skeleton,
   Snackbar,
   Table,
@@ -22,12 +24,13 @@ import { useForm } from "@tanstack/react-form";
 import { type ReactElement, useState } from "react";
 
 import {
+  COMMUNITY_ARTIFACT_INSTRUCTIONS_MAX_LENGTH,
   COMMUNITY_DESCRIPTION_MAX_LENGTH,
   COMMUNITY_NAME_MAX_LENGTH,
   COMMUNITY_SLUG_MAX_LENGTH,
   COMMUNITY_SLUG_REGEX,
 } from "@hatchery/common";
-import type { Community, CreateCommunityInput, UpdateCommunityInput } from "@hatchery/common";
+import type { ArtifactConfig, Community, CreateCommunityInput, UpdateCommunityInput } from "@hatchery/common";
 import { useCommunities, useCreateCommunity, useUpdateCommunity } from "../api/communities.js";
 
 /** コミュニティ作成フォーム。 */
@@ -156,6 +159,16 @@ function CreateCommunityForm(): ReactElement {
   );
 }
 
+/** コミュニティ編集フォームの内部状態型（#332）。 */
+interface EditFormValues {
+  name: string;
+  description: string;
+  /** true = GitHub Issue 自動起票を有効にする（ADR-0023）。 */
+  artifactEnabled: boolean;
+  /** Agent への追加指示文（artifactEnabled=true のときのみ送信）。 */
+  artifactInstructions: string;
+}
+
 /** コミュニティ編集フォーム（インライン）。 */
 interface EditCommunityFormProps {
   community: Community;
@@ -166,12 +179,28 @@ function EditCommunityForm({ community, onCancel }: EditCommunityFormProps): Rea
   const updateMutation = useUpdateCommunity();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const form = useForm({
-    defaultValues: { name: community.name, description: community.description } as UpdateCommunityInput,
+  const form = useForm<EditFormValues>({
+    defaultValues: {
+      name: community.name,
+      description: community.description,
+      artifactEnabled: community.artifact_config != null,
+      artifactInstructions: community.artifact_config?.instructions ?? "",
+    },
     onSubmit: async ({ value }) => {
       setErrorMsg(null);
+      const artifactConfig: ArtifactConfig | null = value.artifactEnabled
+        ? {
+            skills: ["github-issue"],
+            instructions: value.artifactInstructions.trim() || undefined,
+          }
+        : null;
       try {
-        await updateMutation.mutateAsync({ id: community.id, input: value });
+        const updateInput: UpdateCommunityInput = {
+          name: value.name,
+          description: value.description,
+          artifact_config: artifactConfig,
+        };
+        await updateMutation.mutateAsync({ id: community.id, input: updateInput });
         onCancel();
       } catch (e) {
         setErrorMsg(e instanceof Error ? e.message : "更新に失敗しました");
@@ -235,6 +264,44 @@ function EditCommunityForm({ community, onCancel }: EditCommunityFormProps): Rea
           />
         )}
       </form.Field>
+
+      {/* 成果物設定（ADR-0023 / #332） */}
+      <form.Field name="artifactEnabled">
+        {(field) => (
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={field.state.value}
+                onChange={(e) => field.handleChange(e.target.checked)}
+              />
+            }
+            label="GitHub Issue 自動起票（定時バッチで GitHub Issue を自律起票する）"
+          />
+        )}
+      </form.Field>
+
+      <form.Subscribe selector={(state) => state.values.artifactEnabled}>
+        {(enabled) =>
+          enabled ? (
+            <form.Field name="artifactInstructions">
+              {(field) => (
+                <TextField
+                  label="起票指示文（Agent への追加指示・省略可）"
+                  size="small"
+                  multiline
+                  rows={3}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  inputProps={{ maxLength: COMMUNITY_ARTIFACT_INSTRUCTIONS_MAX_LENGTH }}
+                  helperText={`最大 ${COMMUNITY_ARTIFACT_INSTRUCTIONS_MAX_LENGTH} 文字`}
+                />
+              )}
+            </form.Field>
+          ) : null
+        }
+      </form.Subscribe>
+
       <Box sx={{ display: "flex", gap: 1 }}>
         <Button type="submit" variant="contained" size="small" disabled={updateMutation.isPending}>
           保存
@@ -281,7 +348,7 @@ function CommunityRow({ community }: CommunityRowProps): ReactElement {
   );
 }
 
-/** 管理画面コミュニティタブ（#310）。 */
+/** 管理画面コミュニティタブ（#310 / #332）。 */
 export function CommunitiesTab(): ReactElement {
   const { data: communities = [], isLoading } = useCommunities();
 

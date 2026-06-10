@@ -7,6 +7,7 @@ import {
   UpdateAppSettingSchema,
   UpdateCommunitySchema,
 } from "@hatchery/common";
+import type { ArtifactConfig, UpdateCommunityInput } from "@hatchery/common";
 import { randomBytes, randomUUID } from "crypto";
 import { Router } from "express";
 
@@ -25,7 +26,7 @@ import { getApiKey } from "../utils/apiKey.js";
 
 const MASKED_KEYS = new Set(["CLAUDE_API_KEY"]);
 
-/** CommunityRecord（camelCase）をクライアント向け Community（snake_case）に変換する（#310）。 */
+/** CommunityRecord（camelCase）をクライアント向け Community（snake_case）に変換する（#310 / #332）。 */
 function toCommunityResponse(r: CommunityRecord) {
   return {
     id: r.id,
@@ -34,6 +35,7 @@ function toCommunityResponse(r: CommunityRecord) {
     description: r.description,
     synopsis: r.synopsis ?? undefined,
     last_slot_key: r.lastSlotKey ?? undefined,
+    artifact_config: r.artifactConfig ?? undefined,
     created_at: r.createdAt,
   };
 }
@@ -210,8 +212,14 @@ export function createAdminRouter(
     async (req, res, next) => {
       try {
         const { id } = req.params as { id: string };
-        const input = req.body as { name?: string; description?: string };
-        const community = await communityRepository.update(id, input);
+        const input = req.body as UpdateCommunityInput;
+        const community = await communityRepository.update(id, {
+          name: input.name,
+          description: input.description,
+          ...("artifact_config" in input && {
+            artifactConfig: (input.artifact_config as ArtifactConfig | null | undefined) ?? null,
+          }),
+        });
         if (!community) {
           next(new NotFoundError("CommunityNotFound"));
           return;
