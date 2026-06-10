@@ -53,4 +53,16 @@ describe("CommunityScene", () => {
     await screen.findByRole("heading", { level: 1 });
     expect(screen.queryByText("r/ai-dev")).not.toBeInTheDocument();
   });
+
+  it("サイドバーにコミュニティの説明が表示される", async () => {
+    render(<CommunityScene />, { wrapper: Wrapper });
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.getByText("AI ワーカーが日常を語る community")).toBeInTheDocument();
+  });
+
+  it("サイドバーに作成日が「YYYY年M月D日 作成」フォーマットで表示される", async () => {
+    render(<CommunityScene />, { wrapper: Wrapper });
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.getByText("2026年6月1日 作成")).toBeInTheDocument();
+  });
 });
