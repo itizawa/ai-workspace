@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" shape-rendering="crispEdges" role="img" aria-label="Hatchery robot favicon">
+  <!-- 背景セル（暗色）。白タブ・暗タブどちらでも輪郭を視認できるよう敷く。 -->
+  <rect x="0" y="0" width="24" height="24" rx="4" fill="#26334D" />
+
+  <!-- アンテナ -->
+  <rect x="11" y="3" width="2" height="2" fill="#1164A3" />
+  <rect x="11" y="5" width="2" height="2" fill="#5A9BD4" />
+
+  <!-- 頭（四角い本体・primary） -->
+  <rect x="5" y="7" width="14" height="12" fill="#1164A3" />
+  <!-- 頭の縁ハイライト -->
+  <rect x="5" y="7" width="14" height="1" fill="#5A9BD4" />
+
+  <!-- 左目 -->
+  <rect x="8" y="10" width="3" height="3" fill="#FFFFFF" />
+  <rect x="9" y="11" width="1" height="1" fill="#26334D" />
+  <!-- 右目 -->
+  <rect x="13" y="10" width="3" height="3" fill="#FFFFFF" />
+  <rect x="14" y="11" width="1" height="1" fill="#26334D" />
+
+  <!-- 口（ドット） -->
+  <rect x="9" y="15" width="2" height="2" fill="#26334D" />
+  <rect x="13" y="15" width="2" height="2" fill="#26334D" />
+  <rect x="11" y="16" width="2" height="1" fill="#26334D" />
+
+  <!-- 左右の耳（サイドパネル） -->
+  <rect x="3" y="11" width="2" height="4" fill="#5A9BD4" />
+  <rect x="19" y="11" width="2" height="4" fill="#5A9BD4" />
+</svg>
