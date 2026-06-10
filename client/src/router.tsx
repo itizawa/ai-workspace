@@ -40,6 +40,7 @@ const LazyPostThreadScene = lazyRouteComponent(
   "PostThreadScene",
 );
 const LazyLoginScene = lazyRouteComponent(() => import("./routes/LoginScene"), "LoginScene");
+const LazyLandingScene = lazyRouteComponent(() => import("./routes/LandingScene"), "LandingScene");
 const LazySettingsScene = lazyRouteComponent(() => import("./routes/SettingsScene"), "SettingsScene");
 const LazyAccountScene = lazyRouteComponent(() => import("./routes/AccountScene"), "AccountScene");
 const LazyAcceptInvitationScene = lazyRouteComponent(
@@ -78,11 +79,11 @@ async function requireAdminRoute(): Promise<void> {
 
 /**
  * サイドバーなしで描画する auth 系ルートかどうかを判定する。
- * /login は完全一致、/invite/ は動的パスのためプレフィックス一致で判定する。
- * 新しい auth ルートを追加した場合はここにも追記すること。
+ * /login・/lp は完全一致、/invite/ は動的パスのためプレフィックス一致で判定する。
+ * 新しい auth ルート（認証不要・サイドバーなし）を追加した場合はここにも追記すること。
  */
 function isAuthLayout(pathname: string): boolean {
-  return pathname === "/login" || pathname.startsWith("/invite/");
+  return pathname === "/login" || pathname === "/lp" || pathname.startsWith("/invite/");
 }
 
 /**
@@ -159,6 +160,17 @@ const loginRoute = createRoute({
   ),
 });
 
+/** ランディングページ（/lp）。未ログイン向けの紹介ページ。認証不要・サイドバーなしの AuthLayout で描画する（#167）。 */
+const lpRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/lp",
+  component: () => (
+    <Suspense fallback={null}>
+      <LazyLandingScene />
+    </Suspense>
+  ),
+});
+
 /** 管理画面（/admin）。未ログインなら /login、非 admin なら / へリダイレクト（#136）。 */
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -210,6 +222,7 @@ const routeTree = rootRoute.addChildren([
   communityRoute,
   postRoute,
   loginRoute,
+  lpRoute,
   adminRoute,
   accountRoute,
   inviteRoute,
