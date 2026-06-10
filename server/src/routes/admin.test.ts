@@ -3,19 +3,19 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createApp } from "../app.js";
 import { InMemoryAppSettingRepository } from "../persistence/appSettingRepository.js";
-import { InMemoryEmployeeRepository } from "../persistence/employeeRepository.js";
+import { InMemoryWorkerRepository } from "../persistence/workerRepository.js";
 import { InMemoryUserRepository } from "../persistence/userRepository.js";
 import { createTestDeps } from "../testing/createTestDeps.js";
 import { getApiKey } from "./admin.js";
 import { encrypt } from "../utils/crypto.js";
 
-async function makeApp(appSettingRepo = new InMemoryAppSettingRepository(), role: "admin" | "member" = "admin", employeeRepository = new InMemoryEmployeeRepository()) {
+async function makeApp(appSettingRepo = new InMemoryAppSettingRepository(), role: "admin" | "member" = "admin", workerRepository = new InMemoryWorkerRepository()) {
   const userRepo = await InMemoryUserRepository.createWithTestUser(null, role);
   return createApp(
     await createTestDeps({
       userRepository: userRepo,
       appSettingRepository: appSettingRepo,
-      employeeRepository,
+      workerRepository,
     }),
   );
 }
@@ -120,7 +120,7 @@ describe("getApiKey", () => {
     }
   });
 
-  it("DB 未設定ゾnv 未設定の場合は undefined を返す", async () => {
+  it("DB 未設定・env 未設定の場合は undefined を返す", async () => {
     delete process.env.ANTHROPIC_API_KEY;
     const repo = new InMemoryAppSettingRepository();
     expect(await getApiKey(repo)).toBeUndefined();
@@ -135,71 +135,71 @@ describe("getApiKey", () => {
     expect(await getApiKey(repo)).toBe(plaintext);
   });
 
-  it("DB 未設定ゾnv 設定済みの場合は env 値を返す", async () => {
+  it("DB 未設定・env 設定済みの場合は env 値を返す", async () => {
     process.env.ANTHROPIC_API_KEY = "sk-ant-env-key";
     const repo = new InMemoryAppSettingRepository();
     expect(await getApiKey(repo)).toBe("sk-ant-env-key");
   });
 });
 
-describe("DELETE /api/admin/employees/:id (#218)", () => {
-  async function makeAppWithEmployee(role: "admin" | "member" = "admin") {
+describe("DELETE /api/admin/workers/:id (#218)", () => {
+  async function makeAppWithWorker(role: "admin" | "member" = "admin") {
     const userRepo = await InMemoryUserRepository.createWithTestUser(null, role);
-    const employeeRepo = new InMemoryEmployeeRepository([
+    const workerRepo = new InMemoryWorkerRepository([
       { id: "emp-1", displayName: "田中 太郎", role: "エンジニア", isBot: true, personality: null },
     ]);
     return {
       app: createApp(
         await createTestDeps({
           userRepository: userRepo,
-          employeeRepository: employeeRepo,
+          workerRepository: workerRepo,
         }),
       ),
-      employeeRepo,
+      workerRepo,
     };
   }
 
   it("未認証の場合は 401 を返す", async () => {
-    const { app } = await makeAppWithEmployee();
-    const res = await request(app).delete("/api/admin/employees/emp-1");
+    const { app } = await makeAppWithWorker();
+    const res = await request(app).delete("/api/admin/workers/emp-1");
     expect(res.status).toBe(401);
   });
 
   it("member ユーザーは 403 を返す", async () => {
-    const { app } = await makeAppWithEmployee("member");
+    const { app } = await makeAppWithWorker("member");
     const agent = await loginAgent(app);
-    const res = await agent.delete("/api/admin/employees/emp-1");
+    const res = await agent.delete("/api/admin/workers/emp-1");
     expect(res.status).toBe(403);
   });
 
-  it("存在する Employee を論理削除すると 200 を返す", async () => {
-    const { app } = await makeAppWithEmployee();
+  it("存在する Worker を論理削除すると 200 を返す", async () => {
+    const { app } = await makeAppWithWorker();
     const agent = await loginAgent(app);
-    const res = await agent.delete("/api/admin/employees/emp-1");
+    const res = await agent.delete("/api/admin/workers/emp-1");
     expect(res.status).toBe(200);
   });
 
-  it("存在しない Employee の削除を試みると 404 を返す", async () => {
-    const { app } = await makeAppWithEmployee();
+  it("存在しない Worker の削除を試みると 404 を返す", async () => {
+    const { app } = await makeAppWithWorker();
     const agent = await loginAgent(app);
-    const res = await agent.delete("/api/admin/employees/nonexistent");
+    const res = await agent.delete("/api/admin/workers/nonexistent");
     expect(res.status).toBe(404);
   });
 
-  it("論理削除後に Employee の deletedAt が設定される", async () => {
-    const { app, employeeRepo } = await makeAppWithEmployee();
+  it("論理削除後に Worker の deletedAt が設定される", async () => {
+    const { app, workerRepo } = await makeAppWithWorker();
     const agent = await loginAgent(app);
-    await agent.delete("/api/admin/employees/emp-1");
-    const employee = await employeeRepo.findDeletedById("emp-1");
-    expect(employee?.deletedAt).toBeInstanceOf(Date);
+    await agent.delete("/api/admin/workers/emp-1");
+    const worker = await workerRepo.findDeletedById("emp-1");
+    expect(worker?.deletedAt).toBeInstanceOf(Date);
   });
 });
 
-describe("POST /api/admin/employees (#217)", () => {
+describe("POST /api/admin/workers (#217)", () => {
   it("未認証の場合は 401 を返す", async () => {
     const app = await makeApp();
     const res = await request(app)
-      .post("/api/admin/employees")
+      .post("/api/admin/workers")
       .send({ displayName: "新社員" });
     expect(res.status).toBe(401);
   });
@@ -207,24 +207,24 @@ describe("POST /api/admin/employees (#217)", () => {
   it("member ロールの場合は 403 を返す", async () => {
     const app = await makeApp(new InMemoryAppSettingRepository(), "member");
     const agent = await loginAgent(app);
-    const res = await agent.post("/api/admin/employees").send({ displayName: "新社員" });
+    const res = await agent.post("/api/admin/workers").send({ displayName: "新社員" });
     expect(res.status).toBe(403);
   });
 
-  it("admin ロールで認証済みの場合 201 と作成した Employee を返す", async () => {
+  it("admin ロールで認証済みの場合 201 と作成した Worker を返す", async () => {
     const app = await makeApp();
     const agent = await loginAgent(app);
-    const res = await agent.post("/api/admin/employees").send({ displayName: "新社員" });
+    const res = await agent.post("/api/admin/workers").send({ displayName: "新社員" });
     expect(res.status).toBe(201);
     expect(res.body.displayName).toBe("新社員");
     expect(typeof res.body.id).toBe("string");
     expect(res.body.id.length).toBeGreaterThan(0);
   });
 
-  it("作成した Employee は isBot=true になる", async () => {
+  it("作成した Worker は isBot=true になる", async () => {
     const app = await makeApp();
     const agent = await loginAgent(app);
-    const res = await agent.post("/api/admin/employees").send({ displayName: "ボット社員" });
+    const res = await agent.post("/api/admin/workers").send({ displayName: "ボット社員" });
     expect(res.status).toBe(201);
     expect(res.body.isBot).toBe(true);
   });
@@ -232,7 +232,7 @@ describe("POST /api/admin/employees (#217)", () => {
   it("role を指定して作成できる", async () => {
     const app = await makeApp();
     const agent = await loginAgent(app);
-    const res = await agent.post("/api/admin/employees").send({ displayName: "社員A", role: "エンジニア" });
+    const res = await agent.post("/api/admin/workers").send({ displayName: "社員A", role: "エンジニア" });
     expect(res.status).toBe(201);
     expect(res.body.role).toBe("エンジニア");
   });
@@ -240,21 +240,21 @@ describe("POST /api/admin/employees (#217)", () => {
   it("displayName が空なら 400 を返す", async () => {
     const app = await makeApp();
     const agent = await loginAgent(app);
-    const res = await agent.post("/api/admin/employees").send({ displayName: "" });
+    const res = await agent.post("/api/admin/workers").send({ displayName: "" });
     expect(res.status).toBe(400);
   });
 
   it("displayName が 51 文字以上なら 400 を返す", async () => {
     const app = await makeApp();
     const agent = await loginAgent(app);
-    const res = await agent.post("/api/admin/employees").send({ displayName: "a".repeat(51) });
+    const res = await agent.post("/api/admin/workers").send({ displayName: "a".repeat(51) });
     expect(res.status).toBe(400);
   });
 
   it("displayName を省略した場合は 400 を返す", async () => {
     const app = await makeApp();
     const agent = await loginAgent(app);
-    const res = await agent.post("/api/admin/employees").send({});
+    const res = await agent.post("/api/admin/workers").send({});
     expect(res.status).toBe(400);
   });
 });

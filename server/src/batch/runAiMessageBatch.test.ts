@@ -6,12 +6,12 @@ import { InMemoryAppSettingRepository } from "../persistence/appSettingRepositor
 import { InMemoryBatchRunLogRepository } from "../persistence/batchRunLogRepository.js";
 import { InMemoryChannelMembershipRepository } from "../persistence/channelMembershipRepository.js";
 import { InMemoryChannelRepository } from "../persistence/channelRepository.js";
-import { InMemoryEmployeeRepository, type EmployeeRecord } from "../persistence/employeeRepository.js";
+import { InMemoryWorkerRepository, type WorkerRecord } from "../persistence/workerRepository.js";
 import { InMemoryMessageRepository } from "../persistence/messageRepository.js";
 
 import { runAiMessageBatch } from "./runAiMessageBatch.js";
 
-const bots: EmployeeRecord[] = [
+const bots: WorkerRecord[] = [
   { id: "haru", displayName: "ハル", role: "ムードメーカー", isBot: true, personality: null, imageUrl: null },
   { id: "ken", displayName: "ケン", role: "ベテラン", isBot: true, personality: null, imageUrl: null },
   { id: "user1", displayName: "ユーザー", role: null, isBot: false, personality: null, imageUrl: null },
@@ -37,10 +37,10 @@ describe("runAiMessageBatch (#53)", () => {
     const channelRepo = new InMemoryChannelRepository(channels);
     const messageRepo = new InMemoryMessageRepository();
     const membershipRepo = new InMemoryChannelMembershipRepository();
-    const employeeRepo = new InMemoryEmployeeRepository(bots);
+    const workerRepo = new InMemoryWorkerRepository(bots);
     const appSettingRepo = new InMemoryAppSettingRepository();
     const batchRunLogRepository = new InMemoryBatchRunLogRepository();
-    return { channelRepo, messageRepo, membershipRepo, employeeRepo, appSettingRepo, batchRunLogRepository };
+    return { channelRepo, messageRepo, membershipRepo, workerRepo, appSettingRepo, batchRunLogRepository };
   };
 
   it("goal.type='chat' のチャンネルのみ対象にし、isBot の発言だけを保存する", async () => {
@@ -52,21 +52,16 @@ describe("runAiMessageBatch (#53)", () => {
     await deps.membershipRepo.addMember("zatsudan", "haru");
     await deps.membershipRepo.addMember("zatsudan", "ken");
     await deps.membershipRepo.addMember("zatsudan", "user1");
-    // goal=issue のチャンネルにも所属者を置くが、対象外なので生成されない
     await deps.membershipRepo.addMember("kikaku", "haru");
 
     const generate = vi.fn().mockResolvedValue(conversationJson);
     const saved = await runAiMessageBatch({ ...deps, generate });
 
-    // 生成は goal=chat の zatsudan の 1 回だけ（shigoto は goal=chat だがメンバーなし）
     expect(generate).toHaveBeenCalledTimes(1);
-    // user1（非 bot）は除外され 2 件だけ保存
     expect(saved).toHaveLength(2);
     expect(saved.map((m) => m.createdEmployeeId)).toEqual(["haru", "ken"]);
-    // バッチ生成メッセージは postedAt が未来時刻（#183: 予約表示）
     const now = Date.now();
     expect(saved[0].postedAt.getTime()).toBeGreaterThan(now);
-    // goal=issue の kikaku には何も保存されない
     expect(await deps.messageRepo.listByChannel("kikaku")).toHaveLength(0);
   });
 
@@ -97,11 +92,9 @@ describe("runAiMessageBatch (#53)", () => {
     });
 
     const saved = await runAiMessageBatch({ ...deps, generate });
-    // z1 は失敗・z2 は成功（1 件）。リトライしないので generate は 2 回だけ
     expect(generate).toHaveBeenCalledTimes(2);
     expect(saved).toHaveLength(1);
     expect(await deps.messageRepo.listByChannel("z1")).toHaveLength(0);
-    // z2 の生成済みメッセージは未来 postedAt なので listByChannel では見えない
     const z2Recent = await deps.messageRepo.listRecentByChannel("z2", 10);
     expect(z2Recent).toHaveLength(1);
   });
@@ -133,7 +126,7 @@ describe("runAiMessageBatch (#53)", () => {
 
   it("bot 所属がいないチャンネルは生成しない", async () => {
     const deps = buildDeps([{ id: "zatsudan", label: "雑談", type: "zatsudan", goal: { type: "chat" } }]);
-    await deps.membershipRepo.addMember("zatsudan", "user1"); // 非 bot のみ
+    await deps.membershipRepo.addMember("zatsudan", "user1");
     const generate = vi.fn().mockResolvedValue(conversationJson);
 
     const saved = await runAiMessageBatch({ ...deps, generate });

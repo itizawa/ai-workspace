@@ -1,4 +1,4 @@
-import { DEFAULT_EMPLOYEES, EMPLOYEE_MESSAGE_TEMPLATES, type Channel } from "@hatchery/common";
+import { DEFAULT_WORKERS, WORKER_MESSAGE_TEMPLATES, type Channel } from "@hatchery/common";
 import { describe, expect, it } from "vitest";
 
 import { createRosterMessageGenerator } from "./rosterMessageGenerator.js";
@@ -8,12 +8,12 @@ const CHANNELS: Channel[] = [
   { id: "shigoto", label: "仕事" },
 ];
 
-describe("createRosterMessageGenerator — 所属 Employee のみ発言（#33）", () => {
-  it("membershipByChannel を渡すと、各チャンネルで所属 Employee のみが speaker になる", () => {
+describe("createRosterMessageGenerator — 所属 Worker のみ発言（#33）", () => {
+  it("membershipByChannel を渡すと、各チャンネルで所属 Worker のみが speaker になる", () => {
     const generate = createRosterMessageGenerator({
       channels: CHANNELS,
-      employees: DEFAULT_EMPLOYEES,
-      templates: EMPLOYEE_MESSAGE_TEMPLATES,
+      workers: DEFAULT_WORKERS,
+      templates: WORKER_MESSAGE_TEMPLATES,
       perChannel: 3,
       rng: () => 0,
       membershipByChannel: {
@@ -31,8 +31,8 @@ describe("createRosterMessageGenerator — 所属 Employee のみ発言（#33）
   it("所属が無いチャンネルでは誰も発言しない", () => {
     const generate = createRosterMessageGenerator({
       channels: CHANNELS,
-      employees: DEFAULT_EMPLOYEES,
-      templates: EMPLOYEE_MESSAGE_TEMPLATES,
+      workers: DEFAULT_WORKERS,
+      templates: WORKER_MESSAGE_TEMPLATES,
       perChannel: 3,
       rng: () => 0,
       membershipByChannel: { zatsudan: ["haru"] },
