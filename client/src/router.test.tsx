@@ -81,6 +81,16 @@ describe("AuthLayout（ログインページ専用レイアウト）", () => {
     expect(await screen.findByRole("heading", { name: /ログイン/ })).toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: /サイドバー/ })).not.toBeInTheDocument();
   });
+
+  // 受け入れ条件 #167: LP（/lp）はサイドバーなしの AuthLayout で描画する。
+  it("/lp で LP（Hatchery 見出し）が描画され、サイドバーが表示されない", async () => {
+    const router = createAppRouter({
+      history: createMemoryHistory({ initialEntries: ["/lp"] }),
+    });
+    render(renderRouter(router));
+    expect(await screen.findByRole("heading", { name: /Hatchery/ })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: /サイドバー/ })).not.toBeInTheDocument();
+  });
 });
 
 // 受け入れ条件 #307: コードベース定義のルート確認。
