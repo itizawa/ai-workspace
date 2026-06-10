@@ -29,6 +29,7 @@ import {
   UpdateWorkerSchema,
   UpdateProfileSchema,
   UserRoleSchema,
+  FEED_CURSOR_MAX_LENGTH,
 } from "@hatchery/common";
 
 extendZodWithOpenApi(z);
@@ -49,7 +50,7 @@ const LoginRequestComponent = registry.register(
   LoginRequestSchema.openapi({ description: "ログインリクエストボディ（id / password）" }),
 );
 
-// エラー応答スキーマ。実装（validateBody / errorHandler）が実際に返す形 `{ error: string }` に忐実。
+// エラー応答スキーマ。実装（validateBody / errorHandler）が実際に返す形 `{ error: string }` に忠実。
 const ErrorComponent = registry.register(
   "Error",
   z.object({ error: z.string() }).openapi({ description: "エラー応答（実装の実際の形に準拠）" }),
@@ -125,7 +126,7 @@ registry.registerPath({
   },
 });
 
-// admin: Worker 論理削除（#218 / #337）。認証必須・admin のみ。deletedAt をセットして返す。
+// admin: Worker 論理削除（#218 / #337）。認証必須・admin のみ。 deletedAt をセットして返す。
 registry.registerPath({
   method: "delete",
   path: "/api/admin/workers/{id}",
@@ -436,7 +437,7 @@ registry.registerPath({
   },
 });
 
-// ── 公共コミュニティ API（#305 / ADR-0019 / ADR-0020）──────────────────────
+// ── 公共コミュニティ API（#305 / ADR-0019 / ADR-0020）──────────────────────────────────
 
 const CommunityComponent = registry.register(
   "Community",
@@ -595,12 +596,41 @@ registry.registerPath({
 registry.registerPath({
   method: "get",
   path: "/api/feed",
-  summary: "ホームフィードを取得（認証不要・全 community の投稿・新着順）",
+  summary: "ホームフィードを取得（認証不要・全 community の投稿・新着順・カーソルページネーション #367）",
+  request: {
+    query: z.object({
+      cursor: z
+        .string()
+        .max(FEED_CURSOR_MAX_LENGTH)
+        .optional()
+        .openapi({ description: "カーソル（直前ページ末尾位置の base64 エンコード）" }),
+      limit: z
+        .coerce
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .default(20)
+        .openapi({ description: "1 ページあたりの件数（1～100、既定 20）" }),
+    }),
+  },
   responses: {
     200: {
-      description: "全 community の投稿一覧（createdAt 降順）",
-      content: { "application/json": { schema: z.array(PostComponent) } },
+      description: "全 community の投稿一覧（createdAt 降順）とカーソル情報",
+      content: {
+        "application/json": {
+          schema: z.object({
+            posts: z.array(PostComponent),
+            nextCursor: z
+              .string()
+              .max(FEED_CURSOR_MAX_LENGTH)
+              .nullable()
+              .openapi({ description: "次ページ取得用カーソル。null の場合は末尾" }),
+          }),
+        },
+      },
     },
+    400: { description: "クエリパラメータが不正（limit 超過・不正 cursor）", ...errorJson },
   },
 });
 

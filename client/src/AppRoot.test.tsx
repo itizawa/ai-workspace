@@ -6,13 +6,13 @@ import { AppRoot } from "./AppRoot";
 import { createAppRouter } from "./router";
 
 // 受け入れ条件 #307: ThemeProvider + QueryClientProvider + RouterProvider を合成し、
-// クラッシュせずコミュニティ一覧とホームフィード枠を描画する。
+// クラッシュせずコミュニティ一覧とホームフィード框を描画する。
 // テスト間の状態リークを避けるため memory history のルータを注入する。
 describe("AppRoot", () => {
   beforeEach(() => {
     // URL ごとに応答を分ける: /auth/me はログイン済み(200 AuthUser)、GET /api/communities はコミュニティ一覧
     // ホーム（/）はログイン必須（router の requireAuth ガード）のため、ログイン済みでないと /login へ
-    // リダイレクトされ、サイドバー＋ホーム枠が描画されない。
+    // リダイレクトされ、サイドバー＋ホーム框が描画されない。
     vi.stubGlobal(
       "fetch",
       vi.fn((input: Request | string) => {
@@ -42,7 +42,7 @@ describe("AppRoot", () => {
         }
         if (url.includes("/api/feed")) {
           return Promise.resolve(
-            new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } }),
+            new Response(JSON.stringify({ posts: [], nextCursor: null }), { status: 200, headers: { "Content-Type": "application/json" } }),
           );
         }
         return Promise.resolve(
@@ -55,7 +55,7 @@ describe("AppRoot", () => {
     vi.unstubAllGlobals();
   });
 
-  it("クラッシュせずコミュニティ一覧とホームフィード枠を描画する", async () => {
+  it("クラッシュせずコミュニティ一覧とホームフィード框を描画する", async () => {
     const router = createAppRouter({
       history: createMemoryHistory({ initialEntries: ["/"] }),
     });
