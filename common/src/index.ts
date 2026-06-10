@@ -7,6 +7,7 @@
 // ── 公共コミュニティ新ドメイン（ADR-0019・#304）────────────────────────
 export * from "./domain/community/index.js";
 export * from "./domain/post/index.js";
+export * from "./domain/feed/index.js";
 export * from "./domain/comment/index.js";
 export * from "./domain/subscription/index.js";
 export * from "./domain/worldState/index.js";
