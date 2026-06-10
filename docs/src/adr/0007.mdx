@@ -1,5 +1,6 @@
 import { Meta } from "@storybook/blocks";
 import content from "../../adr/0007-documentation-storybook-github-pages.md?raw";
+import { MarkdownDoc } from "../markdown/MarkdownDoc";
 
 <Meta title="ADR/0007 ドキュメント基盤（Storybook + GitHub Pages）" />
 
@@ -9,6 +10,4 @@ import content from "../../adr/0007-documentation-storybook-github-pages.md?raw"
 >
 > 本ページは `.md` 正本を薄い MDX ラッパーで表示しています（ADR-0007 の設計方針どおり）。
 
-<pre style={{ whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: "0.875rem", lineHeight: 1.6 }}>
-  {content}
-</pre>
+<MarkdownDoc content={content} />
