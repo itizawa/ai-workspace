@@ -26,6 +26,9 @@ function stubFetch(isLoggedIn: boolean) {
       if (url.includes("/auth/logout")) {
         return Promise.resolve(jsonResponse(200));
       }
+      if (url.includes("/api/feed")) {
+        return Promise.resolve(jsonResponse(200, { posts: [], nextCursor: null }));
+      }
       return Promise.resolve(jsonResponse(200, []));
     }),
   );
@@ -67,7 +70,7 @@ describe("AppHeader", () => {
     expect(await screen.findByTestId("account-skeleton")).toBeInTheDocument();
   });
 
-  it("初期表示時にアカウント設定が DOM 上に存在しない（Menu は閃じている）", async () => {
+  it("初期表示時にアカウント設定が DOM 上に存在しない（Menu は闆じている）", async () => {
     stubFetch(true);
     renderApp("/");
 
@@ -76,7 +79,7 @@ describe("AppHeader", () => {
     expect(screen.queryByRole("menuitem", { name: /アカウント設定/ })).not.toBeInTheDocument();
   });
 
-  it("初期表示時にログアウト menuitem が DOM 上に存在しない（Menu は閃じている）", async () => {
+  it("初期表示時にログアウト menuitem が DOM 上に存在しない（Menu は闆じている）", async () => {
     stubFetch(true);
     renderApp("/");
 

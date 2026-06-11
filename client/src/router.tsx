@@ -19,16 +19,30 @@ import {
 export { SETTINGS_TAB_VALUES, type SettingsTabValue } from "./routes/settingsTabValues.js";
 import { AuthLayout } from "./routes/AuthLayout";
 import { RootLayout } from "./routes/RootLayout";
-import { ChannelViewSkeleton } from "./components/ChannelViewSkeleton";
+import { MainContentSkeleton } from "./components/MainContentSkeleton";
 
 // ルートコンポーネントを lazyRouteComponent で動的 import（コード分割）する。
 // TanStack Router の defaultPreload: "intent" と組み合わせ、ホバー時にプリロードされる。
-const LazyHomeScene = lazyRouteComponent(() => import("./routes/HomeScene"), "HomeScene");
-const LazyChannelScene = lazyRouteComponent(() => import("./routes/ChannelScene"), "ChannelScene");
+const LazyHomeFeedScene = lazyRouteComponent(
+  () => import("./routes/HomeFeedScene"),
+  "HomeFeedScene",
+);
+const LazyCommunityBrowseScene = lazyRouteComponent(
+  () => import("./routes/CommunityBrowseScene"),
+  "CommunityBrowseScene",
+);
+const LazyCommunityScene = lazyRouteComponent(
+  () => import("./routes/CommunityScene"),
+  "CommunityScene",
+);
+const LazyPostThreadScene = lazyRouteComponent(
+  () => import("./routes/PostThreadScene"),
+  "PostThreadScene",
+);
 const LazyLoginScene = lazyRouteComponent(() => import("./routes/LoginScene"), "LoginScene");
+const LazyLandingScene = lazyRouteComponent(() => import("./routes/LandingScene"), "LandingScene");
 const LazySettingsScene = lazyRouteComponent(() => import("./routes/SettingsScene"), "SettingsScene");
 const LazyAccountScene = lazyRouteComponent(() => import("./routes/AccountScene"), "AccountScene");
-const LazyOfficeScene = lazyRouteComponent(() => import("./routes/OfficeScene"), "OfficeScene");
 const LazyAcceptInvitationScene = lazyRouteComponent(
   () => import("./routes/AcceptInvitationScene"),
   "AcceptInvitationScene",
@@ -65,11 +79,11 @@ async function requireAdminRoute(): Promise<void> {
 
 /**
  * サイドバーなしで描画する auth 系ルートかどうかを判定する。
- * /login は完全一致、/invite/ は動的パスのためプレフィックス一致で判定する。
- * 新しい auth ルートを追加した場合はここにも追記すること。
+ * /login・/lp は完全一致、/invite/ は動的パスのためプレフィックス一致で判定する。
+ * 新しい auth ルート（認証不要・サイドバーなし）を追加した場合はここにも追記すること。
  */
 function isAuthLayout(pathname: string): boolean {
-  return pathname === "/login" || pathname.startsWith("/invite/");
+  return pathname === "/login" || pathname === "/lp" || pathname.startsWith("/invite/");
 }
 
 /**
@@ -91,25 +105,46 @@ const rootRoute = createRootRoute({
   component: AppShell,
 });
 
-/** ホーム（/）= 本日のシーン表示の枠。未ログインまたはネットワークエラーの場合は /login へリダイレクト。 */
+/** ホームフィード（/）。認証済みなら購読フィード、未認証ならゲスト向け誘導 UI を表示する（#341）。 */
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: () => (
     <Suspense fallback={null}>
-      <LazyHomeScene />
+      <LazyHomeFeedScene />
     </Suspense>
   ),
-  beforeLoad: requireAuth,
 });
 
-/** チャンネル別ビューの枠（/channels/$channelId）。未認証ユーザーも閲覧可能（#255）。 */
-const channelRoute = createRoute({
+/** コミュニティブラウズ（/communities）。認証不要の公開ページ。 */
+const communitiesRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/channels/$channelId",
+  path: "/communities",
   component: () => (
-    <Suspense fallback={<ChannelViewSkeleton />}>
-      <LazyChannelScene />
+    <Suspense fallback={<MainContentSkeleton />}>
+      <LazyCommunityBrowseScene />
+    </Suspense>
+  ),
+});
+
+/** コミュニティページ（/communities/$slug）。フィード + 購読ボタン。認証不要。 */
+const communityRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/communities/$slug",
+  component: () => (
+    <Suspense fallback={<MainContentSkeleton />}>
+      <LazyCommunityScene />
+    </Suspense>
+  ),
+});
+
+/** 投稿スレッド（/posts/$postId）。post + comments 表示。認証不要。 */
+const postRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/posts/$postId",
+  component: () => (
+    <Suspense fallback={<MainContentSkeleton />}>
+      <LazyPostThreadScene />
     </Suspense>
   ),
 });
@@ -121,6 +156,17 @@ const loginRoute = createRoute({
   component: () => (
     <Suspense fallback={null}>
       <LazyLoginScene />
+    </Suspense>
+  ),
+});
+
+/** ランディングページ（/lp）。未ログイン向けの紹介ページ。認証不要・サイドバーなしの AuthLayout で描画する（#167）。 */
+const lpRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/lp",
+  component: () => (
+    <Suspense fallback={null}>
+      <LazyLandingScene />
     </Suspense>
   ),
 });
@@ -159,18 +205,6 @@ const accountRoute = createRoute({
   beforeLoad: requireAuth,
 });
 
-/** 仮想オフィス画面（/office）。未ログインまたはネットワークエラーの場合は /login へリダイレクト（#240）。 */
-const officeRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/office",
-  component: () => (
-    <Suspense fallback={null}>
-      <LazyOfficeScene />
-    </Suspense>
-  ),
-  beforeLoad: requireAuth,
-});
-
 /** 招待リンク受諾画面（/invite/:token）。公開ルート（requireAuth なし・AuthLayout）。 */
 const inviteRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -184,11 +218,13 @@ const inviteRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  channelRoute,
+  communitiesRoute,
+  communityRoute,
+  postRoute,
   loginRoute,
+  lpRoute,
   adminRoute,
   accountRoute,
-  officeRoute,
   inviteRoute,
 ]);
 

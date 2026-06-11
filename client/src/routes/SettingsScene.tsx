@@ -7,7 +7,8 @@ import { APP_SETTING_VALUE_MAX_LENGTH } from "@hatchery/common";
 import { useAdminSettings, useSaveAdminSetting } from "../api/admin.js";
 import { useBatchLogs, useRefreshBatchLogs } from "../api/batchLogs.js";
 import { useTokenUsage, useRefreshTokenUsage } from "../api/tokenUsage.js";
-import { EmployeeTable } from "../components/EmployeeTable";
+import { AdminWorkerTable } from "../components/AdminWorkerTable.js";
+import { CommunitiesTab } from "../components/CommunitiesTab.js";
 import { InvitationsTab } from "../components/InvitationsTab.js";
 import { type SettingsTabValue } from "./settingsTabValues.js";
 
@@ -234,11 +235,12 @@ interface SettingsTab {
 }
 
 const SETTINGS_TABS: readonly [SettingsTab, ...SettingsTab[]] = [
-  { label: "ユーザー一覧", value: "users", content: <EmployeeTable /> },
+  { label: "ワーカー管理", value: "users", content: <AdminWorkerTable /> },
   { label: "API トークン設定", value: "api-token", content: <ApiTokenSettings /> },
   { label: "バッチログ", value: "batch-logs", content: <BatchLogs /> },
   { label: "招待", value: "invitations", content: <InvitationsTab /> },
   { label: "トークン使用量", value: "token-usage", content: <TokenUsageTab /> },
+  { label: "コミュニティ", value: "communities", content: <CommunitiesTab /> },
 ];
 
 /** 管理画面（/admin）。タブ UI を持ち、ユーザー一覧タブに AI 社員をテーブル表示する（#25）。 */

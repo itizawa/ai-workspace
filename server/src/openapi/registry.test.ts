@@ -9,16 +9,6 @@ describe("generateOpenApiDocument", () => {
     expect(doc.info.title).toBeDefined();
   });
 
-  it("paths に /messages が含まれる", () => {
-    const doc = generateOpenApiDocument();
-    expect(doc.paths).toHaveProperty("/api/messages");
-  });
-
-  it("components.schemas に Message が含まれる", () => {
-    const doc = generateOpenApiDocument();
-    expect(doc.components?.schemas).toHaveProperty("Message");
-  });
-
   // #41: createApp が登録する全エンドポイントが spec に含まれること。
   it("paths に auth/health のエンドポイントが含まれる", () => {
     const doc = generateOpenApiDocument();
@@ -34,15 +24,13 @@ describe("generateOpenApiDocument", () => {
     expect(doc.components?.schemas).toHaveProperty("LoginRequest");
   });
 
-  // #49: AuthUser に自身の employeeId（任意）が含まれる。
-  it("AuthUser スキーマに employeeId プロパティが含まれる（AC-11）", () => {
+  // #331: ADR-0020 後処理。AuthUser から employeeId を削除した。
+  it("AuthUser スキーマに employeeId プロパティが含まれない（#331）", () => {
     const doc = generateOpenApiDocument();
     const authUser = doc.components?.schemas?.AuthUser as
       | { properties?: Record<string, unknown>; required?: string[] }
       | undefined;
-    expect(authUser?.properties).toHaveProperty("employeeId");
-    // 任意フィールドなので required には含めない。
-    expect(authUser?.required ?? []).not.toContain("employeeId");
+    expect(authUser?.properties).not.toHaveProperty("employeeId");
   });
 
   it("/auth/login(post) は LoginRequest を受け取り 200 で AuthUser を返す", () => {
@@ -69,26 +57,83 @@ describe("generateOpenApiDocument", () => {
     expect(me?.responses?.["401"]).toBeDefined();
   });
 
-  // #48: チャンネル別メッセージ投稿・取得エンドポイントが spec に含まれる。
-  it("paths に /channels/{channelId}/messages が含まれる", () => {
+  it("paths に /api/communities が含まれる（ADR-0019）", () => {
     const doc = generateOpenApiDocument();
-    expect(doc.paths).toHaveProperty("/api/channels/{channelId}/messages");
+    expect(doc.paths).toHaveProperty("/api/communities");
   });
 
-  it("/channels/{channelId}/messages(get) は 200 でメッセージ配列を返す", () => {
+  it("components.schemas に Community と Post が含まれる（ADR-0019）", () => {
     const doc = generateOpenApiDocument();
-    const get = doc.paths?.["/api/channels/{channelId}/messages"]?.get;
-    expect(get).toBeDefined();
-    expect(get?.responses?.["200"]).toBeDefined();
+    expect(doc.components?.schemas).toHaveProperty("Community");
+    expect(doc.components?.schemas).toHaveProperty("Post");
   });
 
-  it("/channels/{channelId}/messages(post) は 201 を返し 400/401/404 を定義する", () => {
+  // #337: admin 系 5 エンドポイントの OpenAPI 登録。
+  type RefContent = { content?: Record<string, { schema?: { $ref?: string } }> };
+
+  it("paths に admin communities/workers の 5 エンドポイントが含まれる（#337）", () => {
     const doc = generateOpenApiDocument();
-    const post = doc.paths?.["/api/channels/{channelId}/messages"]?.post;
-    expect(post).toBeDefined();
-    expect(post?.responses?.["201"]).toBeDefined();
-    expect(post?.responses?.["400"]).toBeDefined();
-    expect(post?.responses?.["401"]).toBeDefined();
-    expect(post?.responses?.["404"]).toBeDefined();
+    expect(doc.paths?.["/api/admin/communities"]?.get).toBeDefined();
+    expect(doc.paths?.["/api/admin/communities"]?.post).toBeDefined();
+    expect(doc.paths?.["/api/admin/communities/{id}"]?.patch).toBeDefined();
+    expect(doc.paths?.["/api/admin/workers"]?.post).toBeDefined();
+    expect(doc.paths?.["/api/admin/workers/{id}"]?.delete).toBeDefined();
+  });
+
+  it("components.schemas に CreateCommunity / UpdateCommunity / CreateWorker が含まれる（#337）", () => {
+    const doc = generateOpenApiDocument();
+    expect(doc.components?.schemas).toHaveProperty("CreateCommunity");
+    expect(doc.components?.schemas).toHaveProperty("UpdateCommunity");
+    expect(doc.components?.schemas).toHaveProperty("CreateWorker");
+  });
+
+  it("GET /api/admin/communities は 200 で Community 配列を返す（#337）", () => {
+    const doc = generateOpenApiDocument();
+    const get = doc.paths?.["/api/admin/communities"]?.get;
+    const items = (
+      (get?.responses?.["200"] as RefContent)?.content?.["application/json"]?.schema as {
+        items?: { $ref?: string };
+      }
+    )?.items?.$ref;
+    expect(items).toBe("#/components/schemas/Community");
+  });
+
+  it("POST /api/admin/communities は CreateCommunity を受け取り 201 で Community を返す（#337）", () => {
+    const doc = generateOpenApiDocument();
+    const post = doc.paths?.["/api/admin/communities"]?.post;
+    const reqRef = (post?.requestBody as RefContent)?.content?.["application/json"]?.schema?.$ref;
+    expect(reqRef).toBe("#/components/schemas/CreateCommunity");
+    const okRef = (post?.responses?.["201"] as RefContent)?.content?.["application/json"]?.schema
+      ?.$ref;
+    expect(okRef).toBe("#/components/schemas/Community");
+  });
+
+  it("PATCH /api/admin/communities/{id} は UpdateCommunity を受け取り 200 で Community を返す（#337）", () => {
+    const doc = generateOpenApiDocument();
+    const patch = doc.paths?.["/api/admin/communities/{id}"]?.patch;
+    const reqRef = (patch?.requestBody as RefContent)?.content?.["application/json"]?.schema?.$ref;
+    expect(reqRef).toBe("#/components/schemas/UpdateCommunity");
+    const okRef = (patch?.responses?.["200"] as RefContent)?.content?.["application/json"]?.schema
+      ?.$ref;
+    expect(okRef).toBe("#/components/schemas/Community");
+  });
+
+  it("POST /api/admin/workers は CreateWorker を受け取り 201 で Worker を返す（#337）", () => {
+    const doc = generateOpenApiDocument();
+    const post = doc.paths?.["/api/admin/workers"]?.post;
+    const reqRef = (post?.requestBody as RefContent)?.content?.["application/json"]?.schema?.$ref;
+    expect(reqRef).toBe("#/components/schemas/CreateWorker");
+    const okRef = (post?.responses?.["201"] as RefContent)?.content?.["application/json"]?.schema
+      ?.$ref;
+    expect(okRef).toBe("#/components/schemas/Worker");
+  });
+
+  it("DELETE /api/admin/workers/{id} は 200 で id / deletedAt を持つオブジェクトを返す（#337）", () => {
+    const doc = generateOpenApiDocument();
+    const del = doc.paths?.["/api/admin/workers/{id}"]?.delete;
+    const schema = (del?.responses?.["200"] as RefContent)?.content?.["application/json"]
+      ?.schema as { properties?: Record<string, unknown> } | undefined;
+    expect(schema?.properties).toHaveProperty("id");
+    expect(schema?.properties).toHaveProperty("deletedAt");
   });
 });

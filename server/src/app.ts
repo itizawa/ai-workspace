@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import session, { type Store } from "express-session";
 
 import { createPassport } from "./auth/passport.js";
-import { SECURITY_DEFAULTS } from "./config/env.js";
+import { DEFAULT_PUBLIC_BASE_URL, SECURITY_DEFAULTS } from "./config/env.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { createCors } from "./middleware/cors.js";
 import { createRateLimiter } from "./middleware/rateLimiter.js";
@@ -11,23 +11,30 @@ import { createJsonBodyParser, createRequestTimeout } from "./middleware/request
 import { createSecureHeaders } from "./middleware/secureHeaders.js";
 import type { AppSettingRepository } from "./persistence/appSettingRepository.js";
 import type { BatchRunLogRepository } from "./persistence/batchRunLogRepository.js";
-import type { ChannelMembershipRepository } from "./persistence/channelMembershipRepository.js";
-import type { ChannelRepository } from "./persistence/channelRepository.js";
-import type { EmployeeRepository } from "./persistence/employeeRepository.js";
+import type { CommunityRepository } from "./persistence/communityRepository.js";
+import type { CommentRepository } from "./persistence/commentRepository.js";
+import type { WorkerRepository } from "./persistence/workerRepository.js";
 import type { InvitationLinkRepository } from "./persistence/invitationLinkRepository.js";
-import type { MessageRepository } from "./persistence/messageRepository.js";
+import type { StorageService } from "./services/storageService.js";
+import type { PostRepository } from "./persistence/postRepository.js";
+import type { SubscriptionRepository } from "./persistence/subscriptionRepository.js";
 import type { TokenUsageLogRepository } from "./persistence/tokenUsageLogRepository.js";
 import type { UserRepository } from "./persistence/userRepository.js";
+import type { VoteRepository } from "./persistence/voteRepository.js";
+import type { WorldStateRepository } from "./persistence/worldStateRepository.js";
 import { createAdminRouter } from "./routes/admin.js";
+import { createApiDocsRouter, isApiDocsEnabled } from "./routes/apiDocs.js";
+import { createAdminWorkerImageRouter } from "./routes/adminWorkerImage.js";
 import { createBatchLogsRouter } from "./routes/batch-logs.js";
 import { createTokenUsageRouter } from "./routes/token-usage.js";
 import { createAuthRouter } from "./routes/auth.js";
-import { createChannelsRouter } from "./routes/channels.js";
-import { createEmployeesRouter } from "./routes/employees.js";
+import { createCommunitiesRouter } from "./routes/communities.js";
+import { createWorkersRouter } from "./routes/workers.js";
+import { createFeedRouter } from "./routes/feed.js";
 import { healthRouter } from "./routes/health.js";
 import { createInvitationsRouter } from "./routes/invitations.js";
-import { createMessagesRouter } from "./routes/messages.js";
-import { createPlanningIssuesRouter } from "./routes/planning-issues.js";
+import { createPostsRouter } from "./routes/posts.js";
+import { createSitemapRouter } from "./routes/sitemap.js";
 
 /** DDoS/過負荷対策（#34）の設定。未指定の項目は安全な既定値を使う。 */
 export interface SecurityOptions {
@@ -45,10 +52,11 @@ export interface SecurityOptions {
   enableHsts?: boolean;
   /**
    * セッション cookie をクロスサイト（別ドメイン）でも送信できるようにするか（#78）。
-   * フロント（Cloudflare Pages）と API（Cloud Run）が別ドメインの本番/dev で true。
    * true で SameSite=None + Secure（HTTPS 前提）。ローカル同一オリジンは false（SameSite=Lax）。既定 false。
    */
   crossSiteCookie?: boolean;
+  /** express-session の署名秘密鍵（#344）。本番では必須。未指定なら開発用既定値。 */
+  sessionSecret?: string;
 }
 
 /** SecurityOptions の既定値（env.ts と共有＝単一情報源。本番は server.ts が env から渡す）。 */
@@ -57,6 +65,7 @@ const DEFAULT_SECURITY: Required<SecurityOptions> = {
   corsAllowedOrigins: [],
   enableHsts: false,
   crossSiteCookie: false,
+  sessionSecret: "hatchery-dev-secret",
 };
 
 /**
@@ -76,19 +85,13 @@ export function buildSessionCookieOptions(crossSiteCookie: boolean) {
 
 /**
  * createApp の依存（永続化は注入する＝Express/Prisma からドメインを独立させる）。
- * すべてのリポジトリが必須（Issue #137）。InMemory フォールバックは撤去済み。
  * テスト用合成は server/src/testing/createTestDeps.ts、
  * 本番用合成は server/src/composition/createPrismaDeps.ts を使う。
  */
 export interface AppDeps {
-  messageRepository: MessageRepository;
   userRepository: UserRepository;
-  /** チャンネル所属（多対多）の永続化（#33）。 */
-  channelMembershipRepository: ChannelMembershipRepository;
-  /** チャンネル CRUD の永続化（#37）。 */
-  channelRepository: ChannelRepository;
-  /** Employee CRUD の永続化（#38）。 */
-  employeeRepository: EmployeeRepository;
+  /** Worker CRUD の永続化（#38）。 */
+  workerRepository: WorkerRepository;
   /** アプリ設定（API キー等）の永続化（#52）。 */
   appSettingRepository: AppSettingRepository;
   /** バッチ実行ログの永続化（#75）。 */
@@ -97,6 +100,20 @@ export interface AppDeps {
   invitationLinkRepository: InvitationLinkRepository;
   /** トークン使用量ログの永続化（#153）。 */
   tokenUsageLogRepository: TokenUsageLogRepository;
+  /** コミュニティの永続化（ADR-0019）。呼び出し側（composition root）が注入する（#290）。 */
+  communityRepository: CommunityRepository;
+  /** 投稿の永続化（ADR-0019）。呼び出し側（composition root）が注入する（#290）。 */
+  postRepository: PostRepository;
+  /** コメントの永続化（ADR-0019）。呼び出し側（composition root）が注入する（#290）。 */
+  commentRepository: CommentRepository;
+  /** 購読の永続化（ADR-0019）。呼び出し側（composition root）が注入する（#290）。 */
+  subscriptionRepository: SubscriptionRepository;
+  /** up vote の永続化（ADR-0019）。呼び出し側（composition root）が注入する（#290）。 */
+  voteRepository: VoteRepository;
+  /** ワールド状態の永続化（ADR-0019）。呼び出し側（composition root）が注入する（#290）。 */
+  worldStateRepository: WorldStateRepository;
+  /** GCS ストレージサービス（#204 / ADR-0022）。本番は GcsStorageService、テスト・ローカルは InMemoryStorageService。 */
+  storageService: StorageService;
   /** DDoS/過負荷対策の設定（#34）。省略時は既定値。 */
   security?: SecurityOptions;
   /**
@@ -105,6 +122,12 @@ export interface AppDeps {
    * 本番（NODE_ENV=production）では必須—省略すると起動時例外。
    */
   sessionStore?: Store;
+  /**
+   * 公開ページの絶対 URL ベース（sitemap.xml 生成に使う・#259）。
+   * 省略時は本番フロント既定値（client/vite.config.ts の DEFAULT_OGP_URL と同じ）。
+   * 本番は server.ts が env（PUBLIC_BASE_URL）から渡す。
+   */
+  publicBaseUrl?: string;
 }
 
 /**
@@ -117,41 +140,40 @@ export function createApp(deps: AppDeps): Express {
   const app = express();
   const security = { ...DEFAULT_SECURITY, ...deps.security };
 
-  const sessionSecret = process.env.SESSION_SECRET;
-  if (!sessionSecret && process.env.NODE_ENV === "production") {
-    throw new Error("SESSION_SECRET 環境変数が設定されていません。本番環境では必須です。");
+  // deps.security から直接読む（DEFAULT_SECURITY の "hatchery-dev-secret" を介さない）ことで、
+  // sessionSecret を明示しないまま NODE_ENV=production で起動した場合も本番ガードが正しく機能する。
+  const sessionSecret = deps.security?.sessionSecret ?? process.env.SESSION_SECRET;
+  if (process.env.NODE_ENV === "production") {
+    if (security.corsAllowedOrigins.includes("*")) {
+      throw new Error(
+        "本番環境で CORS に * は使用できません。CORS_ALLOWED_ORIGINS に具体的なオリジンを設定してください（#344）。",
+      );
+    }
+    if (!sessionSecret) {
+      throw new Error("SESSION_SECRET 環境変数が設定されていません。本番環境では必須です。");
+    }
+    if (!deps.sessionStore) {
+      throw new Error(
+        "sessionStore が必須です。本番環境では connect-pg-simple 等の永続ストアを AppDeps.sessionStore に渡してください（#186）。",
+      );
+    }
   }
 
-  if (!deps.sessionStore && process.env.NODE_ENV === "production") {
-    throw new Error(
-      "sessionStore が必須です。本番環境では connect-pg-simple 等の永続ストアを AppDeps.sessionStore に渡してください（#186）。",
-    );
-  }
-
-  // セキュアヘッダ／CORS（#35）は最前段に置き、エラー応答も含む全レスポンスに効かせる。
-  // CORS のプリフライト（OPTIONS）は createCors が 204 で打ち切るため、レート制限等より前に置く。
   app.use(createSecureHeaders({ enableHsts: security.enableHsts }));
   app.use(createCors({ allowedOrigins: security.corsAllowedOrigins }));
   app.use(createRequestLogger());
 
-  // DDoS/過負荷対策（#34）はボディ解釈より前に置き、過大・過多なリクエストを早期に弾く。
-  // 注: レート制限は req.ip ごとに数える。リバースプロキシ/LB の背後で運用する場合は、
-  //     正しいクライアント IP を得るためデプロイ側で app.set("trust proxy", ...) の設定が必要
-  //     （未設定だと全クライアントがプロキシ IP に集約される）。本 MVP は単一プロセス前提。
   app.use(createRateLimiter({ windowMs: security.rateLimitWindowMs, max: security.rateLimitMax }));
   app.use(createRequestTimeout(security.requestTimeoutMs));
   app.use(createJsonBodyParser(security.bodyLimit));
 
-  // クロスサイト cookie（別ドメイン配信）では Secure cookie をプロキシ（Cloud Run）背後で
-  // 発行するため trust proxy が必須。これが無いと express-session が接続を非 HTTPS と判断し、
-  // Secure cookie をセットしない（#78）。
   if (security.crossSiteCookie) {
     app.set("trust proxy", 1);
   }
 
   app.use(
     session({
-      secret: sessionSecret ?? "hatchery-dev-secret",
+      secret: sessionSecret ?? DEFAULT_SECURITY.sessionSecret,
       resave: false,
       saveUninitialized: false,
       cookie: buildSessionCookieOptions(security.crossSiteCookie),
@@ -163,30 +185,44 @@ export function createApp(deps: AppDeps): Express {
   app.use(passportInstance.initialize());
   app.use(passportInstance.session());
 
+  const communityRepo = deps.communityRepository;
+  const postRepo = deps.postRepository;
+  const commentRepo = deps.commentRepository;
+  const subscriptionRepo = deps.subscriptionRepository;
+  const voteRepo = deps.voteRepository;
+  const worldStateRepo = deps.worldStateRepository;
+
+  if (isApiDocsEnabled(process.env)) {
+    app.use("/", createApiDocsRouter());
+  }
+
   app.use("/health", healthRouter);
-  app.use("/api/auth", createAuthRouter(passportInstance, deps.userRepository));
-  app.use("/api/messages", createMessagesRouter(deps.messageRepository));
   app.use(
-    "/api/channels",
-    createChannelsRouter(
-      deps.channelMembershipRepository,
-      deps.channelRepository,
-      deps.messageRepository,
-      {
-        employeeRepo: deps.employeeRepository,
-        appSettingRepo: deps.appSettingRepository,
-      },
-    ),
+    "/sitemap.xml",
+    createSitemapRouter(communityRepo, deps.publicBaseUrl ?? DEFAULT_PUBLIC_BASE_URL),
   );
-  app.use("/api/employees", createEmployeesRouter(deps.employeeRepository));
+  app.use("/api/auth", createAuthRouter(passportInstance, deps.userRepository));
+  app.use("/api/workers", createWorkersRouter(deps.workerRepository));
   app.use("/api/admin/batch-logs", createBatchLogsRouter(deps.batchRunLogRepository));
   app.use("/api/admin/token-usage", createTokenUsageRouter(deps.tokenUsageLogRepository));
-  app.use("/api/admin", createAdminRouter(deps.appSettingRepository, deps.invitationLinkRepository));
+  app.use("/api/admin", createAdminRouter(deps.appSettingRepository, deps.invitationLinkRepository, deps.workerRepository, communityRepo));
+  app.use(
+    "/api/admin",
+    createAdminWorkerImageRouter(deps.workerRepository, deps.storageService),
+  );
   app.use(
     "/api/invitations",
     createInvitationsRouter(deps.invitationLinkRepository, deps.userRepository),
   );
-  app.use("/api/channels", createPlanningIssuesRouter(deps.messageRepository));
+  app.use(
+    "/api/communities",
+    createCommunitiesRouter(communityRepo, postRepo, subscriptionRepo, deps.workerRepository),
+  );
+  app.use("/api/feed", createFeedRouter(postRepo));
+  app.use("/api", createPostsRouter(postRepo, commentRepo, voteRepo));
+
+  void worldStateRepo;
+
   app.use(errorHandler);
   return app;
 }
