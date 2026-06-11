@@ -94,13 +94,15 @@ export function InvitationsTab(): ReactElement {
   const form = useForm({
     defaultValues: { expiresInHours: 24, memo: "" },
     onSubmit: async ({ value }) => {
+      if (createMutation.isPending) return;
+      setCreatedInvitation(null);
       try {
         const result = await createMutation.mutateAsync({
           expiresInHours: value.expiresInHours,
           ...(value.memo.trim() ? { memo: value.memo.trim() } : {}),
         });
         setCreatedInvitation(result);
-        form.reset();
+        form.setFieldValue("memo", "");
       } catch {
         setCreateErrorOpen(true);
       }
@@ -140,6 +142,7 @@ export function InvitationsTab(): ReactElement {
                   label="有効期限"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(Number(e.target.value))}
+                  onBlur={field.handleBlur}
                 >
                   {EXPIRY_PRESETS.map((preset) => (
                     <MenuItem key={preset.value} value={preset.value}>
@@ -166,7 +169,7 @@ export function InvitationsTab(): ReactElement {
           <Button
             type="submit"
             variant="contained"
-            disabled={createMutation.isPending}
+            disabled={createMutation.isPending || form.state.isSubmitting}
           >
             発行
           </Button>
@@ -196,7 +199,7 @@ export function InvitationsTab(): ReactElement {
           </Box>
         ) : invitations.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
-            招待がありません。
+            招待がありまぜん。
           </Typography>
         ) : (
           <Table size="small">
