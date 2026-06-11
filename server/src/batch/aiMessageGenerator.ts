@@ -20,13 +20,20 @@ async function callClaudeText(prompt: string, apiKey: string, maxTokens: number)
     max_tokens: maxTokens,
     messages: [{ role: "user", content: prompt }],
   });
+  if (message.stop_reason === "max_tokens") {
+    const snippet =
+      prompt.length > 100 ? `"${prompt.slice(0, 100)}..."` : `"${prompt}"`;
+    console.warn(
+      `[aiMessageGenerator] 出力が max_tokens (${maxTokens}) で切り詰められました。プロンプト先頭: ${snippet}`,
+    );
+  }
   const textContent = message.content.find((c) => c.type === "text");
   return textContent && textContent.type === "text" ? textContent.text : "";
 }
 
 /** Claude で会話 JSON を生成する既定実装（#53）。 */
 export const generateConversationWithClaude: ConversationGenerator = (prompt, apiKey) =>
-  callClaudeText(prompt, apiKey, 1024);
+  callClaudeText(prompt, apiKey, 8192);
 
 /** Claude であらすじを生成する既定実装（#53）。 */
 export const generateSummaryWithClaude: SummaryGenerator = (prompt, apiKey) =>
