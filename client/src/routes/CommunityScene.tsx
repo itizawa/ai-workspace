@@ -38,7 +38,7 @@ export const CommunityScene = (): ReactElement => {
   const { mutate: subscribe, isPending: isSubscribing } = useSubscribe(communitySlug);
   const { mutate: unsubscribe, isPending: isUnsubscribing } = useUnsubscribe(communitySlug);
   const { mutate: votePost } = useVotePost(communitySlug);
-  const { data: recentWorkers, isLoading: isRecentWorkersLoading } = useRecentWorkers(communitySlug);
+  const { data: recentWorkers, isLoading: isRecentWorkersLoading, isError: isRecentWorkersError } = useRecentWorkers(communitySlug);
 
   const isSubscriptionPending = isSubscribing || isUnsubscribing;
 
@@ -149,6 +149,7 @@ export const CommunityScene = (): ReactElement => {
               <RecentWorkersSection
                 workers={recentWorkers ?? []}
                 isLoading={isRecentWorkersLoading}
+                isError={isRecentWorkersError}
               />
             </Box>
             <Stack spacing={1}>

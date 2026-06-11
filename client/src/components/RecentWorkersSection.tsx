@@ -6,17 +6,26 @@ import type { RecentWorker } from "../api/communities.js";
 interface RecentWorkersSectionProps {
   workers: RecentWorker[];
   isLoading: boolean;
+  isError?: boolean;
 }
 
 /**
  * community に最近投稿したワーカー一覧を表示するセクション（#207）。
  * サイドバーに埋め込むことを想定した presentational コンポーネント。
  */
-export const RecentWorkersSection = ({ workers, isLoading }: RecentWorkersSectionProps): ReactElement => {
+export const RecentWorkersSection = ({ workers, isLoading, isError }: RecentWorkersSectionProps): ReactElement => {
   if (isLoading) {
     return (
       <Typography variant="body2" color="text.secondary">
         読み込み中...
+      </Typography>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Typography variant="body2" color="text.secondary">
+        読み込みに失敗しました
       </Typography>
     );
   }

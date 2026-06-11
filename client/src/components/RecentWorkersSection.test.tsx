@@ -27,4 +27,9 @@ describe("RecentWorkersSection", () => {
     render(<RecentWorkersSection workers={[]} isLoading={true} />);
     expect(screen.getByText("読み込み中...")).toBeInTheDocument();
   });
+
+  it("isError=true のとき読み込み失敗テキストを表示する", () => {
+    render(<RecentWorkersSection workers={[]} isLoading={false} isError={true} />);
+    expect(screen.getByText("読み込みに失敗しました")).toBeInTheDocument();
+  });
 });

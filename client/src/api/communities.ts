@@ -234,7 +234,8 @@ export async function voteComment(commentId: string, direction: VoteDirection): 
 
 /**
  * GET /api/communities/{slug}/recent-workers — community の最近投稿したワーカー一覧を取得（#207）。
- * openapi.gen.ts にパスが追加されるまで直 fetch を使う。
+ * openapi.gen.ts はビルド時に生成されるためコミット対象外。CI パイプラインで再生成後に
+ * openApiClient.GET に移行すること（#372 型整合修正と合わせて対応予定）。
  */
 export async function fetchRecentWorkers(slug: string): Promise<RecentWorker[]> {
   const res = await fetch(`/api/communities/${encodeURIComponent(slug)}/recent-workers`, {
