@@ -69,27 +69,17 @@ describe("PostCard", () => {
   });
 
   describe("voteStopPropagation", () => {
-    it("有効時の up vote クリックで stopPropagation と preventDefault の両方が呼ばれる", () => {
+    it.each([
+      ["up vote", /up vote/i],
+      ["down vote", /down vote/i],
+    ] as const)("有効時の %s クリックで stopPropagation と preventDefault の両方が呼ばれる", (_label, namePattern) => {
       render(<PostCard post={mockPost} onVote={vi.fn()} voteStopPropagation={true} />);
 
       const event = new MouseEvent("click", { bubbles: true, cancelable: true });
       const stopPropagationSpy = vi.spyOn(event, "stopPropagation");
       const preventDefaultSpy = vi.spyOn(event, "preventDefault");
 
-      fireEvent(screen.getByRole("button", { name: /up vote/i }), event);
-
-      expect(stopPropagationSpy).toHaveBeenCalled();
-      expect(preventDefaultSpy).toHaveBeenCalled();
-    });
-
-    it("有効時の down vote クリックで stopPropagation と preventDefault の両方が呼ばれる", () => {
-      render(<PostCard post={mockPost} onVote={vi.fn()} voteStopPropagation={true} />);
-
-      const event = new MouseEvent("click", { bubbles: true, cancelable: true });
-      const stopPropagationSpy = vi.spyOn(event, "stopPropagation");
-      const preventDefaultSpy = vi.spyOn(event, "preventDefault");
-
-      fireEvent(screen.getByRole("button", { name: /down vote/i }), event);
+      fireEvent(screen.getByRole("button", { name: namePattern }), event);
 
       expect(stopPropagationSpy).toHaveBeenCalled();
       expect(preventDefaultSpy).toHaveBeenCalled();
