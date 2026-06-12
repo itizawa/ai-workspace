@@ -86,6 +86,9 @@ describe.skipIf(!DATABASE_URL)("createPrismaCommentRepository (integration)", ()
 
       await repo.createMany(communityId, [
         { postId, slotKey: "2026-06-10T09:00", seq: 0, author: "worker-1", text: "First" },
+      ]);
+      await new Promise((r) => setTimeout(r, 100));
+      await repo.createMany(communityId, [
         { postId, slotKey: "2026-06-10T09:00", seq: 1, author: "worker-2", text: "Second" },
       ]);
 

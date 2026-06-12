@@ -231,6 +231,7 @@ describe.skipIf(!DATABASE_URL)("createPrismaPostRepository (integration)", () =>
       ]);
 
       const first = await repo.listLatestPaged(undefined, 2);
+      expect(first.nextCursor).not.toBeNull();
       const second = await repo.listLatestPaged(first.nextCursor!, 2);
 
       expect(second.posts).toHaveLength(1);
