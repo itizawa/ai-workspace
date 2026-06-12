@@ -44,9 +44,12 @@ echo -n "<NEW_VALUE>" | gcloud secrets versions add hatchery-database-url \
   --data-file=- --project=${PROJECT_ID}
 ```
 
-## ステップ 2: サービスアカウントに Secret Manager の読み取り権限を付与（初回のみ）
+## ステップ 2: サービスアカウントに必要な権限を付与（初回のみ）
+
+Secret Manager の読み取り権限と、Cloud Scheduler が Cloud Run Job を起動するための `roles/run.invoker` 権限を付与する。
 
 ```bash
+# Secret Manager の読み取り権限
 gcloud secrets add-iam-policy-binding hatchery-database-url \
   --member="serviceAccount:${SA_EMAIL}" \
   --role="roles/secretmanager.secretAccessor" \
@@ -55,6 +58,16 @@ gcloud secrets add-iam-policy-binding hatchery-database-url \
 gcloud secrets add-iam-policy-binding hatchery-anthropic-api-key \
   --member="serviceAccount:${SA_EMAIL}" \
   --role="roles/secretmanager.secretAccessor" \
+  --project=${PROJECT_ID}
+```
+
+Cloud Run Job の実行権限（Cloud Scheduler が Job を起動するために必要）:
+
+```bash
+gcloud run jobs add-iam-policy-binding ${JOB_NAME} \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/run.invoker" \
+  --region=${REGION} \
   --project=${PROJECT_ID}
 ```
 
@@ -84,13 +97,21 @@ gcloud run jobs create ${JOB_NAME} \
 Cloud Scheduler が Cloud Run Jobs API を OIDC 認証で呼び出す。
 スケジュール: UTC 0/3/6/9 時（= JST 9/12/15/18 時）。
 
+Cloud Run Jobs execution endpoint はリクエストに OIDC id_token を要求する（OAuth アクセストークンは不可）。
+また URI の `namespaces/` セグメントは**数値のプロジェクト番号**が必要（文字列プロジェクト ID は不可）。
+
 ```bash
+# プロジェクト番号を取得する（一度だけ実行）
+export PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format='value(projectNumber)')
+
 gcloud scheduler jobs create http ${JOB_NAME}-schedule \
   --schedule="0 0,3,6,9 * * *" \
   --time-zone="UTC" \
-  --uri="https://${REGION}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${PROJECT_ID}/jobs/${JOB_NAME}:run" \
+  --uri="https://${REGION}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${PROJECT_NUMBER}/jobs/${JOB_NAME}:run" \
   --message-body="{}" \
-  --oauth-service-account-email=${SA_EMAIL} \
+  --headers="Content-Type=application/json" \
+  --oidc-service-account-email=${SA_EMAIL} \
+  --oidc-token-audience="https://${REGION}-run.googleapis.com/" \
   --location=${REGION} \
   --project=${PROJECT_ID}
 ```
