@@ -28,6 +28,10 @@ export interface ServerEnv {
   googleClientSecret: string | undefined;
   /** Google OAuth コールバック URL（#343）。未設定なら Google 認証エンドポイントを無効化。 */
   googleCallbackUrl: string | undefined;
+  /** バッチの API キーフォールバック（#419）。DB に CLAUDE_API_KEY 未設定のときに使う。未設定なら undefined。 */
+  anthropicApiKey: string | undefined;
+  /** GCS バケット名（#419）。設定時は GcsStorageService を使う。未設定なら InMemoryStorageService。 */
+  gcsBucketName: string | undefined;
 }
 
 /** 公開ページのベース URL の既定値（#259）。client の DEFAULT_OGP_URL と同じドメイン。 */
@@ -71,6 +75,8 @@ const EnvSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1).optional(),
   GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   GOOGLE_CALLBACK_URL: z.string().url().optional(),
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  GCS_BUCKET_NAME: z.string().min(1).optional(),
 });
 
 /** 環境変数から ServerEnv を構築する。不正な値は ZodError を投げて起動時に気付けるようにする。 */
@@ -89,6 +95,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
     GOOGLE_CLIENT_ID: source.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: source.GOOGLE_CLIENT_SECRET,
     GOOGLE_CALLBACK_URL: source.GOOGLE_CALLBACK_URL,
+    ANTHROPIC_API_KEY: source.ANTHROPIC_API_KEY,
+    GCS_BUCKET_NAME: source.GCS_BUCKET_NAME,
   });
   return {
     port: parsed.PORT,
@@ -104,5 +112,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
     googleClientId: parsed.GOOGLE_CLIENT_ID,
     googleClientSecret: parsed.GOOGLE_CLIENT_SECRET,
     googleCallbackUrl: parsed.GOOGLE_CALLBACK_URL,
+    anthropicApiKey: parsed.ANTHROPIC_API_KEY,
+    gcsBucketName: parsed.GCS_BUCKET_NAME,
   };
 }

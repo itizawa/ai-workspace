@@ -24,8 +24,7 @@ import { GcsStorageService, InMemoryStorageService } from "../services/storageSe
  * DI コンテナは使わず手動 DI のまま（ADR-0012）。
  * common への DI 基盤の漏洩なし（ADR-0001 / ADR-0005）。
  */
-export function createPrismaDeps(prisma: PrismaClient): Omit<AppDeps, "security" | "sessionStore"> {
-  const gcsBucketName = process.env.GCS_BUCKET_NAME;
+export function createPrismaDeps(prisma: PrismaClient, gcsBucketName?: string): Omit<AppDeps, "security" | "sessionStore"> {
   const storageService = gcsBucketName
     ? new GcsStorageService(gcsBucketName)
     : new InMemoryStorageService();

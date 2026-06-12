@@ -82,4 +82,24 @@ describe("loadEnv", () => {
     const env = loadEnv({});
     expect(env.appSecret).toBeUndefined();
   });
+
+  it("ANTHROPIC_API_KEY が設定されている場合に env.anthropicApiKey として返す", () => {
+    const env = loadEnv({ ANTHROPIC_API_KEY: "sk-ant-api03-test" });
+    expect(env.anthropicApiKey).toBe("sk-ant-api03-test");
+  });
+
+  it("ANTHROPIC_API_KEY 未設定なら anthropicApiKey が undefined を返す", () => {
+    const env = loadEnv({});
+    expect(env.anthropicApiKey).toBeUndefined();
+  });
+
+  it("GCS_BUCKET_NAME が設定されている場合に env.gcsBucketName として返す", () => {
+    const env = loadEnv({ GCS_BUCKET_NAME: "my-bucket" });
+    expect(env.gcsBucketName).toBe("my-bucket");
+  });
+
+  it("GCS_BUCKET_NAME 未設定なら gcsBucketName が undefined を返す", () => {
+    const env = loadEnv({});
+    expect(env.gcsBucketName).toBeUndefined();
+  });
 });
