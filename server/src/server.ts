@@ -19,7 +19,7 @@ const googleAuth =
     : undefined;
 
 const app = createApp({
-  ...createPrismaDeps(prisma),
+  ...createPrismaDeps(prisma, env.gcsBucketName),
   sessionStore,
   publicBaseUrl: env.publicBaseUrl,
   googleAuth,

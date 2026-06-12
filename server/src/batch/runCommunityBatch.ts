@@ -44,6 +44,8 @@ export interface RunCommunityBatchDeps {
    * テストで固定 slotKey を使う場合に注入する。
    */
   slotKey?: string;
+  /** ANTHROPIC_API_KEY の env 値。DB に CLAUDE_API_KEY がないときのフォールバック（#419）。 */
+  anthropicApiKey?: string;
 }
 
 /**
@@ -79,7 +81,7 @@ export function generateSlotKey(now: Date = new Date()): string {
 export async function runCommunityBatch(
   deps: RunCommunityBatchDeps,
 ): Promise<RunCommunityBatchResult> {
-  const apiKey = await getApiKey(deps.appSettingRepo);
+  const apiKey = await getApiKey(deps.appSettingRepo, deps.anthropicApiKey);
   if (!apiKey) {
     console.error("[communityBatch] API キーが設定されていないためスキップします");
     return { posts: [], comments: [] };

@@ -55,14 +55,12 @@ const validGenerationOutput = JSON.stringify({
 
 describe("runCommunityBatch (#306)", () => {
   beforeEach(() => {
-    process.env.ANTHROPIC_API_KEY = "test-key";
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
-    delete process.env.ANTHROPIC_API_KEY;
     vi.restoreAllMocks();
   });
 
@@ -72,7 +70,7 @@ describe("runCommunityBatch (#306)", () => {
     const commentRepo = createInMemoryCommentRepository();
     const appSettingRepo = createInMemoryAppSettingRepository();
     const batchRunLogRepository = createInMemoryBatchRunLogRepository();
-    return { communityRepo, postRepo, commentRepo, appSettingRepo, batchRunLogRepository };
+    return { communityRepo, postRepo, commentRepo, appSettingRepo, batchRunLogRepository, anthropicApiKey: "test-key" };
   };
 
   it("正常系: community ごとに post と comment が永続化される", async () => {
@@ -162,11 +160,10 @@ describe("runCommunityBatch (#306)", () => {
   });
 
   it("API キー未設定の場合は何も生成せず空を返す", async () => {
-    delete process.env.ANTHROPIC_API_KEY;
     const deps = buildDeps([community1]);
     const generate = vi.fn().mockResolvedValue(validGenerationOutput);
 
-    const result = await runCommunityBatch({ ...deps, generate });
+    const result = await runCommunityBatch({ ...deps, generate, anthropicApiKey: undefined });
 
     expect(generate).not.toHaveBeenCalled();
     expect(result.posts.length).toBe(0);

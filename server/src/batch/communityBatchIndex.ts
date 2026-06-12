@@ -1,5 +1,6 @@
 import { pathToFileURL } from "node:url";
 
+import { loadEnv } from "../config/env.js";
 import {
   runCommunityBatch,
   type RunCommunityBatchDeps,
@@ -42,6 +43,8 @@ export async function runCommunityBatchCli(
  * ここで動的 import する（prisma generate 前の環境でもテストが動くようにするため）。
  */
 async function main(): Promise<void> {
+  const env = loadEnv();
+
   const [
     { prisma },
     { createPrismaAppSettingRepository },
@@ -65,6 +68,7 @@ async function main(): Promise<void> {
       commentRepo: createPrismaCommentRepository(prisma),
       appSettingRepo: createPrismaAppSettingRepository(prisma),
       batchRunLogRepository: createPrismaBatchRunLogRepository(prisma),
+      anthropicApiKey: env.anthropicApiKey,
     },
     disconnect: () => prisma.$disconnect(),
   });

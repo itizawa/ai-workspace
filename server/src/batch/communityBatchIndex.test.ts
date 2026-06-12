@@ -48,14 +48,12 @@ const validGenerationOutput = JSON.stringify({
 
 describe("communityBatchIndex (#383)", () => {
   beforeEach(() => {
-    process.env.ANTHROPIC_API_KEY = "test-key";
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
-    delete process.env.ANTHROPIC_API_KEY;
     vi.restoreAllMocks();
   });
 
@@ -73,6 +71,7 @@ describe("communityBatchIndex (#383)", () => {
         appSettingRepo: createInMemoryAppSettingRepository(),
         batchRunLogRepository: createInMemoryBatchRunLogRepository(),
         generate,
+        anthropicApiKey: "test-key",
       },
       disconnect,
     };
