@@ -38,9 +38,10 @@ jobs:
             exit 0
           fi
 
-          # 同名タグが既に存在する場合はスキップ（冪等）。
-          if git tag | grep -q "^${version}$"; then
-            echo "タグ ${version} は既に存在します。スキップします（冪等）。"
+          # 同名タグがリモートに既に存在する場合はスキップ（冪等）。
+          # git tag はローカル値のみなのでリモートを直接冗する。
+          if git ls-remote --tags origin "refs/tags/${version}" | grep -q "."; then
+            echo "タグ ${version} はリモートに既に存在します。スキップします（冪等）。"
             exit 0
           fi
 
@@ -50,14 +51,20 @@ jobs:
           if [ -n "$prev_tag" ]; then
             commit_range="${prev_tag}..${MERGE_SHA}"
           else
-            commit_range="${MERGE_SHA}"
+            # 前タグ無しの場合はマージコミットの第1親コミット（main側前回）を基点にして
+            # このリリース分のコミットのみを表示する。
+            commit_range="${MERGE_SHA}^1..${MERGE_SHA}"
           fi
 
           release_notes=$(git log --no-merges --pretty=format:'- %s (%h)' "$commit_range")
 
           # git タグを作成してプッシュする。
+          # リモートチェック後に並行実行でタグが作成された場合は冪等スキップする。
           git tag "$version" "$MERGE_SHA"
-          git push origin "$version"
+          if ! git push origin "$version"; then
+            echo "タグ ${version} の push に失敗しました。並行実行で作成済みの延備があります。スキップします。"
+            exit 0
+          fi
 
           # GitHub Release を作成する。
           gh release create "$version" \
