@@ -73,4 +73,53 @@ describe.skipIf(!DATABASE_URL)("createPrismaWorkerCommunityRepository (integrati
 
     expect(result).toEqual([]);
   });
+
+  it("setWorkerCommunities は参加 community を全置換し listCommunityIdsByWorker で取得できる（#490）", async () => {
+    const c1 = await prisma.community.create({
+      data: { slug: "c1", name: "C1", description: "説明" },
+    });
+    const c2 = await prisma.community.create({
+      data: { slug: "c2", name: "C2", description: "説明" },
+    });
+    const c3 = await prisma.community.create({
+      data: { slug: "c3", name: "C3", description: "説明" },
+    });
+    await prisma.worker.create({ data: { id: "haru", displayName: "haru" } });
+    await prisma.workerCommunity.create({
+      data: { workerId: "haru", communityId: c1.id },
+    });
+
+    const repo = createPrismaWorkerCommunityRepository(prisma);
+    await repo.setWorkerCommunities("haru", [c2.id, c3.id]);
+
+    const result = await repo.listCommunityIdsByWorker("haru");
+    expect([...result].sort()).toEqual([c2.id, c3.id].sort());
+  });
+
+  it("setWorkerCommunities に空配列を渡すと全解除する（#490）", async () => {
+    const c1 = await prisma.community.create({
+      data: { slug: "c1", name: "C1", description: "説明" },
+    });
+    await prisma.worker.create({ data: { id: "haru", displayName: "haru" } });
+    await prisma.workerCommunity.create({
+      data: { workerId: "haru", communityId: c1.id },
+    });
+
+    const repo = createPrismaWorkerCommunityRepository(prisma);
+    await repo.setWorkerCommunities("haru", []);
+
+    expect(await repo.listCommunityIdsByWorker("haru")).toEqual([]);
+  });
+
+  it("setWorkerCommunities は重複 id を一意化する（#490）", async () => {
+    const c1 = await prisma.community.create({
+      data: { slug: "c1", name: "C1", description: "説明" },
+    });
+    await prisma.worker.create({ data: { id: "haru", displayName: "haru" } });
+
+    const repo = createPrismaWorkerCommunityRepository(prisma);
+    await repo.setWorkerCommunities("haru", [c1.id, c1.id]);
+
+    expect(await repo.listCommunityIdsByWorker("haru")).toEqual([c1.id]);
+  });
 });

@@ -33,5 +33,28 @@ export function createPrismaWorkerCommunityRepository(
       });
       return rows.map((row) => toRecord(row.worker));
     },
+
+    async listCommunityIdsByWorker(workerId: string): Promise<string[]> {
+      const rows = await prisma.workerCommunity.findMany({
+        where: { workerId },
+        select: { communityId: true },
+      });
+      return rows.map((row) => row.communityId);
+    },
+
+    async setWorkerCommunities(
+      workerId: string,
+      communityIds: readonly string[],
+    ): Promise<void> {
+      const uniqueIds = [...new Set(communityIds)];
+      // 既存リンク削除 → 新規一括作成をトランザクションで原子的に行う（部分適用を避ける）。
+      await prisma.$transaction([
+        prisma.workerCommunity.deleteMany({ where: { workerId } }),
+        prisma.workerCommunity.createMany({
+          data: uniqueIds.map((communityId) => ({ workerId, communityId })),
+          skipDuplicates: true,
+        }),
+      ]);
+    },
   };
 }
