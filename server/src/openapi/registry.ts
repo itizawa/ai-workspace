@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import {
   AppSettingResponseSchema,
+  AuthorWorkerSchema,
   AuthUserSchema,
   BatchRunLogSchema,
   CommunitySchema,
@@ -237,7 +238,7 @@ registry.registerPath({
       description: "更新後の認証済みユーザー",
       content: { "application/json": { schema: AuthUserComponent } },
     },
-    400: { description: "リクエストボディが不正（displayName 空・atvtarUrl 不正など）", ...errorJson },
+    400: { description: "リクエストボディが不正（displayName 空セatvtarUrl 不正など）", ...errorJson },
     401: { description: "未認証", ...errorJson },
   },
 });
@@ -373,11 +374,19 @@ registry.registerPath({
   },
 });
 
-// ── 公共コミュニティ API（#305 / ADR-0019 / ADR-0020）────────────────────────
+// ── 公共コミュニティ API（#305 / ADR-0019 / ADR-0020）────────────────
 
 const CommunityComponent = registry.register(
   "Community",
   CommunitySchema.openapi({ description: "コミュニティ（サブレディット相当）。ADR-0019" }),
+);
+
+// 発言者の表示用ワーカー情報（#479）。Post / Comment の author_worker が参照する。
+registry.register(
+  "AuthorWorker",
+  AuthorWorkerSchema.openapi({
+    description: "post / comment の発言者の表示用ワーカー情報（アバター画像 + 表示名・#479）",
+  }),
 );
 
 const PostComponent = registry.register(
