@@ -78,7 +78,7 @@ const EnvSchema = z.object({
   ANTHROPIC_API_KEY: z
     .string()
     .optional()
-    .transform((v) => (v && v.length > 0 ? v : undefined)),
+    .transform((v) => v || undefined),
   GCS_BUCKET_NAME: z.string().min(1).optional(),
 });
 
