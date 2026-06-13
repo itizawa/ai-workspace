@@ -1,11 +1,14 @@
 /**
- * PostThreadScene（/posts/$postId）の RTL テスト (#380 / #390).
+ * PostThreadScene（/posts/$postId）の RTL テスト (#380 / #390 / #462).
  * - #380: MSW で GET /api/posts/:postId をモックし、post 本文・コメント一覧・空状態・
  *   ローディング・エラーの各描画を検証する。ネットワーク実アクセスはしない
  *   （onUnhandledRequest: "error" で素通りを検知）。
  *   投票の楽観更新の詳細は UpVoteButton / communities 側の責務（スコープ外）。
  * - #390: 右サイドバー（コミュニティ詳細カード）の表示を TanStack Query キャッシュの
  *   シードで検証する（staleTime 内のため fetch は発生しない）。
+ * - #462: usePostThread / usePublicCommunities を Suspense 化したため、シーンを router と同じく
+ *   QueryBoundary（fallback=PostThreadSkeleton）でラップして描画する。ローディングは Suspense
+ *   fallback（post-thread-skeleton）、取得失敗は ErrorBoundary フォールバック（再試行ボタン）で検証する。
  */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
@@ -16,11 +19,22 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import { PostThreadScene } from "./PostThreadScene";
 import { postThreadQueryKey, communitySubscriptionQueryKey } from "../api/communities";
 import { AUTH_ME_QUERY_KEY } from "../api/auth";
+import { QueryBoundary } from "../components/QueryBoundary";
+import { PostThreadSkeleton } from "../components/PostThreadSkeleton";
 import { handlers } from "../mocks/handlers.js";
 import { mockCommunities, mockPosts } from "../mocks/data/fixtures.js";
 import type { Community, Comment } from "../api/communities.js";
 import type React from "react";
 import { Suspense } from "react";
+
+/** router と同じ構成（QueryBoundary + PostThreadSkeleton fallback）でシーンを包む。 */
+function BoundedScene(): React.ReactElement {
+  return (
+    <QueryBoundary fallback={<PostThreadSkeleton />}>
+      <PostThreadScene />
+    </QueryBoundary>
+  );
+}
 
 const mockComments: Comment[] = [
   {
@@ -81,7 +95,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 
 describe("PostThreadScene (#380)", () => {
   it("post のタイトル・本文・author が表示される", async () => {
-    render(<PostThreadScene />, { wrapper: Wrapper });
+    render(<BoundedScene />, { wrapper: Wrapper });
 
     expect(await screen.findByText("今日も元気に始めましょう")).toBeInTheDocument();
     expect(
@@ -96,7 +110,7 @@ describe("PostThreadScene (#380)", () => {
         HttpResponse.json({ post: mockPosts[0], comments: mockComments }),
       ),
     );
-    render(<PostThreadScene />, { wrapper: Wrapper });
+    render(<BoundedScene />, { wrapper: Wrapper });
 
     expect(await screen.findByText("コメント 2 件")).toBeInTheDocument();
     expect(screen.getByText("worker-ken")).toBeInTheDocument();
@@ -109,7 +123,7 @@ describe("PostThreadScene (#380)", () => {
     server.use(
       http.get("/api/posts/:postId", () => HttpResponse.json({ post: mockPosts[0], comments: [] })),
     );
-    render(<PostThreadScene />, { wrapper: Wrapper });
+    render(<BoundedScene />, { wrapper: Wrapper });
 
     expect(
       await screen.findByText("まだコメントはありません。AI ワーカーが定時にコメントします。"),
@@ -124,7 +138,7 @@ describe("PostThreadScene (#380)", () => {
         return HttpResponse.json({ post: mockPosts[0], comments: [] });
       }),
     );
-    render(<PostThreadScene />, { wrapper: Wrapper });
+    render(<BoundedScene />, { wrapper: Wrapper });
 
     // ローディング中はスケルトンが表示され、テキスト「読み込み中...」は出ない
     expect(screen.queryByText("読み込み中...")).not.toBeInTheDocument();
@@ -133,11 +147,17 @@ describe("PostThreadScene (#380)", () => {
     expect(await screen.findByText("今日も元気に始めましょう")).toBeInTheDocument();
   });
 
-  it("取得に失敗したときエラーメッセージが表示される", async () => {
-    server.use(http.get("/api/posts/:postId", () => new HttpResponse(null, { status: 500 })));
-    render(<PostThreadScene />, { wrapper: Wrapper });
+  it("取得に失敗したとき ErrorBoundary の再試行フォールバックが表示される（#462）", async () => {
+    // 子が throw すると React が console.error を出すため抑制する。
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    server.use(
+      http.get("/api/posts/:postId", () => new HttpResponse(null, { status: 500 })),
+    );
+    render(<BoundedScene />, { wrapper: Wrapper });
 
-    expect(await screen.findByText("投稿の取得に失敗しました。")).toBeInTheDocument();
+    expect(await screen.findByText("データの取得に失敗しました。")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "再試行" })).toBeInTheDocument();
+    errorSpy.mockRestore();
   });
 });
 
@@ -166,7 +186,7 @@ function createWrapper({ communities }: { communities: Community[] }) {
 
 describe("PostThreadScene サイドバー (#390)", () => {
   it("post 本文とコメントを表示する（既存表示の維持）", async () => {
-    render(<PostThreadScene />, { wrapper: createWrapper({ communities: mockCommunities }) });
+    render(<BoundedScene />, { wrapper: createWrapper({ communities: mockCommunities }) });
     expect(await screen.findByText("今日も元気に始めましょう")).toBeInTheDocument();
     expect(
       screen.getByText("おはようございます！今日もよろしくお願いします。"),
@@ -176,33 +196,33 @@ describe("PostThreadScene サイドバー (#390)", () => {
   });
 
   it("サイドバーに post の所属コミュニティ名がリンクとして表示される", async () => {
-    render(<PostThreadScene />, { wrapper: createWrapper({ communities: mockCommunities }) });
+    render(<BoundedScene />, { wrapper: createWrapper({ communities: mockCommunities }) });
     await screen.findByText("今日も元気に始めましょう");
     const link = screen.getByRole("link", { name: "AI 開発者の集い" });
     expect(link).toHaveAttribute("href", "/communities/$slug");
   });
 
   it("サイドバーにコミュニティの説明と作成日が表示される", async () => {
-    render(<PostThreadScene />, { wrapper: createWrapper({ communities: mockCommunities }) });
+    render(<BoundedScene />, { wrapper: createWrapper({ communities: mockCommunities }) });
     await screen.findByText("今日も元気に始めましょう");
     expect(screen.getByText("AI ワーカーが日常を語る community")).toBeInTheDocument();
     expect(screen.getByText("2026年6月1日 作成")).toBeInTheDocument();
   });
 
   it("サイドバーにシェアボタンが表示される（PostCard の共有ボタンに加えて 2 つ目）", async () => {
-    render(<PostThreadScene />, { wrapper: createWrapper({ communities: mockCommunities }) });
+    render(<BoundedScene />, { wrapper: createWrapper({ communities: mockCommunities }) });
     await screen.findByText("今日も元気に始めましょう");
     expect(screen.getAllByRole("button", { name: /共有/i }).length).toBeGreaterThanOrEqual(2);
   });
 
   it("未ログイン時はサイドバーに購読ボタンを表示しない", async () => {
-    render(<PostThreadScene />, { wrapper: createWrapper({ communities: mockCommunities }) });
+    render(<BoundedScene />, { wrapper: createWrapper({ communities: mockCommunities }) });
     await screen.findByText("今日も元気に始めましょう");
     expect(screen.queryByRole("button", { name: "購読する" })).not.toBeInTheDocument();
   });
 
   it("コミュニティが特定できない場合はサイドバーを表示しない（post は表示する）", async () => {
-    render(<PostThreadScene />, { wrapper: createWrapper({ communities: [] }) });
+    render(<BoundedScene />, { wrapper: createWrapper({ communities: [] }) });
     expect(await screen.findByText("今日も元気に始めましょう")).toBeInTheDocument();
     expect(screen.queryByText("AI 開発者の集い")).not.toBeInTheDocument();
     expect(screen.queryByText("2026年6月1日 作成")).not.toBeInTheDocument();
@@ -238,7 +258,7 @@ describe("PostThreadScene レイアウトシフト解消 (#409)", () => {
         return HttpResponse.json({ post: mockPosts[0], comments: [] });
       }),
     );
-    render(<PostThreadScene />, { wrapper: Wrapper });
+    render(<BoundedScene />, { wrapper: Wrapper });
 
     expect(screen.getByTestId("post-thread-skeleton")).toBeInTheDocument();
     // ローディング完了後はコンテンツが表示される
@@ -253,7 +273,7 @@ describe("PostThreadScene レイアウトシフト解消 (#409)", () => {
         return HttpResponse.json(mockCommunities);
       }),
     );
-    render(<PostThreadScene />, { wrapper: createPostOnlyWrapper() });
+    render(<BoundedScene />, { wrapper: createPostOnlyWrapper() });
 
     // post はシード済み → 即時表示
     expect(screen.getByText("今日も元気に始めましょう")).toBeInTheDocument();

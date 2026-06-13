@@ -21,6 +21,8 @@ import { AuthLayout } from "./routes/AuthLayout";
 import { RootLayout } from "./routes/RootLayout";
 import { MainContentSkeleton } from "./components/MainContentSkeleton";
 import { LoginDialog } from "./components/LoginDialog";
+import { PostThreadSkeleton } from "./components/PostThreadSkeleton";
+import { QueryBoundary } from "./components/QueryBoundary";
 import { useLoginModal } from "./hooks/useLoginModal.js";
 
 /** root の search param。`login=1`（モーダル開）を全ルートで共有する（#454）。 */
@@ -137,9 +139,9 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: () => (
-    <Suspense fallback={null}>
+    <QueryBoundary fallback={<MainContentSkeleton />}>
       <LazyHomeFeedScene />
-    </Suspense>
+    </QueryBoundary>
   ),
 });
 
@@ -148,9 +150,9 @@ const popularRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/popular",
   component: () => (
-    <Suspense fallback={null}>
+    <QueryBoundary fallback={<MainContentSkeleton />}>
       <LazyHomeFeedScene sort="popular" />
-    </Suspense>
+    </QueryBoundary>
   ),
 });
 
@@ -159,9 +161,9 @@ const communitiesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/communities",
   component: () => (
-    <Suspense fallback={<MainContentSkeleton />}>
+    <QueryBoundary fallback={<MainContentSkeleton />}>
       <LazyCommunityBrowseScene />
-    </Suspense>
+    </QueryBoundary>
   ),
 });
 
@@ -170,9 +172,9 @@ const communityRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/communities/$slug",
   component: () => (
-    <Suspense fallback={<MainContentSkeleton />}>
+    <QueryBoundary fallback={<MainContentSkeleton />}>
       <LazyCommunityScene />
-    </Suspense>
+    </QueryBoundary>
   ),
 });
 
@@ -181,9 +183,9 @@ const postRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/posts/$postId",
   component: () => (
-    <Suspense fallback={<MainContentSkeleton />}>
+    <QueryBoundary fallback={<PostThreadSkeleton />}>
       <LazyPostThreadScene />
-    </Suspense>
+    </QueryBoundary>
   ),
 });
 
