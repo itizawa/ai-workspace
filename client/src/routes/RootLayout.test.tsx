@@ -22,13 +22,17 @@ function jsonResponse(status: number, body: unknown): Response {
 }
 
 const COMMUNITIES_DATA = [
-  { id: "community-1", slug: "ai-dev", name: "AI 開発者の集い", description: "", created_at: "2026-06-01T00:00:00Z" },
+  {
+    id: "community-1",
+    slug: "ai-dev",
+    name: "AI 開発者の集い",
+    description: "",
+    created_at: "2026-06-01T00:00:00Z",
+  },
 ];
 
 function stubFetch(isLoggedIn: boolean, role: "member" | "admin" = "member") {
-  const user = isLoggedIn
-    ? { id: "user1", displayName: "Alice", role }
-    : undefined;
+  const user = isLoggedIn ? { id: "user1", displayName: "Alice", role } : undefined;
   vi.stubGlobal(
     "fetch",
     vi.fn().mockImplementation((input: RequestInfo | URL) => {
@@ -36,7 +40,11 @@ function stubFetch(isLoggedIn: boolean, role: "member" | "admin" = "member") {
       if (url.includes("/auth/me")) {
         return Promise.resolve(jsonResponse(isLoggedIn ? 200 : 401, user));
       }
-      if (url.includes("/api/communities") && !url.includes("/feed") && !url.includes("/subscribe")) {
+      if (
+        url.includes("/api/communities") &&
+        !url.includes("/feed") &&
+        !url.includes("/subscribe")
+      ) {
         return Promise.resolve(jsonResponse(200, COMMUNITIES_DATA));
       }
       if (url.includes("/api/feed")) {
@@ -65,38 +73,45 @@ function renderWithRouter(initialPath = "/") {
   const indexRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: "/",
-    component: (): ReactElement => (
-      <RootLayout />
-    ),
+    component: (): ReactElement => <RootLayout />,
   });
 
   const communitiesRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: "/communities",
-    component: (): ReactElement => (
-      <RootLayout />
-    ),
+    component: (): ReactElement => <RootLayout />,
   });
 
   const communityRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: "/communities/$slug",
-    component: (): ReactElement => (
-      <RootLayout />
-    ),
+    component: (): ReactElement => <RootLayout />,
   });
 
   const popularRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: "/popular",
-    component: (): ReactElement => (
-      <RootLayout />
-    ),
+    component: (): ReactElement => <RootLayout />,
   });
 
   const adminRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: "/admin",
+    component: (): ReactElement => <RootLayout />,
+  });
+
+  // 受け入れ条件 #484: サイドバーの利用規約・プライバシーポリシーリンクの遷移先。
+  const termsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/terms",
+    component: (): ReactElement => (
+      <RootLayout />
+    ),
+  });
+
+  const privacyRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/privacy",
     component: (): ReactElement => (
       <RootLayout />
     ),
@@ -109,6 +124,8 @@ function renderWithRouter(initialPath = "/") {
       communityRoute,
       popularRoute,
       adminRoute,
+      termsRoute,
+      privacyRoute,
     ]),
     history: createMemoryHistory({ initialEntries: [initialPath] }),
   });
@@ -260,8 +277,9 @@ describe("サイドバーのナビゲーション (#307)", () => {
     renderWithRouter("/");
 
     await screen.findByRole("navigation", { name: "サイドバー" });
-    // #435 でグローバルナビ追加に伴い Divider が複数になった
-    expect(screen.getAllByRole("separator").length).toBeGreaterThanOrEqual(1);
+    // #435 でグローバルナビ追加に伴い Divider が複数になった。
+    // #461: サイドバー内容は useAuth（useSuspenseQuery）解決後に描画されるため findAllBy で待つ。
+    expect((await screen.findAllByRole("separator")).length).toBeGreaterThanOrEqual(1);
   });
 
   it("「探す」が /communities へのリンクを持つ ListItemButton でレンダリングされる", async () => {
@@ -285,6 +303,8 @@ describe("サイドバーのナビゲーション (#307)", () => {
     renderWithRouter("/");
 
     await screen.findByRole("navigation", { name: "サイドバー" });
+    // #461: サイドバー内容は useAuth 解決後に描画される。ナビ項目（ホーム）が出てから不在を判定する。
+    await screen.findByRole("link", { name: /ホーム/ });
     expect(screen.queryByRole("link", { name: /管理画面/ })).not.toBeInTheDocument();
   });
 });
@@ -402,6 +422,8 @@ describe("グローバルナビゲーションメニュー (#435)", () => {
     renderWithRouter("/");
 
     await screen.findByRole("navigation", { name: "サイドバー" });
+    // #461: サイドバー内容は useAuth 解決後に描画される。ナビ項目（ホーム）が出てから不在を判定する。
+    await screen.findByRole("link", { name: /ホーム/ });
     expect(screen.queryByRole("link", { name: /コミュニティを作る/ })).not.toBeInTheDocument();
   });
 
@@ -410,6 +432,8 @@ describe("グローバルナビゲーションメニュー (#435)", () => {
     renderWithRouter("/");
 
     await screen.findByRole("navigation", { name: "サイドバー" });
+    // #461: サイドバー内容は useAuth 解決後に描画される。ナビ項目（ホーム）が出てから不在を判定する。
+    await screen.findByRole("link", { name: /ホーム/ });
     expect(screen.queryByRole("link", { name: /コミュニティを作る/ })).not.toBeInTheDocument();
   });
 });
@@ -447,5 +471,55 @@ describe("グローバルナビゲーションメニュー（モバイルドロ�
     await screen.findByRole("navigation", { name: "サイドバー" });
     expect(await screen.findByRole("link", { name: /ホーム/ })).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: /人気/ })).toBeInTheDocument();
+  });
+});
+
+// 受け入れ条件 #484-4,5: サイドバー下部のリーガルリンク（利用規約・プライバシーポリシー）
+describe("リーガルリンク（利用規約・プライバシーポリシー） (#484)", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    // デスクトップ幅（恒久サイドバー表示）
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("「利用規約」が /terms へのリンクで表示される", async () => {
+    stubFetch(true);
+    renderWithRouter("/");
+
+    const termsLink = await screen.findByRole("link", { name: /利用規約/ });
+    expect(termsLink).toHaveAttribute("href", "/terms");
+  });
+
+  it("「プライバシーポリシー」が /privacy へのリンクで表示される", async () => {
+    stubFetch(true);
+    renderWithRouter("/");
+
+    const privacyLink = await screen.findByRole("link", { name: /プライバシーポリシー/ });
+    expect(privacyLink).toHaveAttribute("href", "/privacy");
+  });
+
+  it("未ログインユーザーにもリーガルリンクが表示される（全ユーザー参照可）", async () => {
+    stubFetch(false);
+    renderWithRouter("/");
+
+    await screen.findByRole("navigation", { name: "サイドバー" });
+    expect(await screen.findByRole("link", { name: /利用規約/ })).toHaveAttribute("href", "/terms");
+    expect(await screen.findByRole("link", { name: /プライバシーポリシー/ })).toHaveAttribute("href", "/privacy");
   });
 });
