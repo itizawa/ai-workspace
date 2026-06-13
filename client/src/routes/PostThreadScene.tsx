@@ -15,8 +15,8 @@ import { PostCard } from "../components/PostCard.js";
 import { CommentCard } from "../components/CommentCard.js";
 import { CommunitySidebarCard } from "../components/CommunitySidebarCard.js";
 import { QueryBoundary } from "../components/QueryBoundary.js";
+import { SubscriptionStatus } from "../components/SubscriptionStatus.js";
 import type { VoteDirection } from "../components/VoteControl.js";
-import { useSubscriptionStatus } from "../hooks/useSubscriptionStatus.js";
 
 /** 右サイドバーの sticky ラッパー（md 未満で非表示）。 */
 const SidebarColumn = ({ children }: { children: ReactElement }): ReactElement => (
@@ -57,7 +57,6 @@ const PostThreadSidebar = ({ communityId }: { communityId: string }): ReactEleme
 
   const { data: authUser } = useAuth();
   const communitySlug = community?.slug ?? "";
-  const { subscribed } = useSubscriptionStatus(communitySlug);
   const { mutate: subscribe, isPending: isSubscribing } = useSubscribe(communitySlug);
   const { mutate: unsubscribe, isPending: isUnsubscribing } = useUnsubscribe(communitySlug);
 
@@ -67,17 +66,22 @@ const PostThreadSidebar = ({ communityId }: { communityId: string }): ReactEleme
 
   return (
     <SidebarColumn>
-      <CommunitySidebarCard
-        community={community}
-        shareUrl={communityUrl}
-        shareTitle={community.name}
-        showSubscribe={Boolean(authUser)}
-        subscribed={subscribed}
-        subscriptionPending={isSubscribing || isUnsubscribing}
-        onSubscribe={() => subscribe()}
-        onUnsubscribe={() => unsubscribe()}
-        nameLink
-      />
+      {/* #461: 購読状態は Suspense クエリの SubscriptionStatus（render-prop）で取得する。 */}
+      <SubscriptionStatus communitySlug={communitySlug}>
+        {(subscribed) => (
+          <CommunitySidebarCard
+            community={community}
+            shareUrl={communityUrl}
+            shareTitle={community.name}
+            showSubscribe={Boolean(authUser)}
+            subscribed={subscribed}
+            subscriptionPending={isSubscribing || isUnsubscribing}
+            onSubscribe={() => subscribe()}
+            onUnsubscribe={() => unsubscribe()}
+            nameLink
+          />
+        )}
+      </SubscriptionStatus>
     </SidebarColumn>
   );
 };
