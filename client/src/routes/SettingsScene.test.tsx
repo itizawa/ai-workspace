@@ -250,19 +250,24 @@ describe("管理画面タブの Suspense / QueryBoundary（#463）", () => {
   });
 
   it("バッチログタブ: 取得成功でログ行が表示される", async () => {
+    // 各 fetch 呼び出しごとに新しい Response を返す（mockResolvedValue だと同一 Response
+    // インスタンスが共有され、サイドバーの /api/communities など複数の並列 fetch で
+    // body が二重読みされ "Body has already been read" になるため mockImplementation で都度生成する）。
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        jsonResponse(200, [
-          {
-            id: "log1",
-            status: "success",
-            messageCount: 3,
-            errorMessage: null,
-            errorCode: null,
-            executedAt: "2026-06-01T00:00:00.000Z",
-          },
-        ]),
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(
+          jsonResponse(200, [
+            {
+              id: "log1",
+              status: "success",
+              messageCount: 3,
+              errorMessage: null,
+              errorCode: null,
+              executedAt: "2026-06-01T00:00:00.000Z",
+            },
+          ]),
+        ),
       ),
     );
     renderApp("/admin?tab=batch-logs", { id: "user1", displayName: "Alice", role: "admin" });
@@ -272,7 +277,10 @@ describe("管理画面タブの Suspense / QueryBoundary（#463）", () => {
   });
 
   it("バッチログタブ: 取得失敗で QueryBoundary の再試行フォールバックが表示される", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(500, { error: "boom" })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(500, { error: "boom" }))),
+    );
     renderApp("/admin?tab=batch-logs", { id: "user1", displayName: "Alice", role: "admin" });
 
     // createQueryClient は retry:1 のため、リトライのバックオフ込みで待つ。
@@ -291,7 +299,10 @@ describe("管理画面タブの Suspense / QueryBoundary（#463）", () => {
   });
 
   it("トークン使用量タブ: 取得失敗で QueryBoundary の再試行フォールバックが表示される", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(500, { error: "boom" })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(500, { error: "boom" }))),
+    );
     renderApp("/admin?tab=token-usage", { id: "user1", displayName: "Alice", role: "admin" });
 
     // createQueryClient は retry:1 のため、リトライのバックオフ込みで待つ。
