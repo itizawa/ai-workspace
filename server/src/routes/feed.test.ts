@@ -68,7 +68,7 @@ describe("GET /api/feed", () => {
     expect(res.body.posts).toHaveLength(2);
   });
 
-  it("投稿が 0 件のときは posts が空配列・nextCursor が null", async () => {
+  it("投稿が 0 件のときは posts が空配列・ nextCursor が null", async () => {
     const deps = await createTestDeps();
     const app = createApp(deps);
     const res = await request(app).get("/api/feed");
