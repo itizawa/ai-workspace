@@ -109,6 +109,18 @@ common: Zod スキーマ → server: zod-to-openapi で openapi.json 生成 → 
 - 参照実装: `client/src/routes/LoginScene.tsx`（`useForm` + `form.Field` + MUI `TextField` の連携例）。
 - 違反（生の `useState` によるフォーム管理・自前 isDirty 等）はレビューで指摘対象とする。
 
+## e2e ユースケースの保守
+
+**ユーザーから見た振る舞い（画面・遷移・操作結果・空状態/エラー表示等）を追加・変更する機能開発では、`e2e/` のユースケースを必ず同じ PR で更新すること**。これは `develop → main` 昇格前のリリース判定（`/release-check`）が「何を動作確認すべきか」を読む正本であり、更新を怠ると検証範囲が実機能から乖離する。
+
+- **正本**: `e2e/usecases.md`（全エリア索引）と各 `e2e/<area>/usecases.md`（エリア別の前提条件・ステップ・期待動作）。`## UC-XXX-NN` 見出しは同エリアの `<area>/<area>.spec.ts` の `test.todo()` と 1:1 対応。
+- **更新ルール**:
+  - 既存画面に振る舞いを足す → 該当 `e2e/<area>/usecases.md` に `## UC-XXX-NN` を追記し、`e2e/usecases.md` のサマリにも反映する。
+  - 新しい画面・機能カテゴリ → `e2e/<new-area>/usecases.md` を新設し、`e2e/usecases.md` のエリア一覧に行を追加する。
+  - ユースケースは**ユーザー視点の「観察可能な期待動作」**で書く（実装詳細は書かない）。設計書（`docs/design/issue-<N>.md`）の受け入れ条件と整合させる。
+- 純粋なバックエンド/リファクタ等で**ユーザー可視の振る舞いが変わらない**場合は更新不要（その旨を PR に一言残す）。
+- ユーザー可視の振る舞いを変えたのに usecases を更新していない PR は、**レビューで指摘対象**とする。
+
 ## ADR の追加・更新
 
 技術的な決定は `docs/adr/NNNN-kebab-case-title.md`（連番 4 桁）に MADR 風フォーマットで 1 ファイル 1 決定で残す。新規は `docs/adr/template.md` をコピーし、`docs/adr/README.md` の一覧表に行を追加する。
