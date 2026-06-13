@@ -301,11 +301,13 @@ describe("GET /api/communities/:slug/recent-workers", () => {
   it("post.author が displayName 文字列でも DB ワーカー（UUID id）を解決して返す（#478）", async () => {
     const communityRepo = createInMemoryCommunityRepository([makeCommunity()]);
     const postRepo = createInMemoryPostRepository();
+    // DB ワーカーは UUID の id を持ち、displayName が "haru" 等。
     const workerRepo = createInMemoryWorkerRepository([
       { id: "c9226003-uuid", displayName: "haru", role: "ムードメーカー" },
       { id: "d89954ec-uuid", displayName: "ken", role: "ベテラン" },
       { id: "e0000000-uuid", displayName: "mei", role: "新人" },
     ]);
+    // 旧バッチ由来の post は author に displayName 文字列を保存している。
     await postRepo.createMany("community-1", [
       { slotKey: "slot-1", seq: 1, author: "haru", title: "T1", text: "X" },
       { slotKey: "slot-1", seq: 2, author: "ken", title: "T2", text: "X" },
