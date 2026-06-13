@@ -13,6 +13,7 @@ import {
 import { useAuth } from "../api/auth.js";
 import { CommunityHeader } from "../components/CommunityHeader.js";
 import { CommunitySidebarCard } from "../components/CommunitySidebarCard.js";
+import { LoginPromptSnackbar } from "../components/LoginPromptSnackbar.js";
 import { PostCard } from "../components/PostCard.js";
 import { QueryBoundary } from "../components/QueryBoundary.js";
 import { RecentWorkersSection } from "../components/RecentWorkersSection.js";
@@ -21,6 +22,7 @@ import type { VoteDirection } from "../components/VoteControl.js";
 import { SubscribeButton } from "../components/SubscribeButton.js";
 import { SubscriptionStatus } from "../components/SubscriptionStatus.js";
 import { useDocumentTitle } from "../hooks/useDocumentTitle.js";
+import { useGuestVoteGuard } from "../hooks/useGuestVoteGuard.js";
 
 /**
  * 最近投稿したワーカーパネル（#207）。
@@ -38,6 +40,7 @@ const RecentWorkersPanel = ({ slug }: { slug: string }): ReactElement => {
  * ADR-0018 / Issue #370。
  * #462: usePublicCommunities・useCommunityFeed は Suspense 化（ローディング/エラーは router の QueryBoundary に委譲）。
  * useRecentWorkers はサイドバーの局所 QueryBoundary に委譲する。
+ * #481: ゲストの vote 押下は guardVote で握りつぶさずログイン誘導する。
  */
 export const CommunityScene = (): ReactElement => {
   const { slug } = useParams({ strict: false });
@@ -54,6 +57,7 @@ export const CommunityScene = (): ReactElement => {
   const { mutate: subscribe, isPending: isSubscribing } = useSubscribe(communitySlug);
   const { mutate: unsubscribe, isPending: isUnsubscribing } = useUnsubscribe(communitySlug);
   const { mutate: votePost } = useVotePost(communitySlug);
+  const { guardVote, promptOpen, closePrompt } = useGuestVoteGuard();
 
   const isSubscriptionPending = isSubscribing || isUnsubscribing;
 
@@ -108,7 +112,7 @@ export const CommunityScene = (): ReactElement => {
                       <PostCard
                         post={post}
                         onVote={(direction: VoteDirection) =>
-                          votePost({ postId: post.id, direction })
+                          guardVote(() => votePost({ postId: post.id, direction }))
                         }
                         voteStopPropagation
                       />
@@ -164,6 +168,7 @@ export const CommunityScene = (): ReactElement => {
               </Box>
             )}
           </Box>
+          <LoginPromptSnackbar open={promptOpen} onClose={closePrompt} />
         </Box>
       )}
     </SubscriptionStatus>

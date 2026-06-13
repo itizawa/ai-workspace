@@ -14,9 +14,11 @@ import { useAuth } from "../api/auth.js";
 import { PostCard } from "../components/PostCard.js";
 import { CommentCard } from "../components/CommentCard.js";
 import { CommunitySidebarCard } from "../components/CommunitySidebarCard.js";
+import { LoginPromptSnackbar } from "../components/LoginPromptSnackbar.js";
 import { QueryBoundary } from "../components/QueryBoundary.js";
 import { SubscriptionStatus } from "../components/SubscriptionStatus.js";
 import type { VoteDirection } from "../components/VoteControl.js";
+import { useGuestVoteGuard } from "../hooks/useGuestVoteGuard.js";
 
 /** 右サイドバーの sticky ラッパー（md 未満で非表示）。 */
 const SidebarColumn = ({ children }: { children: ReactElement }): ReactElement => (
@@ -94,6 +96,7 @@ const PostThreadSidebar = ({ communityId }: { communityId: string }): ReactEleme
  * #462: usePostThread は Suspense 化（ローディングは router の QueryBoundary が post-thread-skeleton を表示、
  * エラーは ErrorBoundary フォールバック）。所属コミュニティ取得（usePublicCommunities）は右サイドバーの
  * 局所 QueryBoundary に委譲し、post 本文は先に描画する。
+ * #481: ゲストの post / comment vote 押下は guardVote で握りつぶさずログイン誘導する。
  */
 export const PostThreadScene = (): ReactElement => {
   const { postId } = useParams({ strict: false });
@@ -102,6 +105,7 @@ export const PostThreadScene = (): ReactElement => {
   const { data } = usePostThread(id);
   const { mutate: votePost } = useVotePost();
   const { mutate: voteComment } = useVoteComment(id);
+  const { guardVote, promptOpen, closePrompt } = useGuestVoteGuard();
 
   const { post, comments } = data;
   const postUrl = `${window.location.origin}/posts/${post.id}`;
@@ -113,7 +117,9 @@ export const PostThreadScene = (): ReactElement => {
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <PostCard
             post={post}
-            onVote={(direction: VoteDirection) => votePost({ postId: post.id, direction })}
+            onVote={(direction: VoteDirection) =>
+              guardVote(() => votePost({ postId: post.id, direction }))
+            }
             postUrl={postUrl}
           />
 
@@ -127,7 +133,7 @@ export const PostThreadScene = (): ReactElement => {
                   key={comment.id}
                   comment={comment}
                   onVote={(direction: VoteDirection) =>
-                    voteComment({ commentId: comment.id, direction })
+                    guardVote(() => voteComment({ commentId: comment.id, direction }))
                   }
                 />
               ))}
@@ -148,6 +154,7 @@ export const PostThreadScene = (): ReactElement => {
           <PostThreadSidebar communityId={post.community_id} />
         </QueryBoundary>
       </Box>
+      <LoginPromptSnackbar open={promptOpen} onClose={closePrompt} />
     </Box>
   );
 };

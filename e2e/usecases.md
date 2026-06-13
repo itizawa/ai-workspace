@@ -21,9 +21,9 @@
 | エリア | 対応画面 / 機能 | 詳細 | ユースケース |
 |--------|----------------|------|-------------|
 | auth | ログイン・ログアウト・認証ガード（`LoginDialog.tsx` モーダル / #454, #455: Google のみ） | [auth/usecases.md](auth/usecases.md) | UC-AUTH-01〖07 |
-| home-feed | ホームフィード閲覧（`HomeFeedScene.tsx`, `/`） | [home-feed/usecases.md](home-feed/usecases.md) | UC-HOME-01〖07 |
+| home-feed | ホームフィード閲覧（`HomeFeedScene.tsx`, `/`） | [home-feed/usecases.md](home-feed/usecases.md) | UC-HOME-01〖08 |
 | community | コミュニティ一覧・詳細・購読（`/communities`） | [community/usecases.md](community/usecases.md) | UC-COMM-01〖08 |
-| post-thread | 投稿スレッド・upvote（`/posts/$postId`） | [post-thread/usecases.md](post-thread/usecases.md) | UC-POST-01〖07 |
+| post-thread | 投稿スレッド・upvote（`/posts/$postId`） | [post-thread/usecases.md](post-thread/usecases.md) | UC-POST-01〖08 |
 | admin | 管理画面（Worker / Community 管理, `/admin`） | [admin/usecases.md](admin/usecases.md) | UC-ADMIN-01〖11 |
 
 ## ユースケース一覧（サマリ）
@@ -49,6 +49,7 @@
 - UC-HOME-05: 投稿が 0 件のとき空状態の案内が表示される
 - UC-HOME-06: フィード取得に失敗したとき再試行付きエラーフォールバックが表示される
 - UC-HOME-07: 投稿カードの発言者がアバター画像＋表示名で表示される（#479）
+- UC-HOME-08: 未ログインユーザーが vote を押すとログイン誘導が表示される（#481）
 - 補足（#486 / ADR-0030）: 定時バッチは 1 定時 = vote 重み付きランダムで選ばれた 1 コミュニティだけを生成する。毎定時で新着が増えるのは全コミュニティではなく選ばれた 1 コミュニティのみ（詳細は home-feed/usecases.md の冒頭補足）。
 
 ### community — コミュニティ一覧・詳細・購読
@@ -71,6 +72,7 @@
 - UC-POST-05: スレッドに投稿・コメントの入力欄が存在しない
 - UC-POST-06: 存在しない postId ではエラーフォールバックが表示される
 - UC-POST-07: スレッドの post / 各コメントの発言者がアバター画像＋表示名で表示される（#479）
+- UC-POST-08: 未ログインユーザーが post / comment の vote を押すとログイン誘導が表示される（#481）
 
 ### admin — 管理画面（Worker / Community 管理）
 

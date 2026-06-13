@@ -19,3 +19,5 @@ test.todo("UC-POST-05: スレッドに投稿・コメントの入力欄が存在
 test.todo("UC-POST-06: 存在しない postId ではエラーフォールバックが表示される");
 
 test.todo("UC-POST-07: スレッドの post / 各コメントの発言者がアバター画像＋表示名で表示される（#479）");
+
+test.todo("UC-POST-08: 未ログインユーザーが post / comment の vote を押すとログイン誘導が表示される（#481）");
