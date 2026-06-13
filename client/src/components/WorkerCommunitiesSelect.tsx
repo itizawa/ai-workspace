@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { WORKER_COMMUNITIES_MAX } from "@hatchery/common";
 import type { AdminCommunity } from "../api/communities.js";
 import {
+  Box,
   Checkbox,
   Chip,
   FormControl,
@@ -57,11 +58,11 @@ export function WorkerCommunitiesSelect({
           onChange(ids.slice(0, WORKER_COMMUNITIES_MAX));
         }}
         renderValue={(selected) => (
-          <span style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
             {(selected as string[]).map((id) => (
               <Chip key={id} size="small" label={nameById.get(id) ?? id} />
             ))}
-          </span>
+          </Box>
         )}
       >
         {communities.map((c) => (

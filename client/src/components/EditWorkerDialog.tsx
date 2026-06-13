@@ -50,8 +50,13 @@ export function EditWorkerDialog({ worker, open, onClose }: EditWorkerDialogProp
   const communities = communitiesQuery.data ?? [];
   // 現在の参加コミュニティ取得が完了するまではフォームの初期値が確定しないため、
   // 取得完了後に form を再マウントする（defaultValues は非同期更新されないため key で制御）。
+  // 取得が「進行中（isLoading）」の間だけ初期化中とみなす。エラー時は isLoading=false になり
+  // フォーム編集を可能にする（取得失敗で名前・役割の編集まで永久にブロックしないため）。
   const initialCommunityIds = workerCommunitiesQuery.data;
-  const isInitializing = workerCommunitiesQuery.isLoading || initialCommunityIds === undefined;
+  const isInitializing = workerCommunitiesQuery.isLoading;
+  // 参加コミュニティ取得に成功した場合のみ、その編集と置換 API 呼び出しを行う。
+  // 取得失敗時は communityIds を触らず（誤って全解除しないため）、エラー表示のみ行う。
+  const canEditCommunities = workerCommunitiesQuery.isSuccess;
 
   const form = useForm({
     defaultValues: {
@@ -70,10 +75,14 @@ export function EditWorkerDialog({ worker, open, onClose }: EditWorkerDialogProp
             personality: value.personality || undefined,
           },
         });
-        await setCommunitiesMutation.mutateAsync({
-          workerId: worker.id,
-          communityIds: value.communityIds,
-        });
+        // 参加コミュニティの取得に成功している場合のみ置換する。
+        // 取得失敗時に呼ぶと未取得の空配列で既存紐づきを誤って消すため呼ばない。
+        if (canEditCommunities) {
+          await setCommunitiesMutation.mutateAsync({
+            workerId: worker.id,
+            communityIds: value.communityIds,
+          });
+        }
         onClose();
       } catch {
         setErrorOpen(true);
@@ -154,7 +163,7 @@ export function EditWorkerDialog({ worker, open, onClose }: EditWorkerDialogProp
                   <CircularProgress size={16} />
                   参加コミュニティを読み込み中…
                 </Box>
-              ) : (
+              ) : canEditCommunities ? (
                 <form.Field name="communityIds">
                   {(field) => (
                     <WorkerCommunitiesSelect
@@ -166,6 +175,10 @@ export function EditWorkerDialog({ worker, open, onClose }: EditWorkerDialogProp
                     />
                   )}
                 </form.Field>
+              ) : (
+                <Alert severity="warning">
+                  参加コミュニティの読み込みに失敗しました。表示名・役割・性格のみ編集できます。
+                </Alert>
               )}
             </Box>
           </DialogContent>

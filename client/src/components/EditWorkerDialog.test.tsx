@@ -64,6 +64,8 @@ function stubAll(opts?: {
   vi.mocked(useWorkerCommunities).mockReturnValue({
     data: opts?.current ?? [],
     isLoading: false,
+    isSuccess: true,
+    isError: false,
   } as ReturnType<typeof useWorkerCommunities>);
   vi.mocked(useSetWorkerCommunities).mockReturnValue({
     mutateAsync: opts?.setMutateAsync ?? vi.fn().mockResolvedValue([]),
@@ -169,5 +171,31 @@ describe("EditWorkerDialog（#181 / #329 / #490）", () => {
     await waitFor(() => {
       expect(onClose).toHaveBeenCalled();
     });
+  });
+
+  it("参加コミュニティ取得が失敗しても名前・役割は編集・保存でき、置換 API は呼ばれない（#490）", async () => {
+    const updateMutateAsync = vi.fn().mockResolvedValue(undefined);
+    const setMutateAsync = vi.fn().mockResolvedValue([]);
+    const onClose = vi.fn();
+    stubAll({ updateMutateAsync, setMutateAsync });
+    // 取得失敗状態（isLoading=false / isSuccess=false / isError=true / data=undefined）
+    vi.mocked(useWorkerCommunities).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isSuccess: false,
+      isError: true,
+    } as ReturnType<typeof useWorkerCommunities>);
+
+    renderWithClient(<EditWorkerDialog worker={mockWorker} open onClose={onClose} />);
+
+    // ローディングのまま固まらず、保存ボタンが押せる
+    const saveButton = screen.getByRole("button", { name: /保存/ });
+    expect(saveButton).toBeEnabled();
+    fireEvent.click(saveButton);
+
+    await waitFor(() => expect(updateMutateAsync).toHaveBeenCalled());
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    // 取得失敗時は既存紐づきを誤って消さないよう置換 API を呼ばない
+    expect(setMutateAsync).not.toHaveBeenCalled();
   });
 });
