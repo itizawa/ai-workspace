@@ -242,6 +242,63 @@ describe("GET /api/communities/:slug/recent-workers", () => {
     expect(res.body).toHaveLength(1);
   });
 
+  it("post.author が displayName 文字列でも DB ワーカー（UUID id）を解決して返す（#478）", async () => {
+    const communityRepo = createInMemoryCommunityRepository([makeCommunity()]);
+    const postRepo = createInMemoryPostRepository();
+    // DB ワーカーは UUID の id を持ち、displayName が "haru" 等。
+    const workerRepo = createInMemoryWorkerRepository([
+      { id: "c9226003-uuid", displayName: "haru", role: "ムードメーカー" },
+      { id: "d89954ec-uuid", displayName: "ken", role: "ベテラン" },
+      { id: "e0000000-uuid", displayName: "mei", role: "新人" },
+    ]);
+    // 旧バッチ由来の post は author に displayName 文字列を保存している。
+    await postRepo.createMany("community-1", [
+      { slotKey: "slot-1", seq: 1, author: "haru", title: "T1", text: "X" },
+      { slotKey: "slot-1", seq: 2, author: "ken", title: "T2", text: "X" },
+      { slotKey: "slot-1", seq: 3, author: "mei", title: "T3", text: "X" },
+    ]);
+    const deps = await createTestDeps({
+      communityRepository: communityRepo,
+      postRepository: postRepo,
+      workerRepository: workerRepo,
+    });
+    const app = createApp(deps);
+    const res = await request(app).get("/api/communities/technology/recent-workers");
+    expect(res.status).toBe(200);
+    const displayNames = (res.body as { displayName: string }[]).map((w) => w.displayName);
+    expect(displayNames).toHaveLength(3);
+    expect([...displayNames].sort()).toEqual(["haru", "ken", "mei"]);
+  });
+
+  it("RECENT_WORKERS_LIMIT を超える distinct author は先頭 10 件までに制限する（#478）", async () => {
+    const communityRepo = createInMemoryCommunityRepository([makeCommunity()]);
+    const postRepo = createInMemoryPostRepository();
+    const workers = Array.from({ length: 12 }, (_, i) => ({
+      id: `worker-${i}`,
+      displayName: `name-${i}`,
+    }));
+    const workerRepo = createInMemoryWorkerRepository(workers);
+    await postRepo.createMany(
+      "community-1",
+      workers.map((w, i) => ({
+        slotKey: "slot-1",
+        seq: i,
+        author: w.displayName,
+        title: `T${i}`,
+        text: "X",
+      })),
+    );
+    const deps = await createTestDeps({
+      communityRepository: communityRepo,
+      postRepository: postRepo,
+      workerRepository: workerRepo,
+    });
+    const app = createApp(deps);
+    const res = await request(app).get("/api/communities/technology/recent-workers");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(10);
+  });
+
   it("投稿がない community は空配列を返す", async () => {
     const communityRepo = createInMemoryCommunityRepository([makeCommunity()]);
     const deps = await createTestDeps({ communityRepository: communityRepo });
