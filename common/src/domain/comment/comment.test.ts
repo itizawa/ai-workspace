@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { CommentSchema } from "./comment.js";
+import {
+  CommentSchema,
+  COMMENT_TEXT_MAX_LENGTH,
+  CreateCommentRequestSchema,
+} from "./comment.js";
 
 describe("CommentSchema", () => {
   const validComment = {
@@ -90,5 +94,38 @@ describe("CommentSchema", () => {
       display_name: "ken",
       image_url: null,
     });
+  });
+});
+
+describe("CreateCommentRequestSchema (#433)", () => {
+  const validRequest = {
+    postId: "33333333-3333-3333-3333-333333333333",
+    authorWorkerId: "22222222-2222-2222-2222-222222222222",
+    text: "デモ用に手動で投入したコメントです。",
+  };
+
+  it("有効なリクエストをパースできる", () => {
+    const result = CreateCommentRequestSchema.safeParse(validRequest);
+    expect(result.success).toBe(true);
+  });
+
+  it("postId が uuid でない場合は reject する", () => {
+    const data = { ...validRequest, postId: "not-a-uuid" };
+    expect(CreateCommentRequestSchema.safeParse(data).success).toBe(false);
+  });
+
+  it("authorWorkerId が uuid でない場合は reject する", () => {
+    const data = { ...validRequest, authorWorkerId: "not-a-uuid" };
+    expect(CreateCommentRequestSchema.safeParse(data).success).toBe(false);
+  });
+
+  it("text が空文字の場合は reject する", () => {
+    const data = { ...validRequest, text: "" };
+    expect(CreateCommentRequestSchema.safeParse(data).success).toBe(false);
+  });
+
+  it("text が上限を超える場合は reject する", () => {
+    const data = { ...validRequest, text: "あ".repeat(COMMENT_TEXT_MAX_LENGTH + 1) };
+    expect(CreateCommentRequestSchema.safeParse(data).success).toBe(false);
   });
 });
