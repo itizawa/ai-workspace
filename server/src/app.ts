@@ -25,6 +25,7 @@ import type { WorldStateRepository } from "./persistence/worldStateRepository.js
 import { createAdminRouter } from "./routes/admin.js";
 import { createApiDocsRouter, isApiDocsEnabled } from "./routes/apiDocs.js";
 import { createAdminWorkerImageRouter } from "./routes/adminWorkerImage.js";
+import { createAdminCommunityImageRouter } from "./routes/adminCommunityImage.js";
 import { createAdminWorkerCommunitiesRouter } from "./routes/adminWorkerCommunities.js";
 import { createBatchLogsRouter } from "./routes/batch-logs.js";
 import { createTokenUsageRouter } from "./routes/token-usage.js";
@@ -175,6 +176,7 @@ export function createApp(deps: AppDeps): Express {
     ),
   );
   app.use("/api/admin", createAdminWorkerImageRouter(deps.workerRepository, deps.storageService));
+  app.use("/api/admin", createAdminCommunityImageRouter(communityRepo, deps.storageService));
   app.use(
     "/api/admin",
     createAdminWorkerCommunitiesRouter(
