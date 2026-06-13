@@ -89,7 +89,7 @@ describe.skipIf(!DATABASE_URL)("createPrismaInvitationLinkRepository (integratio
         expiresAt: relativeDate(HOUR_MS),
         createdByUserId: "user-1",
       });
-      await new Promise((r) => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 100));
       const second = await repo.create({
         token: "token-2",
         expiresAt: relativeDate(HOUR_MS),

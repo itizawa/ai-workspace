@@ -65,9 +65,9 @@ describe.skipIf(!DATABASE_URL)("createPrismaTokenUsageLogRepository (integration
     it("occurredAt 降順で最大 limit 件取得する", async () => {
       const repo = createPrismaTokenUsageLogRepository(prisma);
       await repo.create({ model: "m", inputTokens: 1, outputTokens: 1, batchRunLogId: null });
-      await new Promise((r) => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 100));
       await repo.create({ model: "m", inputTokens: 2, outputTokens: 2, batchRunLogId: null });
-      await new Promise((r) => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 100));
       await repo.create({ model: "m", inputTokens: 3, outputTokens: 3, batchRunLogId: null });
 
       const logs = await repo.findRecent(2);
