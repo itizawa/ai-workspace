@@ -465,6 +465,66 @@ registry.registerPath({
   },
 });
 
+// admin: コミュニティのアイコン画像アップロード（認証必須・admin のみ・#457）
+// multipart/form-data の `image` フィールドで送信する。
+const communityImageMultipartBody = {
+  content: {
+    "multipart/form-data": {
+      schema: z.object({
+        image: z.string().openapi({ type: "string", format: "binary" }),
+      }),
+    },
+  },
+};
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/communities/{id}/icon",
+  summary: "コミュニティのアイコン画像をアップロード（認証必須・admin のみ・#457）",
+  request: {
+    params: z.object({ id: communityIdParam }),
+    body: communityImageMultipartBody,
+  },
+  responses: {
+    200: {
+      description: "アップロード後の community id と iconUrl",
+      content: {
+        "application/json": {
+          schema: z.object({ id: z.string(), iconUrl: z.string().nullable() }),
+        },
+      },
+    },
+    400: { description: "ファイル不正（MIME / サイズ超過 / 未添付）", ...errorJson },
+    401: { description: "未認証", ...errorJson },
+    403: { description: "admin 権限なし", ...errorJson },
+    404: { description: "コミュニティが存在しない", ...errorJson },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/admin/communities/{id}/cover",
+  summary: "コミュニティのカバー画像をアップロード（認証必須・admin のみ・#457）",
+  request: {
+    params: z.object({ id: communityIdParam }),
+    body: communityImageMultipartBody,
+  },
+  responses: {
+    200: {
+      description: "アップロード後の community id と coverUrl",
+      content: {
+        "application/json": {
+          schema: z.object({ id: z.string(), coverUrl: z.string().nullable() }),
+        },
+      },
+    },
+    400: { description: "ファイル不正（MIME / サイズ超過 / 未添付）", ...errorJson },
+    401: { description: "未認証", ...errorJson },
+    403: { description: "admin 権限なし", ...errorJson },
+    404: { description: "コミュニティが存在しない", ...errorJson },
+  },
+});
+
 // コミュニティ一覧（認証不要）
 registry.registerPath({
   method: "get",

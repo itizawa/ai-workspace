@@ -29,6 +29,8 @@ function toCommunityResponse(r: CommunityRecord) {
     description: r.description,
     synopsis: r.synopsis ?? undefined,
     last_slot_key: r.lastSlotKey ?? undefined,
+    iconUrl: r.iconUrl ?? null,
+    coverUrl: r.coverUrl ?? null,
     created_at: r.createdAt,
   };
 }
