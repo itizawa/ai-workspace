@@ -27,3 +27,7 @@ test.todo("UC-ADMIN-09: admin ユーザーが Worker 新規作成時に参加コ
 test.todo("UC-ADMIN-10: admin ユーザーがコミュニティのアイコン・カバー画像をアップロードできる");
 
 test.todo("UC-ADMIN-11: 管理画面タブのデータ取得に失敗すると再試行フォールバックが表示される");
+
+test.todo("UC-ADMIN-12: Worker 編集の保存に失敗するとエラー内容が表示される");
+
+test.todo("UC-ADMIN-13: API トークン設定の保存に失敗するとエラー内容が表示される");

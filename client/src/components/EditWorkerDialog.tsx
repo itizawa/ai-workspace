@@ -2,9 +2,9 @@ import type { Worker } from "@hatchery/common";
 import { WORKER_DISPLAY_NAME_MAX_LENGTH, WORKER_ROLE_MAX_LENGTH } from "@hatchery/common";
 import { useForm } from "@tanstack/react-form";
 import type { ReactElement } from "react";
-import { useState } from "react";
 
 import { useUpdateWorker } from "../api/workers.js";
+import { getApiErrorMessage } from "../api/errors.js";
 import {
   useSetWorkerCommunities,
   useWorkerCommunities,
@@ -43,7 +43,16 @@ export function EditWorkerDialog({ worker, open, onClose }: EditWorkerDialogProp
   const updateMutation = useUpdateWorker();
   const setCommunitiesMutation = useSetWorkerCommunities();
   const workerCommunitiesQuery = useWorkerCommunities(worker.id);
-  const [errorOpen, setErrorOpen] = useState(false);
+
+  // 保存エラーは mutation の isError / error に集約し、独立ローカル state を持たない（#476）。
+  // どちらの mutation が失敗してもエラーとして扱い、サーバが返したメッセージを表示する。
+  const saveError = updateMutation.error ?? setCommunitiesMutation.error;
+  const isSaveError = updateMutation.isError || setCommunitiesMutation.isError;
+  // エラー Snackbar を閉じる際は両 mutation をリセットし、再オープン時に残留させない。
+  const handleErrorClose = (): void => {
+    updateMutation.reset();
+    setCommunitiesMutation.reset();
+  };
 
   // 現在の参加コミュニティ取得が完了するまではフォームの初期値が確定しないため、
   // 取得完了後に form を再マウントする（defaultValues は非同期更新されないため key で制御）。
@@ -82,7 +91,8 @@ export function EditWorkerDialog({ worker, open, onClose }: EditWorkerDialogProp
         }
         onClose();
       } catch {
-        setErrorOpen(true);
+        // エラー表示は updateMutation / setCommunitiesMutation の状態に委ねる（#476）。
+        // mutateAsync の reject を握りつぶさないため catch するが、ここでは何もしない。
       }
     },
   });
@@ -188,12 +198,12 @@ export function EditWorkerDialog({ worker, open, onClose }: EditWorkerDialogProp
         </Box>
       </Dialog>
       <Snackbar
-        open={errorOpen}
-        autoHideDuration={4000}
-        onClose={() => setErrorOpen(false)}
+        open={isSaveError}
+        autoHideDuration={6000}
+        onClose={handleErrorClose}
       >
-        <Alert severity="error" onClose={() => setErrorOpen(false)}>
-          ワーカーの更新に失敗しました
+        <Alert severity="error" onClose={handleErrorClose}>
+          {getApiErrorMessage(saveError, "ワーカーの更新に失敗しました")}
         </Alert>
       </Snackbar>
     </>
