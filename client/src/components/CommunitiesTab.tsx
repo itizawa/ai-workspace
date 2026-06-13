@@ -29,6 +29,7 @@ import {
 } from "@hatchery/common";
 import type { Community, CreateCommunityInput, UpdateCommunityInput } from "@hatchery/common";
 import { useCommunities, useCreateCommunity, useUpdateCommunity } from "../api/communities.js";
+import { CommunityImageUpload } from "./CommunityImageUpload.js";
 
 /** コミュニティ作成フォーム。 */
 function CreateCommunityForm(): ReactElement {
@@ -193,6 +194,29 @@ function EditCommunityForm({ community, onCancel }: EditCommunityFormProps): Rea
           {errorMsg}
         </Alert>
       )}
+      {/* アイコン・カバー画像のアップロード（#457）。フォーム送信とは独立した即時アップロード。 */}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <Typography variant="caption" color="text.secondary">
+          カバー画像（ヘッダー）
+        </Typography>
+        <CommunityImageUpload
+          communityId={community.id}
+          kind="cover"
+          name={community.name}
+          currentImageUrl={community.coverUrl ?? null}
+        />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 1 }}>
+          <CommunityImageUpload
+            communityId={community.id}
+            kind="icon"
+            name={community.name}
+            currentImageUrl={community.iconUrl ?? null}
+          />
+          <Typography variant="caption" color="text.secondary">
+            アイコン画像（クリックして変更）
+          </Typography>
+        </Box>
+      </Box>
       <form.Field
         name="name"
         validators={{

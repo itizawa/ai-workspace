@@ -1,4 +1,4 @@
-import { Box, Divider, Stack, Typography } from "./uiParts";
+import { Avatar, Box, Divider, Stack, Typography } from "./uiParts";
 import { Link as RouterLink } from "@tanstack/react-router";
 import type { ReactElement, ReactNode } from "react";
 
@@ -54,19 +54,28 @@ export const CommunitySidebarCard = ({
         p: 2,
       }}
     >
-      <Typography variant="h6" component="h2" gutterBottom>
-        {nameLink ? (
-          <RouterLink
-            to="/communities/$slug"
-            params={{ slug: community.slug }}
-            style={{ textDecoration: "none", color: "inherit" }}
-          >
-            {community.name}
-          </RouterLink>
-        ) : (
-          community.name
-        )}
-      </Typography>
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 0.5 }}>
+        <Avatar
+          src={community.iconUrl ?? undefined}
+          alt={community.name}
+          sx={{ width: 40, height: 40, bgcolor: "primary.main" }}
+        >
+          {community.name[0]}
+        </Avatar>
+        <Typography variant="h6" component="h2" sx={{ minWidth: 0, wordBreak: "break-word" }}>
+          {nameLink ? (
+            <RouterLink
+              to="/communities/$slug"
+              params={{ slug: community.slug }}
+              style={{ textDecoration: "none", color: "inherit" }}
+            >
+              {community.name}
+            </RouterLink>
+          ) : (
+            community.name
+          )}
+        </Typography>
+      </Stack>
       <Divider sx={{ mb: 1 }} />
       {community.description && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>

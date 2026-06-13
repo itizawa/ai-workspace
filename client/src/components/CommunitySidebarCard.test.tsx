@@ -96,6 +96,22 @@ describe("CommunitySidebarCard", () => {
     expect(screen.getByRole("button", { name: /共有/i })).toBeInTheDocument();
   });
 
+  it("iconUrl が設定されているときアイコン画像を表示する（#457）", () => {
+    render(
+      <CommunitySidebarCard
+        {...baseProps}
+        community={{ ...mockCommunity, iconUrl: "https://example.com/icon.png" }}
+      />,
+    );
+    const img = screen.getByRole("img", { name: "AI 開発者の集い" });
+    expect(img).toHaveAttribute("src", "https://example.com/icon.png");
+  });
+
+  it("iconUrl 未設定でもイニシャルのフォールバックで崩れずに表示する（#457）", () => {
+    render(<CommunitySidebarCard {...baseProps} />);
+    expect(screen.getByRole("heading", { name: "AI 開発者の集い" })).toBeInTheDocument();
+  });
+
   it("children を追加セクションとして描画する", () => {
     render(
       <CommunitySidebarCard {...baseProps}>

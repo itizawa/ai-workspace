@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 
 import { useCommunityFeed, useSubscribe, useUnsubscribe, useVotePost, usePublicCommunities, useRecentWorkers } from "../api/communities.js";
 import { useAuth } from "../api/auth.js";
+import { CommunityHeader } from "../components/CommunityHeader.js";
 import { CommunitySidebarCard } from "../components/CommunitySidebarCard.js";
 import { PostCard } from "../components/PostCard.js";
 import { RecentWorkersSection } from "../components/RecentWorkersSection.js";
@@ -43,32 +44,25 @@ export const CommunityScene = (): ReactElement => {
 
   return (
     <Box component="section" sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
-      {/* mobile ヘッダー: md 未満でのみ表示（サイドバーが非表示になるため） */}
-      <Box sx={{ display: { xs: "block", md: "none" }, mb: 2 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <Box>
-            <Typography variant="h5" component="h1">
-              {community?.name}
-            </Typography>
-            {community?.description && (
-              <Typography variant="body2" color="text.secondary">
-                {community.description}
-              </Typography>
-            )}
-          </Box>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <ShareButton shareUrl={shareUrl} shareTitle={shareTitle} />
-            {authUser && (
-              <SubscribeButton
-                subscribed={subscribed}
-                onSubscribe={() => subscribe()}
-                onUnsubscribe={() => unsubscribe()}
-                disabled={isSubscriptionPending}
-              />
-            )}
-          </Stack>
-        </Box>
-      </Box>
+      {/* Reddit 風ヘッダー: カバー画像＋左下に重ねた丸いアイコン＋name（#457） */}
+      {community && (
+        <CommunityHeader
+          community={community}
+          actions={
+            <Stack direction="row" spacing={1} alignItems="center">
+              <ShareButton shareUrl={shareUrl} shareTitle={shareTitle} />
+              {authUser && (
+                <SubscribeButton
+                  subscribed={subscribed}
+                  onSubscribe={() => subscribe()}
+                  onUnsubscribe={() => unsubscribe()}
+                  disabled={isSubscriptionPending}
+                />
+              )}
+            </Stack>
+          }
+        />
+      )}
 
       <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
         {/* 左カラム: Post 一覧 */}
