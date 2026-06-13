@@ -343,7 +343,7 @@ export async function runCommunityBatch(
       }
 
       // 生成・永続化に成功したので、この定時で登場したワーカーを記録する（#464）。
-      // post に author として現れたワーカーのみを登場扱いにする（コメントだけの author も含む）。
+      // post / comment の author として実際に発言したワーカーを登場扱いにする（author 検証済みの既知 id）。
       for (const post of output.posts) {
         appearedWorkerIds.add(post.author);
         for (const comment of post.comments) {
