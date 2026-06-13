@@ -173,4 +173,98 @@ describe.skipIf(!DATABASE_URL)("createPrismaVoteRepository (integration)", () =>
       expect(votes).toHaveLength(0);
     });
   });
+
+  describe("netScoresByCommunitySince (#486)", () => {
+    afterEach(async () => {
+      await prisma.community.deleteMany();
+    });
+
+    async function setupCommunityFixtures(): Promise<{
+      community1: string;
+      community2: string;
+      post1: string; // community1
+      post2: string; // community2
+      comment1: string; // community1
+    }> {
+      const c1 = await prisma.community.create({
+        data: { slug: "vote-agg-1", name: "C1", description: "c1" },
+      });
+      const c2 = await prisma.community.create({
+        data: { slug: "vote-agg-2", name: "C2", description: "c2" },
+      });
+      const p1 = await prisma.post.create({
+        data: {
+          communityId: c1.id,
+          slotKey: "2026-06-10T09:00",
+          seq: 0,
+          author: "w1",
+          title: "t1",
+          text: "x1",
+        },
+      });
+      const p2 = await prisma.post.create({
+        data: {
+          communityId: c2.id,
+          slotKey: "2026-06-10T09:00",
+          seq: 0,
+          author: "w1",
+          title: "t2",
+          text: "x2",
+        },
+      });
+      const cm1 = await prisma.comment.create({
+        data: {
+          communityId: c1.id,
+          postId: p1.id,
+          slotKey: "2026-06-10T09:00",
+          seq: 0,
+          author: "w2",
+          text: "cx1",
+        },
+      });
+      return { community1: c1.id, community2: c2.id, post1: p1.id, post2: p2.id, comment1: cm1.id };
+    }
+
+    it("community 別に post / comment の純スコア（up:+1 / down:-1）を集計する", async () => {
+      await setupFixtures();
+      const fx = await setupCommunityFixtures();
+      const repo = createPrismaVoteRepository(prisma);
+
+      // community1: post1 up(+1)、comment1 down(-1) = 0
+      await repo.vote(userId, "post", fx.post1, "up");
+      await repo.vote(userId, "comment", fx.comment1, "down");
+      // community2: post2 down(-1)、別ユーザーも post2 down(-1) = -2
+      await repo.vote(userId, "post", fx.post2, "down");
+      await repo.vote(userId2, "post", fx.post2, "down");
+
+      const result = await repo.netScoresByCommunitySince(new Date("2020-01-01"));
+
+      expect(result.get(fx.community1)).toBe(0);
+      expect(result.get(fx.community2)).toBe(-2);
+    });
+
+    it("since より前の vote は集計から除外する", async () => {
+      await setupFixtures();
+      const fx = await setupCommunityFixtures();
+      const repo = createPrismaVoteRepository(prisma);
+
+      await repo.vote(userId, "post", fx.post1, "up");
+
+      // since を未来に置くと直近 vote が除外され空になる。
+      const future = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const result = await repo.netScoresByCommunitySince(future);
+
+      expect(result.get(fx.community1)).toBeUndefined();
+    });
+
+    it("vote が 0 件のとき空の Map を返す", async () => {
+      await setupFixtures();
+      await setupCommunityFixtures();
+      const repo = createPrismaVoteRepository(prisma);
+
+      const result = await repo.netScoresByCommunitySince(new Date("2020-01-01"));
+
+      expect(result.size).toBe(0);
+    });
+  });
 });
