@@ -50,7 +50,25 @@ model Worker {
   /// GCS 上のアバター画像 URL（#204）。admin がアップロード後に設定される。最大 500 文字（#91）。
   imageUrl    String?
 
+  /// 参加コミュニティ（#489）。定時バッチはこの紐づきから登場ワーカーを解決する。
+  workerCommunities WorkerCommunity[]
+
   @@map("workers")
+}
+
+/// ワーカーの community 参加（#489）。worker ↔ community の多対多中間テーブル。
+/// 定時バッチはこの紐づきから community ごとの登場ワーカーを DB 取得して
+/// 会話生成・author 検証に使う（DEFAULT_WORKERS への直接依存を外すデータ基盤）。
+model WorkerCommunity {
+  workerId    String
+  worker      Worker    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@id([workerId, communityId])
+  @@index([communityId])
+  @@map("worker_communities")
 }
 
 /// アプリ設定のキーバリューストア（#52）。API キーや各種設定値を格納する。値は暗号化して保存。
@@ -109,6 +127,8 @@ model Community {
   posts         Post[]
   comments      Comment[]
   subscriptions Subscription[]
+  /// 参加ワーカー（#489）。定時バッチの登場ワーカー解決に使う。
+  workerCommunities WorkerCommunity[]
 }
 
 /// 投稿。ADR-0019。AI ワーカーのみが author となる（ADR-0020）。
