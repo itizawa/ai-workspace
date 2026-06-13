@@ -86,4 +86,62 @@ describe("createInMemoryVoteRepository", () => {
       expect((await repo.findVote("user-1", "comment", "target-1"))?.direction).toBe("down");
     });
   });
+
+  describe("netScoresByCommunitySince (#486)", () => {
+    // targetId → communityId の解決マップ（テスト用）。
+    const resolve = (targetType: "post" | "comment", targetId: string): string | null => {
+      const map: Record<string, string> = {
+        "post:p1": "community-1",
+        "post:p2": "community-1",
+        "post:p3": "community-2",
+        "comment:c1": "community-1",
+        "comment:c2": "community-2",
+      };
+      return map[`${targetType}:${targetId}`] ?? null;
+    };
+
+    it("community 別に純スコア（up:+1 / down:-1）を集計して返す", async () => {
+      const repo = createInMemoryVoteRepository(resolve);
+      // community-1: p1 up(+1), p2 up(+1), c1 down(-1) = +1
+      await repo.vote("u1", "post", "p1", "up");
+      await repo.vote("u2", "post", "p2", "up");
+      await repo.vote("u3", "comment", "c1", "down");
+      // community-2: p3 down(-1), c2 down(-1) = -2
+      await repo.vote("u1", "post", "p3", "down");
+      await repo.vote("u2", "comment", "c2", "down");
+
+      const result = await repo.netScoresByCommunitySince(new Date("2020-01-01"));
+
+      expect(result.get("community-1")).toBe(1);
+      expect(result.get("community-2")).toBe(-2);
+    });
+
+    it("since より前の vote は集計から除外する", async () => {
+      const now = new Date("2026-06-13T00:00:00Z");
+      const repo = createInMemoryVoteRepository(resolve, () => now);
+      // 直近 vote（since 以降）
+      await repo.vote("u1", "post", "p1", "up");
+
+      // since を「今より未来」に置くと、上記 vote は除外され空になる。
+      const future = new Date("2026-06-20T00:00:00Z");
+      const result = await repo.netScoresByCommunitySince(future);
+
+      expect(result.get("community-1")).toBeUndefined();
+    });
+
+    it("community に解決できない vote は無視する", async () => {
+      const repo = createInMemoryVoteRepository(resolve);
+      await repo.vote("u1", "post", "unknown", "up"); // 解決不能
+
+      const result = await repo.netScoresByCommunitySince(new Date("2020-01-01"));
+
+      expect(result.size).toBe(0);
+    });
+
+    it("vote が 0 件のとき空の Map を返す", async () => {
+      const repo = createInMemoryVoteRepository(resolve);
+      const result = await repo.netScoresByCommunitySince(new Date("2020-01-01"));
+      expect(result.size).toBe(0);
+    });
+  });
 });

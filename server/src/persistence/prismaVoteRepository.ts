@@ -1,4 +1,4 @@
-import { type PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 
 import type {
   VoteDirection,
@@ -56,6 +56,33 @@ export function createPrismaVoteRepository(prisma: PrismaClient): VoteRepository
         data: { direction },
       });
       return { scoreDelta: direction === "up" ? 2 : -2 };
+    },
+
+    async netScoresByCommunitySince(since: Date): Promise<Map<string, number>> {
+      // Vote.targetId は Post / Comment の id を多態参照する（DB FK なし）。
+      // post 票は Post 経由、comment 票は Comment 経由で communityId に解決し、
+      // up を +1 / down を -1 として community 単位に集計する（#486 / ADR-0030）。
+      const rows = await prisma.$queryRaw<{ communityId: string; netScore: bigint }[]>(Prisma.sql`
+        SELECT "communityId", SUM(CASE WHEN "direction" = 'up' THEN 1 ELSE -1 END) AS "netScore"
+        FROM (
+          SELECT p."communityId" AS "communityId", v."direction" AS "direction"
+          FROM "Vote" v
+          JOIN "Post" p ON p."id" = v."targetId"
+          WHERE v."targetType" = 'post' AND v."createdAt" >= ${since}
+          UNION ALL
+          SELECT c."communityId" AS "communityId", v."direction" AS "direction"
+          FROM "Vote" v
+          JOIN "Comment" c ON c."id" = v."targetId"
+          WHERE v."targetType" = 'comment' AND v."createdAt" >= ${since}
+        ) AS resolved
+        GROUP BY "communityId"
+      `);
+
+      const scores = new Map<string, number>();
+      for (const row of rows) {
+        scores.set(row.communityId, Number(row.netScore));
+      }
+      return scores;
     },
   };
 }
