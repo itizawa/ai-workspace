@@ -43,24 +43,14 @@ jobs:
         run: pnpm audit --audit-level=high --prod
 
       # ADR-0002 のタスク定義をそのまま回す。Turborepo が依存順と並列を解決する。
-      - name: Lint / Test / Build
-        run: pnpm turbo run lint test build
-
-      # 各ワークスペースのカバレッジを生成する。
-      # pnpm 10 では `pnpm run script -- --flag` が `script -- --flag` として実行され
-      # vitest が --flag をファイルパターンとして解釈するため、pnpm exec で直接起動する。
+      # #507: 各 WS の test script は `vitest run --coverage`。この turbo の test 実行で
+      # common/server/client の coverage/ が生成されるため、別途 vitest を再実行しない
+      # （テストを CI 1 実行あたり 1 回だけに統合し、2 重実行を解消する）。
+      # @hatchery/server#test は turbo.json で ^build / db:generate に依存するため、
+      # coverage 付きでも build / Prisma 生成の前提が満たされた状態でテストが走る。
       # DATABASE_URL が無い CI 環境では .int.test.ts は skipIf で自動スキップされる。
-      - name: Test with coverage (common)
-        working-directory: common
-        run: pnpm exec vitest run --coverage
-
-      - name: Test with coverage (server)
-        working-directory: server
-        run: pnpm exec vitest run --coverage
-
-      - name: Test with coverage (client)
-        working-directory: client
-        run: pnpm exec vitest run --coverage
+      - name: Lint / Test (coverage) / Build
+        run: pnpm turbo run lint test build
 
       - name: Upload coverage (common)
         uses: actions/upload-artifact@v6
