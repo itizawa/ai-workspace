@@ -154,7 +154,7 @@ export function createAdminRouter(
         const input = req.body as {
           name?: string;
           description?: string;
-          generationInstruction?: string;
+          generationInstruction?: string | null;
         };
         const community = await communityRepository.update(id, input);
         if (!community) {
