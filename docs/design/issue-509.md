@@ -85,10 +85,30 @@ Issue 本文は `*.int.test.ts` という命名を想定しているが、本リ
 
 - `pnpm turbo run lint test build` および CI 全体（統合テスト含む）が緑になることを CI で確認。
 
+## 統合テストを CI で初めて実行して判明した既存不具合（AC3 で顕在化）
+
+統合テストはこれまで CI で常にスキップされていたため、以下の**既存の不整合**が隠れていた。
+本 Issue で CI 実行を有効化した結果として顕在化したため、AC3（スキップ 0 で緑）を満たすべく
+同 PR で修正する。
+
+1. **`TokenUsageLog` の migration 欠落**: `schema.prisma` に `TokenUsageLog` モデルが存在するが
+   対応する migration が無く、`prisma migrate deploy` 後もテーブルが作られていなかった
+   （`prismaTokenUsageLogRepository.test.ts` が `relation does not exist` で失敗）。
+   → `server/prisma/migrations/20260614120000_add_token_usage_log/migration.sql` を追加。
+   `prisma migrate diff`（実 DB → schema）で生成した CreateTable + index のみを採用し、
+   ランタイム作成の `session` テーブル DROP や uuid デフォルト差分のノイズは含めない。
+2. **`prismaSubscriptionRepository.test.ts` の stale fixture**: `user.create` が #455 で削除済みの
+   `loginId` を渡しており（必須の `email` / `googleId` を欠く）Prisma バリデーションで失敗。
+   → 他の統合テスト（`prismaVoteRepository.test.ts`）と同じ `email` / `googleId` 形式に修正。
+   既存 stale テストの fixture 補修であり、本 Issue で新規に書いたテストは変更していない。
+
 ## 変更ファイル
 
-- `.github/workflows/ci.yml`（services.postgres 追加 / env.DATABASE_URL / migrate ステップ /
-  チューニングステップ）
+- `.github/workflows/ci.yml`（services.postgres 追加 / env.DATABASE_URL / 耐久性 off チューニング /
+  migrate ステップ）
+- `server/prisma/migrations/20260614120000_add_token_usage_log/migration.sql`（欠落 migration 補完）
+- `server/src/persistence/prismaSubscriptionRepository.test.ts`（stale fixture 修正）
+- `tests/ci-integration-db.test.ts`（CI 構造の規約テスト）
 - `docs/design/issue-509.md`（本ファイル）
 
 ## テスト方針（TDD）
