@@ -17,6 +17,13 @@ concurrency:
 jobs:
   build-test-lint:
     runs-on: ubuntu-latest
+    # Turborepo Remote Caching（ADR-0002 追補 / #508）。
+    # turbo が lint/test/build のキャッシュを CI 実行間で共有し、変更のないワークスペースの再計算をスキップする。
+    # 認証情報は GitHub Secrets / Variables 経由でのみ渡し、リポジトリに平文を残さない。
+    # TURBO_TOKEN / TURBO_TEAM が未設定（空）の場合、turbo は Remote を無効化しローカルキャッシュにフォールバックする。
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
