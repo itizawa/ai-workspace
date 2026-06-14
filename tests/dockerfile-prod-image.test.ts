@@ -18,10 +18,9 @@ describe("server/Dockerfile 本番イメージのサイズ最適化 (Issue #172)
       /pnpm\s+(?:--filter\s+\S+\s+)?deploy\b[^\n]*--prod/.test(raw) ||
       /pnpm\s+(?:--filter\s+\S+\s+)?prune\b[^\n]*--prod/.test(raw) ||
       /pnpm\s+install\b[^\n]*--prod/.test(raw);
-    expect(
-      hasProdReduction,
-      "本番依存のみに絞る pnpm deploy/prune/install --prod 行が必要",
-    ).toBe(true);
+    expect(hasProdReduction, "本番依存のみに絞る pnpm deploy/prune/install --prod 行が必要").toBe(
+      true,
+    );
   });
 
   it("builder の /app 全体を本番ステージへ丸ごと COPY しない（サイズ肥大化リグレッション防止） (受け入れ条件 #4)", () => {
