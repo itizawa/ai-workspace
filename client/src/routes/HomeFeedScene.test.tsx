@@ -20,9 +20,10 @@ type FetchStubOptions = {
     score: number;
     created_at: string;
   }>;
+  communities?: Array<{ id: string; slug: string; name: string }>;
 };
 
-function stubFetch({ authenticated, feedPosts = [] }: FetchStubOptions) {
+function stubFetch({ authenticated, feedPosts = [], communities = [] }: FetchStubOptions) {
   const user = authenticated
     ? { id: "user1", displayName: "Alice", role: "member", email: "alice@example.com" }
     : undefined;
@@ -51,6 +52,25 @@ function stubFetch({ authenticated, feedPosts = [] }: FetchStubOptions) {
     if (url.includes("/api/feed")) {
       return Promise.resolve(
         new Response(JSON.stringify({ posts: feedPosts, nextCursor: null }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    }
+    // #503: 所属コミュニティ名解決用。GET /api/communities を community 一覧で返す。
+    if (/\/api\/communities$/.test(url)) {
+      return Promise.resolve(
+        new Response(JSON.stringify(communities), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    }
+    // #498: スレッド遷移テスト用。GET /api/posts/{postId} を post + comments で返す。
+    if (/\/api\/posts\/[^/]+$/.test(url)) {
+      const post = feedPosts[0] ?? { id: "post-1", title: "投稿", text: "", score: 0 };
+      return Promise.resolve(
+        new Response(JSON.stringify({ post, comments: [] }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         }),
@@ -228,6 +248,114 @@ describe("HomeFeedScene — 人気フィード (/popular) (#435)", () => {
         return url.includes("/api/feed") && url.includes("sort=popular");
       });
       expect(popularCalls.length).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe("HomeFeedScene — 投稿カードからスレッドへ遷移 (#498)", () => {
+  const post = {
+    id: "post-thread-1",
+    community_id: "community-1",
+    slot_key: "2026-06-10-morning",
+    seq: 1,
+    author: "worker-haru",
+    title: "スレッド遷移テスト投稿",
+    text: "内容",
+    score: 0,
+    created_at: "2026-06-10T00:00:00Z",
+  };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("投稿カードが /posts/$postId への href を持つリンクで囲まれている", async () => {
+    stubFetch({ authenticated: false, feedPosts: [post] });
+    renderApp("/");
+
+    const title = await screen.findByText("スレッド遷移テスト投稿");
+    const link = title.closest("a");
+    expect(link).not.toBeNull();
+    expect(link).toHaveAttribute("href", `/posts/${post.id}`);
+  });
+
+  it("投稿カードのタイトルをクリックするとスレッド（/posts/$postId）へ遷移する", async () => {
+    stubFetch({ authenticated: false, feedPosts: [post] });
+    renderApp("/");
+
+    const title = await screen.findByText("スレッド遷移テスト投稿");
+    await userEvent.click(title);
+
+    // スレッド（/posts/$postId）へ遷移し、スレッド固有のコメント空状態が表示される。
+    expect(
+      await screen.findByText(/まだコメントはありません/),
+    ).toBeInTheDocument();
+    // フィードの見出しは消えている（ページが切り替わった）。
+    expect(screen.queryByRole("heading", { name: /ホームフィード/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("HomeFeedScene — 所属コミュニティ名表示（混在フィード・#503）", () => {
+  const communities = [
+    { id: "community-1", slug: "hatchery", name: "Hatchery メタ" },
+    { id: "community-2", slug: "zenn", name: "Zenn感想部" },
+  ];
+  const mixedPosts = [
+    {
+      id: "post-1",
+      community_id: "community-1",
+      slot_key: "2026-06-10-morning",
+      seq: 1,
+      author: "worker-haru",
+      title: "hatchery の投稿",
+      text: "内容A",
+      score: 0,
+      created_at: "2026-06-10T00:00:00Z",
+    },
+    {
+      id: "post-2",
+      community_id: "community-2",
+      slot_key: "2026-06-10-morning",
+      seq: 2,
+      author: "worker-ken",
+      title: "zenn の投稿",
+      text: "内容B",
+      score: 0,
+      created_at: "2026-06-10T01:00:00Z",
+    },
+  ];
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("異なる community の投稿が混在するフィードで各カードに c/{slug} が表示される", async () => {
+    stubFetch({ authenticated: false, feedPosts: mixedPosts, communities });
+    renderApp("/");
+
+    expect(await screen.findByText("hatchery の投稿")).toBeInTheDocument();
+    expect(await screen.findByText("c/hatchery")).toBeInTheDocument();
+    expect(await screen.findByText("c/zenn")).toBeInTheDocument();
+  });
+
+  it("c/{slug} をクリックするとそのコミュニティページ（/communities/$slug）へ遷移する", async () => {
+    stubFetch({ authenticated: false, feedPosts: mixedPosts, communities });
+    renderApp("/");
+
+    const communityLink = await screen.findByRole("button", { name: "c/zenn" });
+    await userEvent.click(communityLink);
+
+    // コミュニティページへ遷移し、ホームの見出しは消えている。
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: /ホームフィード/ })).not.toBeInTheDocument();
     });
   });
 });

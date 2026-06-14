@@ -26,6 +26,7 @@ import {
   type ConversationGenerator,
 } from "./aiMessageGenerator.js";
 import { buildCommunityPrompt, type WorkerDef } from "./buildCommunityPrompt.js";
+import { extractErrorMessage, logBatchError, logBatchInfo } from "./logger.js";
 
 /** プロンプトに載せる直近 post/comment の既定件数。 */
 const DEFAULT_RECENT_LIMIT = 30;
@@ -99,16 +100,16 @@ export interface RunCommunityBatchDeps {
 }
 
 /**
- * 現在時刻から slot_key を生成する（"YYYY-MM-DDTHH:MM" 形式・ローカル時刻基準）。
- * Cron 二重発火ガードに使う。
+ * 現在時刻から slot_key を生成する（"YYYY-MM-DDTHH:MM" 形式・UTC 基準）。
+ * Cron 二重発火ガードに使う。実行環境のタイムゾーンに依存しない。
  */
 export function generateSlotKey(now: Date = new Date()): string {
   const pad = (n: number): string => String(n).padStart(2, "0");
-  const year = now.getFullYear();
-  const month = pad(now.getMonth() + 1);
-  const day = pad(now.getDate());
-  const hour = pad(now.getHours());
-  const minute = pad(now.getMinutes());
+  const year = now.getUTCFullYear();
+  const month = pad(now.getUTCMonth() + 1);
+  const day = pad(now.getUTCDate());
+  const hour = pad(now.getUTCHours());
+  const minute = pad(now.getUTCMinutes());
   return `${year}-${month}-${day}T${hour}:${minute}`;
 }
 
@@ -169,7 +170,7 @@ export async function runCommunityBatch(
 ): Promise<RunCommunityBatchResult> {
   const apiKey = await getApiKey(deps.appSettingRepo, deps.anthropicApiKey);
   if (!apiKey) {
-    console.error("[communityBatch] API キーが設定されていないためスキップします");
+    logBatchInfo("community_batch.skipped_no_api_key");
     return { posts: [], comments: [] };
   }
 
@@ -216,9 +217,7 @@ export async function runCommunityBatch(
       const resolvedWorkers = selectCommunityWorkers(communityWorkers, botWorkers);
       // 登場ワーカーが 1 人もいない community は生成をスキップする（#489 AC3）。
       if (resolvedWorkers.length === 0) {
-        console.warn(
-          `[communityBatch] community ${community.id} に紐づくワーカーが 0 件のためスキップします。`,
-        );
+        logBatchInfo("community_batch.skipped_no_workers", { communityId: community.id });
         continue;
       }
       // 登場ローテーション（#464）: lastAppearedSlotKey の新旧で「最近登場していないワーカー」を
@@ -278,9 +277,9 @@ export async function runCommunityBatch(
       try {
         parsed = JSON.parse(raw);
       } catch {
-        console.error(
-          `[communityBatch] community ${community.id} の生成出力の JSON パースに失敗しました。スキップします。`,
-        );
+        logBatchError("community_batch.json_parse_failed", "JSON parse failed", {
+          communityId: community.id,
+        });
         errors.push(`${community.id}: JSON パース失敗`);
         continue;
       }
@@ -288,10 +287,10 @@ export async function runCommunityBatch(
       // Zod スキーマ検証
       const validated = GenerationOutputSchema.safeParse(parsed);
       if (!validated.success) {
-        console.error(
-          `[communityBatch] community ${community.id} の生成出力のスキーマ検証に失敗しました。スキップします。`,
-          validated.error.format(),
-        );
+        logBatchError("community_batch.schema_validation_failed", "schema validation failed", {
+          communityId: community.id,
+          issues: validated.error.format(),
+        });
         errors.push(`${community.id}: スキーマ検証失敗`);
         continue;
       }
@@ -302,10 +301,9 @@ export async function runCommunityBatch(
       try {
         validateGenerationOutput(output, workerIds);
       } catch (err) {
-        console.error(
-          `[communityBatch] community ${community.id} の生成出力の author 検証に失敗しました。スキップします。`,
-          err instanceof Error ? err.message : String(err),
-        );
+        logBatchError("community_batch.author_validation_failed", err, {
+          communityId: community.id,
+        });
         errors.push(`${community.id}: author 検証失敗`);
         continue;
       }
@@ -351,8 +349,8 @@ export async function runCommunityBatch(
         }
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[communityBatch] community ${community.id} の処理に失敗しました:`, err);
+      const message = extractErrorMessage(err);
+      logBatchError("community_batch.community_failed", err, { communityId: community.id });
       errors.push(`${community.id}: ${message}`);
     }
   }

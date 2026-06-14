@@ -1,16 +1,23 @@
 import { HomeFeedQuerySchema } from "@hatchery/common";
 import { Router } from "express";
 
+import type { CommentRepository } from "../persistence/commentRepository.js";
 import type { PostRepository } from "../persistence/postRepository.js";
 import type { WorkerRepository } from "../persistence/workerRepository.js";
 import { attachAuthorWorker } from "./authorWorker.js";
+import { attachCommentCount } from "./commentCount.js";
+import { toPostResponse } from "./postResponse.js";
 
 /**
  * /api/feed ルータ。ホームフィード（全 community の post を新着順で返す公開フィード）。
  * ADR-0019 / ADR-0020 更新: 購読フィルタなし・認証不要。#367 カーソルページネーション対応。
  * #479: 各 post に発言者の表示用ワーカー情報（author_worker）を付与する。
  */
-export function createFeedRouter(postRepo: PostRepository, workerRepo: WorkerRepository): Router {
+export function createFeedRouter(
+  postRepo: PostRepository,
+  workerRepo: WorkerRepository,
+  commentRepo: CommentRepository,
+): Router {
   const router = Router();
 
   router.get("/", (req, res, next) => {
@@ -28,7 +35,11 @@ export function createFeedRouter(postRepo: PostRepository, workerRepo: WorkerRep
 
     fetchPage
       .then(async (result) => {
-        const posts = await attachAuthorWorker(result.posts, workerRepo);
+        const enriched = await attachAuthorWorker(result.posts, workerRepo);
+        // 各 post にコメント件数を付与する（N+1 回避・#500）。
+        const withCounts = await attachCommentCount(enriched, commentRepo);
+        // OpenAPI 契約（snake_case）へ整形して返す（#499）。
+        const posts = withCounts.map(toPostResponse);
         res.status(200).json({ ...result, posts });
       })
       .catch((err: unknown) => {

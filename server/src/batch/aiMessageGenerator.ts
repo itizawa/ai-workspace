@@ -2,6 +2,8 @@ import Anthropic from "@anthropic-ai/sdk";
 
 import { DEFAULT_BATCH_MODEL, type BatchModel } from "../config/env.js";
 
+import { logBatchError, logBatchInfo } from "./logger.js";
+
 /**
  * チャンネル会話を生成する関数（#53）。プロンプトと API キーを受け、モデルの生テキストを返す。
  * テストではスタブを注入し、本番は Claude を使う（依存注入パターン）。
@@ -17,8 +19,17 @@ export type SummaryGenerator = (prompt: string, apiKey: string) => Promise<strin
  */
 const SUMMARY_MODEL: BatchModel = "claude-sonnet-4-6";
 
-/** 会話生成の max_tokens（複数 post/comment の掛け合いを 1 コールで生成するため広めに取る）。 */
+/**
+ * 会話生成の max_tokens（複数 post/comment の掛け合いを 1 コールで生成するため広めに取る）。
+ * #401 で max_tokens 不足による会話 JSON の切り詰めを修正済み。切り詰め回避のため大きめに保つ。
+ */
 const CONVERSATION_MAX_TOKENS = 8192;
+
+/**
+ * あらすじ生成の max_tokens。あらすじは短文要約のため会話生成より小さく取る。
+ * 値を変える際はこの定数を調整する（リテラル直書きの分散を避けるため集約・#471）。
+ */
+const SUMMARY_MAX_TOKENS = 512;
 
 /** Claude にプロンプトを投げ、最初のテキストブロックを返す共通処理。 */
 async function callClaudeText(
@@ -33,10 +44,11 @@ async function callClaudeText(
     messages: [{ role: "user", content: prompt }],
   });
   if (message.stop_reason === "max_tokens") {
-    const snippet = prompt.length > 100 ? `"${prompt.slice(0, 100)}..."` : `"${prompt}"`;
-    console.warn(
-      `[aiMessageGenerator] 出力が max_tokens (${maxTokens}) で切り詰められました。プロンプト先頭: ${snippet}`,
-    );
+    const snippet = prompt.length > 100 ? `${prompt.slice(0, 100)}...` : prompt;
+    logBatchInfo("ai_generation.max_tokens_truncated", {
+      maxTokens,
+      promptSnippet: snippet,
+    });
   }
   return extractFirstText(message.content);
 }
@@ -62,7 +74,7 @@ export const generateConversationWithClaude: ConversationGenerator =
 
 /** Claude であらすじを生成する既定実装（#53）。 */
 export const generateSummaryWithClaude: SummaryGenerator = (prompt, apiKey) =>
-  callClaudeText(new Anthropic({ apiKey }), prompt, SUMMARY_MODEL, 512);
+  callClaudeText(new Anthropic({ apiKey }), prompt, SUMMARY_MODEL, SUMMARY_MAX_TOKENS);
 
 /**
  * Batches API 経路の ConversationGenerator を作る依存（#389 AC3・DI でテスト可能にする）。
@@ -142,9 +154,10 @@ export function createBatchConversationGenerator(
       status = polled.processing_status;
     }
     if (status !== "ended") {
-      console.warn(
-        `[aiMessageGenerator] Batch ${batch.id} が ${maxPolls} 回のポーリングで ended になりませんでした。`,
-      );
+      logBatchInfo("ai_generation.batch_not_ended", {
+        batchId: batch.id,
+        maxPolls,
+      });
       return "";
     }
 
@@ -157,8 +170,10 @@ export function createBatchConversationGenerator(
       if (result.result.type === "succeeded") {
         return extractFirstText(result.result.message.content);
       }
-      console.error(
-        `[aiMessageGenerator] Batch 結果が ${result.result.type} でした（custom_id: ${result.custom_id}）。`,
+      logBatchError(
+        "ai_generation.batch_result_failed",
+        `batch result type was ${result.result.type}`,
+        { customId: result.custom_id, resultType: result.result.type },
       );
       return "";
     }

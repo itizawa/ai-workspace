@@ -1,13 +1,17 @@
 import { NotFoundError } from "@hatchery/common";
 import { Router } from "express";
 
+import { buildPrivateCacheControl } from "../config/security.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { toCommunityResponse } from "./communityResponse.js";
+import type { CommentRepository } from "../persistence/commentRepository.js";
 import type { CommunityRepository } from "../persistence/communityRepository.js";
 import type { PostRepository } from "../persistence/postRepository.js";
 import type { SubscriptionRepository } from "../persistence/subscriptionRepository.js";
 import type { WorkerRepository } from "../persistence/workerRepository.js";
 import { attachAuthorWorker } from "./authorWorker.js";
+import { attachCommentCount } from "./commentCount.js";
+import { toPostResponse } from "./postResponse.js";
 
 const RECENT_WORKERS_LIMIT = 10;
 
@@ -21,6 +25,7 @@ export function createCommunitiesRouter(
   postRepo: PostRepository,
   subscriptionRepo: SubscriptionRepository,
   workerRepo: WorkerRepository,
+  commentRepo: CommentRepository,
 ): Router {
   const router = Router();
 
@@ -45,7 +50,10 @@ export function createCommunitiesRouter(
         return postRepo.listByCommunity(community.id);
       })
       .then((posts) => attachAuthorWorker(posts, workerRepo))
-      .then((posts) => res.status(200).json(posts))
+      // 各 post にコメント件数を付与する（N+1 回避・#500）。
+      .then((posts) => attachCommentCount(posts, commentRepo))
+      // OpenAPI 契約（snake_case）へ整形して返す（#499）。
+      .then((posts) => res.status(200).json(posts.map(toPostResponse)))
       .catch(next);
   });
 
@@ -79,7 +87,10 @@ export function createCommunitiesRouter(
   });
 
   // 購読状態取得（認証任意・未認証は subscribed: false を返す・#421）
+  // ユーザー個別データを返すため、未認証時でも公開（共有）キャッシュには載せない（#559 AC3）。
+  // ルータ全体の publicCache が未認証 GET に付ける public ヘッダをここで private, no-store に上書きする。
   router.get("/:slug/subscription", (req, res, next) => {
+    res.setHeader("Cache-Control", buildPrivateCacheControl());
     const { slug } = req.params as { slug: string };
     communityRepo
       .findBySlug(slug)
