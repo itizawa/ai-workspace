@@ -15,7 +15,7 @@ async function main() {
     console.log("本番環境ではシードを実行しません");
     return;
   }
-  console.log("シードを投入しました: testuser / testpass・既定の社員・チャンネル");
+  console.log("シードを投入しました: testuser・既定のワーカー・コミュニティ");
 }
 
 main()
