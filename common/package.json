@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "tsc -b",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "lint": "eslint ."
   },
   "dependencies": {

@@ -100,12 +100,9 @@ describe("root package.json に @vitest/coverage-v8 が追加されている (Is
   });
 });
 
-describe("CI ワークフローのカバレッジ設定 (Issue #71)", () => {
-  it("ci.yml に --coverage フラグが含まれる", () => {
-    const content = readFile(".github/workflows/ci.yml");
-    expect(content).toMatch(/--coverage/);
-  });
-
+describe("CI ワークフローのカバレッジ設定 (Issue #71 / #507)", () => {
+  // #507: カバレッジは turbo の test タスク（各 WS の test script が --coverage）で生成するため、
+  // ci.yml 側に直接 --coverage を書かない（書くと2重実行になる）。
   it("actions/upload-artifact ステップが存在する", () => {
     const content = readFile(".github/workflows/ci.yml");
     expect(content).toMatch(/actions\/upload-artifact/);
@@ -115,4 +112,17 @@ describe("CI ワークフローのカバレッジ設定 (Issue #71)", () => {
     const content = readFile(".github/workflows/ci.yml");
     expect(content).toMatch(/davelosert\/vitest-coverage-report-action/);
   });
+});
+
+describe("各ワークスペースの test script が coverage 付き単一実行になっている (Issue #507)", () => {
+  for (const ws of ["common", "server", "client"]) {
+    it(`${ws}/package.json の test script が vitest run --coverage を実行する`, () => {
+      const pkg = JSON.parse(readFile(`${ws}/package.json`)) as {
+        scripts?: Record<string, string>;
+      };
+      const testScript = pkg.scripts?.test ?? "";
+      expect(testScript).toMatch(/vitest\s+run/);
+      expect(testScript).toMatch(/--coverage/);
+    });
+  }
 });

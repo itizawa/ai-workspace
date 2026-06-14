@@ -25,14 +25,16 @@
       "cache": false
     },
     "@hatchery/server#test": {
-      "dependsOn": ["^build", "@hatchery/server#db:generate"]
+      "dependsOn": ["^build", "@hatchery/server#db:generate"],
+      "outputs": ["coverage/**"]
     },
     "@hatchery/server#build": {
       "dependsOn": ["^build", "@hatchery/server#db:generate"],
       "outputs": ["dist/**"]
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
     },
     "storybook:build": {
       "dependsOn": ["^build"],

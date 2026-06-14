@@ -22,7 +22,7 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "setup-db": "prisma migrate dev --skip-generate && prisma db seed",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "lint": "eslint ."
   },
   "prisma": {
