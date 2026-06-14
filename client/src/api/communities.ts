@@ -9,9 +9,9 @@ import {
   useSuspenseQuery,
   useSuspenseInfiniteQuery,
 } from "@tanstack/react-query";
-import { CommunitySchema } from "@hatchery/common";
+import { AdminCommunitySchema } from "@hatchery/common";
 import type {
-  Community as AdminCommunity,
+  AdminCommunity,
   CreateCommunityInput,
   HomeFeedSort,
   UpdateCommunityInput,
@@ -69,7 +69,7 @@ export async function fetchAdminCommunities(): Promise<AdminCommunity[]> {
   });
   if (error || !response.ok || !data)
     throw new Error(`GET /api/admin/communities failed: ${response.status}`);
-  return CommunitySchema.array().parse(
+  return AdminCommunitySchema.array().parse(
     data.map((c) => ({
       ...c,
       created_at: new Date(c.created_at),
@@ -88,7 +88,7 @@ export async function createCommunity(input: CreateCommunityInput): Promise<Admi
   });
   if (error || !response.ok || !data)
     throw new Error(`POST /api/admin/communities failed: ${response.status}`);
-  return CommunitySchema.parse({
+  return AdminCommunitySchema.parse({
     ...data,
     created_at: new Date(data.created_at),
   });
@@ -106,7 +106,7 @@ export async function updateCommunity(
   });
   if (error || !response.ok || !data)
     throw new Error(`PATCH /api/admin/communities/${id} failed: ${response.status}`);
-  return CommunitySchema.parse({
+  return AdminCommunitySchema.parse({
     ...data,
     created_at: new Date(data.created_at),
   });
@@ -427,7 +427,6 @@ export function useVotePost(communitySlug?: string) {
     mutationFn: ({ postId, direction }: { postId: string; direction: VoteDirection }) =>
       votePost(postId, direction),
     onMutate: async ({ postId, direction }: { postId: string; direction: VoteDirection }) => {
-      // 楽観更新: スレッドキャッシュの score を direction に応じて +1 / -1
       const threadKey = postThreadQueryKey(postId);
       await queryClient.cancelQueries({ queryKey: threadKey });
       const previous = queryClient.getQueryData<{ post: Post; comments: Comment[] }>(threadKey);
@@ -475,7 +474,6 @@ export function useVoteComment(postId: string) {
       commentId: string;
       direction: VoteDirection;
     }) => {
-      // 楽観更新: スレッドキャッシュのコメント score を direction に応じて +1 / -1
       const threadKey = postThreadQueryKey(postId);
       await queryClient.cancelQueries({ queryKey: threadKey });
       const previous = queryClient.getQueryData<{ post: Post; comments: Comment[] }>(threadKey);
