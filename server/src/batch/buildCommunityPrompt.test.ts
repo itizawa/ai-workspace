@@ -9,6 +9,7 @@ describe("buildCommunityPrompt (#306)", () => {
       slug: "technology",
       name: "テクノロジー",
       description: "テクノロジーとプログラミングの話題を楽しむコミュニティ。",
+      generationInstruction: null,
       synopsis: null,
       lastSlotKey: null,
       iconUrl: null,
@@ -80,8 +81,8 @@ describe("buildCommunityPrompt (#306)", () => {
       expect(TONE_GUIDELINES).toContain("さん付け");
     });
 
-    it("距離感: 馴れ合い（中身のない同意・褒め合い）回避・率直さ歓迎の指示が TONE_GUIDELINES に含まれる", () => {
-      expect(TONE_GUIDELINES).toContain("馴れ合い");
+    it("距離感: 駴れ合い（中身のない同意・褒め合い）回避・率直さ歓迎の指示が TONE_GUIDELINES に含まれる", () => {
+      expect(TONE_GUIDELINES).toContain("駴れ合い");
       expect(TONE_GUIDELINES).toContain("率直");
     });
 
