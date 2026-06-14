@@ -13,13 +13,13 @@
 
 ## 受け入れ条件 → 入出力
 
-| # | 受け入れ条件 | 検証（テスト） |
-|---|---|---|
-| 1 | common/server/client の各テストが CI 1 実行あたり 1 回だけ走る | `ci-workflow.test.ts`: ci.yml に `vitest run --coverage` を直接呼ぶ「2 重実行」ステップが存在しないこと（`Test with coverage` ステップ群が消えていること）を検証 |
-| 2 | カバレッジ生成・artifact・PR コメントが従来どおり機能 | `vitest-coverage-config.test.ts`: 各 WS の vitest 設定に v8/lcov/json-summary/thresholds が残り、ci.yml に upload-artifact / vitest-coverage-report-action が残ること。各 WS の `test` script が `--coverage` を含むこと |
-| 3 | 統合方法を明示し選定理由を述べる | 本書（下記「設計判断」） |
-| 4 | `DATABASE_URL` 未設定で `.int.test.ts` が skipIf でスキップ | 既存挙動を変更しない（vitest 設定・テストの skipIf を触らない） |
-| 5 | ローカルの `turbo run build\|test\|lint` が緑のまま | ローカルで `pnpm turbo run lint test build` を実行して確認 |
+| #   | 受け入れ条件                                                   | 検証（テスト）                                                                                                                                                                                                           |
+| --- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | common/server/client の各テストが CI 1 実行あたり 1 回だけ走る | `ci-workflow.test.ts`: ci.yml に `vitest run --coverage` を直接呼ぶ「2 重実行」ステップが存在しないこと（`Test with coverage` ステップ群が消えていること）を検証                                                         |
+| 2   | カバレッジ生成・artifact・PR コメントが従来どおり機能          | `vitest-coverage-config.test.ts`: 各 WS の vitest 設定に v8/lcov/json-summary/thresholds が残り、ci.yml に upload-artifact / vitest-coverage-report-action が残ること。各 WS の `test` script が `--coverage` を含むこと |
+| 3   | 統合方法を明示し選定理由を述べる                               | 本書（下記「設計判断」）                                                                                                                                                                                                 |
+| 4   | `DATABASE_URL` 未設定で `.int.test.ts` が skipIf でスキップ    | 既存挙動を変更しない（vitest 設定・テストの skipIf を触らない）                                                                                                                                                          |
+| 5   | ローカルの `turbo run build\|test\|lint` が緑のまま            | ローカルで `pnpm turbo run lint test build` を実行して確認                                                                                                                                                               |
 
 ## 設計判断: 統合方法（受け入れ条件 #3）
 
