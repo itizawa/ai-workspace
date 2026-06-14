@@ -101,6 +101,29 @@ describe("ジョブのステップ定義 (受け入れ条件 #3, #4, #5, #6)", (
   });
 });
 
+describe("テストの2重実行解消 (Issue #507)", () => {
+  it("ci.yml に turbo を介さず vitest run --coverage を直接呼ぶ「2重実行」ステップが存在しない", () => {
+    const steps = allSteps(loadWorkflow());
+    // turbo の test タスク（各 WS の test script が --coverage）でカバレッジを生成するため、
+    // ci.yml 側で vitest run --coverage を直接実行するステップ（旧 "Test with coverage (*)"）は無い。
+    const directCoverageRun = steps.filter((s) => {
+      const run = s.run ?? "";
+      return /vitest\s+run/.test(run) && /--coverage/.test(run);
+    });
+    expect(directCoverageRun).toHaveLength(0);
+  });
+
+  it("テストを走らせる run ステップは turbo run の単一ステップのみ", () => {
+    const steps = allSteps(loadWorkflow());
+    // vitest を起動する run ステップ（turbo run 経由を除く）が存在しないことで単一実行を担保する。
+    const standaloneVitest = steps.filter((s) => {
+      const run = s.run ?? "";
+      return /vitest\s+run/.test(run) && !/turbo\s+run/.test(run);
+    });
+    expect(standaloneVitest).toHaveLength(0);
+  });
+});
+
 describe("ジョブ名 (受け入れ条件 #7)", () => {
   it("外部スキャンと区別できるプロジェクト由来のジョブが定義されている", () => {
     const wf = loadWorkflow();
